@@ -49,7 +49,7 @@ object DES {
       println("解密后 " + new String(decryptResult, 0, decryptResult.length, UTF8_CHARSET))
     }
     catch {
-      case e => e.printStackTrace()
+      case e:Throwable => e.printStackTrace()
     }
   }
 
