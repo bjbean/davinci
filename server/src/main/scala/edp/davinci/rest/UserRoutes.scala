@@ -13,7 +13,7 @@ import io.swagger.annotations._
 @Path("/users")
 class UserRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
-  val routes = getUserByIdRoute ~ getUserByAllRoute ~ postUserRoute ~ putUserRoute ~ getUserByPageRoute ~ deleteUserByIdRoute
+  val routes = getUserByIdRoute ~ postUserRoute ~ putUserRoute ~ getUserByPageRoute ~ deleteUserByIdRoute
 
   @Path("/{id}")
   @ApiOperation(value = "get one user from system by id", notes = "", nickname = "", httpMethod = "GET")
@@ -28,17 +28,16 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   ))
   def getUserByIdRoute: Route = modules.userRoutes.getByIdRoute("users")
 
-  @ApiOperation(value = "get all user with the same domain", notes = "", nickname = "", httpMethod = "GET")
-  @ApiResponses(Array(
-    new ApiResponse(code = 200, message = "OK"),
-    new ApiResponse(code = 403, message = "user is not admin"),
-    new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
-  ))
-  def getUserByAllRoute = modules.userRoutes.getByAllRoute("users", "domain_id")
+//  @ApiOperation(value = "get all user with the same domain", notes = "", nickname = "", httpMethod = "GET")
+//  @ApiResponses(Array(
+//    new ApiResponse(code = 200, message = "OK"),
+//    new ApiResponse(code = 403, message = "user is not admin"),
+//    new ApiResponse(code = 401, message = "authorization error"),
+//    new ApiResponse(code = 500, message = "internal server error")
+//  ))
+//  def getUserByAllRoute = modules.userRoutes.getByAllRoute("users", "domain_id")
 
 
-  @Path("{page=\\d+&size=\\d+}")
   @ApiOperation(value = "get users with paginate", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "paginate", value = "paginate information", required = true, dataType = "String", paramType = "path")

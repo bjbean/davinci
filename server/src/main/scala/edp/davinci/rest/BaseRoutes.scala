@@ -1,6 +1,7 @@
 package edp.davinci.rest
 
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.persistence.base.{BaseDal, BaseEntity, BaseTable}
 import edp.davinci.persistence.entities.JsonProtocol._
@@ -72,6 +73,7 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
   override def getByAllRoute(route: String, column: String) = path(route) {
     get {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+            println("~~~~~~~~~~~~~~~~~~~~~")
         session => getByAllComplete(route, session, getByAll(session, column))
       }
     }
@@ -158,17 +160,32 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     future
   }
 
-  override def paginateRoute(route: String, column: String): Route = path(s"${route}\\?page=\\d+&size=\\d+".r) {
-    filter =>
-      get {
-        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-          session =>
-            println(filter)
-            getByAllComplete(route, session, paginateFilter(filter, session, column))
-        }
-      }
-  }
+  //  override def paginateRoute(route: String, column: String): Route = path(s"${route}\\?page=\\d+&size=\\d+".r) {
+  //    filter =>
+  //      get {
+  //        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+  //          session =>
+  //            println(filter)
+  //            getByAllComplete(route, session, paginateFilter(filter, session, column))
+  //        }
+  //      }
+  //  }
 
+
+  override def paginateRoute(route: String, column: String) = path(route){
+    get{
+      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize){
+        session =>
+          parameters('page.as[Int], 'size.as[Int]){(offset,limit)=>
+            val future = column match {
+              case "domain_id" => baseDal.paginate(table => table.domain_id === session.domainId && table.active === true)(offset, limit).mapTo[Seq[BaseEntity]]
+              case "id" => baseDal.paginate(_.active === true)(offset, limit).mapTo[Seq[BaseEntity]]
+            }
+            getByAllComplete(route, session,future)
+          }
+      }
+    }
+  }
 
   def generateEntity(baseClass: BaseClass, session: SessionClass): BaseEntity = {
     baseClass match {
