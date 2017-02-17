@@ -4,7 +4,7 @@ import javax.ws.rs.Path
 
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module._
-import edp.davinci.persistence.entities.JsonProtocol._
+import edp.davinci.util.JsonProtocol._
 import edp.davinci.persistence.entities.User
 import edp.davinci.util.AuthorizationProvider
 import io.swagger.annotations._
@@ -28,14 +28,14 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   ))
   def getUserByIdRoute: Route = modules.userRoutes.getByIdRoute("users")
 
-//  @ApiOperation(value = "get all user with the same domain", notes = "", nickname = "", httpMethod = "GET")
-//  @ApiResponses(Array(
-//    new ApiResponse(code = 200, message = "OK"),
-//    new ApiResponse(code = 403, message = "user is not admin"),
-//    new ApiResponse(code = 401, message = "authorization error"),
-//    new ApiResponse(code = 500, message = "internal server error")
-//  ))
-//  def getUserByAllRoute = modules.userRoutes.getByAllRoute("users", "domain_id")
+  //  @ApiOperation(value = "get all user with the same domain", notes = "", nickname = "", httpMethod = "GET")
+  //  @ApiResponses(Array(
+  //    new ApiResponse(code = 200, message = "OK"),
+  //    new ApiResponse(code = 403, message = "user is not admin"),
+  //    new ApiResponse(code = 401, message = "authorization error"),
+  //    new ApiResponse(code = 500, message = "internal server error")
+  //  ))
+  //  def getUserByAllRoute = modules.userRoutes.getByAllRoute("users", "domain_id")
 
 
   @ApiOperation(value = "get users with paginate", notes = "", nickname = "", httpMethod = "GET")
@@ -53,7 +53,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
 
   @ApiOperation(value = "Add a new user to the system", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "user", value = "User object to be added", required = true, dataType = "edp.davinci.rest.UserClassSeq", paramType = "body")
+    new ApiImplicitParam(name = "user", value = "User object to be added", required = true, dataType = "edp.davinci.rest.UserClass", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
@@ -63,10 +63,10 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   ))
   def postUserRoute = path("users") {
     post {
-      entity(as[RequestJson[Seq[UserClass]]]) {
-        seq =>
+      entity(as[UserClass]) {
+        user =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => modules.userRoutes.postComplete(session, seq.payload)
+            session => modules.userRoutes.postComplete(session, user)
           }
       }
     }
@@ -75,7 +75,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
 
   @ApiOperation(value = "update a user in the system", notes = "", nickname = "", httpMethod = "PUT")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "user", value = "User object to be updated", required = true, dataType = "edp.davinci.rest.UserSeq", paramType = "body")
+    new ApiImplicitParam(name = "user", value = "User object to be updated", required = true, dataType = "edp.davinci.persistence.entities.User", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "put success"),
@@ -84,12 +84,12 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def putUserRoute = path("users") {
+  def putUserRoute = path("users" / LongNumber) { id =>
     put {
-      entity(as[RequestJson[Seq[User]]]) {
+      entity(as[User]) {
         seq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => modules.userRoutes.putComplete(session, seq.payload)
+            session => modules.userRoutes.putComplete(session, seq, id)
           }
       }
     }
