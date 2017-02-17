@@ -8,7 +8,7 @@ import edp.common.util.DateUtils._
 import edp.common.util.DtFormat
 import edp.davinci.util.JwtSupport._
 
-object Utils {
+object CommonUtils {
 
   def responseHeaderWithToken(session: SessionClass): Directive0 = {
     respondWithHeader(RawHeader("token", JwtSupport.generateToken(session)))
