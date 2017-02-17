@@ -6,10 +6,10 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule}
-import edp.davinci.persistence.entities.JsonProtocol._
+import edp.davinci.util.JsonProtocol._
 import edp.davinci.persistence.entities.User
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.util.Utils._
+import edp.davinci.util.CommonUtils._
 import io.swagger.annotations._
 
 import scala.util.{Failure, Success}
@@ -40,14 +40,14 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
               case Success(userOpt) => userOpt match {
                 case Some(user) =>
                   if (user.password == changePwd.oldPass) {
-                    onComplete(modules.userDal.update(updatePass(user, changePwd.newPass)).mapTo[Int]) {
-                      case Success(result) => complete(OK, getHeader(200, session))
-                      case Failure(ex) => complete(InternalServerError, getHeader(500, session))
+                    onComplete(modules.userDal.update(updatePass(user, changePwd.newPass),user.id).mapTo[Int]) {
+                      case Success(_) => complete(OK, getHeader(200, session))
+                      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage,session))
                     }
                   } else complete(Unauthorized, getHeader(401, "old password is wrong", session))
                 case None => complete(NotFound, getHeader(404, session))
               }
-              case Failure(ex) => complete(InternalServerError, getHeader(500, session))
+              case Failure(ex) => complete(InternalServerError, getHeader(500,ex.getMessage, session))
             }
         }
       }

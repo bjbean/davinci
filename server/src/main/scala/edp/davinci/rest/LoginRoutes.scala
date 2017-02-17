@@ -5,9 +5,9 @@ import javax.ws.rs.Path
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule}
-import edp.davinci.persistence.entities.JsonProtocol._
+import edp.davinci.util.JsonProtocol._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.util.Utils._
+import edp.davinci.util.CommonUtils._
 import io.swagger.annotations._
 
 import scala.util.{Failure, Success}
