@@ -14,16 +14,18 @@ class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
   override val apiTypes = Seq(
     typeOf[LoginRoutes],
     typeOf[UserRoutes],
-    typeOf[ChangePwdRoutes]
-//    typeOf[BizlogicRoutes],
-//    typeOf[DashboardRoutes],
-//    typeOf[WidgetRoutes],
-//    typeOf[SqlRoutes],
-//    typeOf[SourceRoutes],
-//    typeOf[LibWidgetRoutes],
-//    typeOf[GroupRoutes],
-//    typeOf[DomainRoutes]
-   )
+    typeOf[ChangePwdRoutes],
+    typeOf[SourceRoutes],
+    typeOf[DomainRoutes]
+    //    typeOf[BizlogicRoutes],
+    //    typeOf[DashboardRoutes],
+    //    typeOf[WidgetRoutes],
+    //    typeOf[SqlRoutes],
+    //    typeOf[SourceRoutes],
+    //    typeOf[LibWidgetRoutes],
+    //    typeOf[GroupRoutes],
+
+  )
 
   override val host = Boot.host + ":" + Boot.port
   //the url of your api, not swagger's json endpoint

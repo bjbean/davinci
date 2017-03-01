@@ -9,11 +9,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait BaseDal[T, A] {
+
+
   def insert(row: A): Future[A]
 
   def insert(rows: Seq[A]): Future[Seq[A]]
 
-  def update(row: A): Future[Int]
+  def update(row: A,id:Long): Future[Int]
 
   def update(rows: Seq[A]): Future[Unit]
 
@@ -45,9 +47,9 @@ class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(imp
     }
   }
 
-  override def update(row: A): Future[Int] = if (row.isValid) db.run(tableQ.filter(_.id === row.id).update(row)) else Future(0)
+  override def update(row: A,id:Long): Future[Int] = if (row.isValid) db.run(tableQ.filter(_.id === id).update(row)) else Future(0)
 
-  override def update(rows: Seq[A]): Future[Unit] = db.run(DBIO.seq(rows.filter(_.isValid).map(r => tableQ.filter(_.id === r.id).update(r)): _*))
+  override def update(rows: Seq[A]): Future[Unit] = db.run(DBIO.seq(rows.filter(_.isValid).map(r => {tableQ.filter(_.id === r.id).update(r)}): _*))
 
   override def findById(id: Long): Future[Option[A]] = db.run(tableQ.filter(obj => obj.id === id && obj.active === true).result.headOption)
 
@@ -55,7 +57,7 @@ class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(imp
 
   override def deleteById(id: Long): Future[Int] = deleteById(Seq(id))
 
-  override def deleteById(ids: Seq[Long]): Future[Int] = db.run(tableQ.filter(_.id.inSet(ids)).delete)
+  override def deleteById(ids: Seq[Long]): Future[Int] = db.run(tableQ.filter(_.id.inSet(ids)).map(x => x.active).update(false))
 
   override def deleteByFilter[C: CanBeQueryCondition](f: (T) => C): Future[Int] = db.run(tableQ.withFilter(f).delete)
 
