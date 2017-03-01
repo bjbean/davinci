@@ -4,7 +4,6 @@ import edp.davinci.persistence.base.{BaseEntity, BaseTable}
 import slick.jdbc.H2Profile.api._
 
 case class Dashboard(id: Long,
-                     domain_id: Long,
                      name: String,
                      desc: String,
                      publish: Boolean,
@@ -14,8 +13,7 @@ case class Dashboard(id: Long,
                      update_time: String,
                      update_by: Long) extends BaseEntity
 
-case class SimpleDashboard(domain_id: Long,
-                           name: String,
+case class SimpleDashboard(name: String,
                            desc: String,
                            publish: Boolean,
                            active: Boolean,
@@ -25,7 +23,6 @@ case class SimpleDashboard(domain_id: Long,
                            update_by: Long)
 
 class DashboardTable(tag: Tag) extends BaseTable[Dashboard](tag, "dashboard") {
-//  def domain_id = column[Long]("domain_id")
 
 //  def name = column[String]("name")
 
@@ -41,5 +38,5 @@ class DashboardTable(tag: Tag) extends BaseTable[Dashboard](tag, "dashboard") {
 
   def update_by = column[Long]("update_by")
 
-  def * = (id, domain_id, name, desc, publish, active, create_time, create_by, update_time, update_by) <> (Dashboard.tupled, Dashboard.unapply)
+  def * = (id, name, desc, publish, active, create_time, create_by, update_time, update_by) <> (Dashboard.tupled, Dashboard.unapply)
 }

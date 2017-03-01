@@ -17,7 +17,6 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
   //  val source = new SourceRoutes(modules)
   //  val libWidget = new LibWidgetRoutes(modules)
   //  val group = new GroupRoutes(modules)
-  val domain = new DomainRoutes(modules)
 
   val routes: Route =
     corsHandler(swagger.routes) ~ corsHandler(swagger.indexRoute) ~
@@ -25,8 +24,7 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
         corsHandler(login.routes) ~
           corsHandler(users.routes) ~
           corsHandler(changePwd.routes) ~
-          corsHandler(source.routes) ~
-          corsHandler(domain.routes)
+          corsHandler(source.routes)
         //          corsHandler(bizlogic.routes) ~
         //          corsHandler(dashboard.routes) ~
         //          corsHandler(widget.routes) ~

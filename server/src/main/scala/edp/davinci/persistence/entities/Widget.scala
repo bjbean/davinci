@@ -4,7 +4,6 @@ import edp.davinci.persistence.base.{BaseEntity, BaseTable}
 import slick.jdbc.H2Profile.api._
 
 case class Widget(id: Long,
-                  domain_id: Long,
                   widgetlib_id: Long,
                   bizlogic_id: Long,
                   name: String,
@@ -18,8 +17,7 @@ case class Widget(id: Long,
                   update_time: String,
                   update_by: Long) extends BaseEntity
 
-case class SimpleWidget(domain_id: Long,
-                        widgetlib_id: Long,
+case class SimpleWidget(widgetlib_id: Long,
                         bizlogic_id: Long,
                         name: String,
                         desc: String,
@@ -33,13 +31,12 @@ case class SimpleWidget(domain_id: Long,
                         update_by: Long)
 
 class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "Widget") {
-//  def domain_id = column[Long]("domain_id")
 
   def widgetlib_id = column[Long]("widgetlib_id")
 
   def bizlogic_id = column[Long]("bizlogic_id")
 
-//  def name = column[String]("name")
+  //  def name = column[String]("name")
 
   def desc = column[String]("desc")
 
@@ -57,5 +54,5 @@ class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "Widget") {
 
   def update_by = column[Long]("update_by")
 
-  def * = (id, domain_id, widgetlib_id, bizlogic_id, name, desc, trigger_type, trigger_params, publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
+  def * = (id, widgetlib_id, bizlogic_id, name, desc, trigger_type, trigger_params, publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
 }

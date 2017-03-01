@@ -74,16 +74,12 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
         session =>
           parameters('page.as[Int], 'size.as[Int] ? 20) { (offset, limit) =>
-            val future = column match {
-              case "domain_id" => baseDal.paginate(table => table.domain_id === session.domainId && table.active === true)(offset, limit).mapTo[Seq[BaseEntity]]
-              case "id" => baseDal.paginate(_.active === true)(offset, limit).mapTo[Seq[BaseEntity]]
-            }
+            val future = baseDal.paginate(_.active === true)(offset, limit).mapTo[Seq[BaseEntity]]
             getByAllComplete(route, session, future)
           }
       }
     }
   }
-
 
   def getByIdComplete(route: String, id: Long, session: SessionClass): Route = {
     if (session.admin || access(route, "id"))
@@ -96,12 +92,8 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
       } else complete(Forbidden, getHeader(403, session))
   }
 
-  def getByAll(session: SessionClass, column: String): Future[Seq[BaseEntity]] = {
-    column match {
-      case "domain_id" => baseDal.findByFilter(table => table.domain_id === session.domainId && table.active === true)
-      case "id" => baseDal.findByFilter(_.active === true)
-    }
-  }
+  def getByAll(session: SessionClass, column: String): Future[Seq[BaseEntity]] = baseDal.findByFilter(_.active === true)
+
 
   def getByAllComplete(route: String, session: SessionClass, future: Future[Seq[BaseEntity]]): Route = {
     if (session.admin || access(route, "all")) {
@@ -168,16 +160,15 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
 
   def generateEntityAsActive(baseClass: BaseClass, session: SessionClass): BaseEntity = {
     baseClass match {
-      case bizLogic: BizlogicClass => Bizlogic(0, session.domainId, bizLogic.source_id, bizLogic.name, bizLogic.desc, active = true, currentTime, session.userId, currentTime, session.userId)
-      case dashboard: DashboardClass => Dashboard(0, session.domainId, dashboard.name, dashboard.desc, dashboard.publish, active = true, currentTime, session.userId, currentTime, session.userId)
-      case domain: DomainClass => Domain(0, domain.name, domain.desc, active = true, currentTime, session.userId, currentTime, session.userId)
-      case group: GroupClass => Group(0, session.domainId, group.name, group.desc, active = true, currentTime, session.userId, currentTime, session.userId)
+      case bizLogic: BizlogicClass => Bizlogic(0, bizLogic.source_id, bizLogic.name, bizLogic.desc, active = true, currentTime, session.userId, currentTime, session.userId)
+      case dashboard: DashboardClass => Dashboard(0, dashboard.name, dashboard.desc, dashboard.publish, active = true, currentTime, session.userId, currentTime, session.userId)
+      case group: GroupClass => Group(0, group.name, group.desc, active = true, currentTime, session.userId, currentTime, session.userId)
       case libWidget: LibWidgetClass => LibWidget(0, libWidget.`type`, active = true, currentTime, session.userId, currentTime, session.userId)
-      case source: SourceClass => Source(0, session.domainId, source.group_id, source.name, source.desc, source.`type`, source.config, active = true, currentTime, session.userId, currentTime, session.userId)
-      case sql: SqlClass => Sql(0, session.domainId, sql.bizlogic_id, sql.name, sql.sql_type, sql.sql_tmpl, sql.sql_order, sql.desc, active = true, currentTime, session.userId, currentTime, session.userId)
+      case source: SourceClass => Source(0, source.group_id, source.name, source.desc, source.`type`, source.config, active = true, currentTime, session.userId, currentTime, session.userId)
+      case sql: SqlClass => Sql(0, sql.bizlogic_id, sql.name, sql.sql_type, sql.sql_tmpl, sql.sql_order, sql.desc, active = true, currentTime, session.userId, currentTime, session.userId)
       case sqlLog: SqlLogClass => SqlLog(0, sqlLog.sql_id, session.userId, sqlLog.start_time, sqlLog.end_time, active = true, sqlLog.success, sqlLog.error)
-      case user: UserClass => User(0, session.domainId, user.email, "123456", user.title, user.name, admin = false, active = true, currentTime, session.userId, currentTime, session.userId)
-      case widget: WidgetClass => Widget(0, session.domainId, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish, active = true, currentTime, session.userId, currentTime, session.userId)
+      case user: UserClass => User(0, user.email, "123456", user.title, user.name, admin = false, active = true, currentTime, session.userId, currentTime, session.userId)
+      case widget: WidgetClass => Widget(0, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish, active = true, currentTime, session.userId, currentTime, session.userId)
     }
   }
 

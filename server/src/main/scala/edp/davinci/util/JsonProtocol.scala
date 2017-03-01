@@ -9,41 +9,38 @@ import spray.json._
 object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   // davinci
-  implicit val formatGroup: RootJsonFormat[Group] = jsonFormat9(Group)
-  implicit val formatSimpleGroup: RootJsonFormat[SimpleGroup] = jsonFormat8(SimpleGroup)
+  implicit val formatGroup: RootJsonFormat[Group] = jsonFormat8(Group)
+  implicit val formatSimpleGroup: RootJsonFormat[SimpleGroup] = jsonFormat7(SimpleGroup)
 
-  implicit val formatSql: RootJsonFormat[Sql] = jsonFormat13(Sql)
-  implicit val formatSimpleSql: RootJsonFormat[SimpleSql] = jsonFormat12(SimpleSql)
+  implicit val formatSql: RootJsonFormat[Sql] = jsonFormat12(Sql)
+  implicit val formatSimpleSql: RootJsonFormat[SimpleSql] = jsonFormat11(SimpleSql)
 
   implicit val formatSqlLog: RootJsonFormat[SqlLog] = jsonFormat8(SqlLog)
   implicit val formatSimpleSqlLog: RootJsonFormat[SimpleSqlLog] = jsonFormat7(SimpleSqlLog)
 
-  implicit val formatTablePrivilege: RootJsonFormat[Source] = jsonFormat12(Source)
-  implicit val formatSimpleTablePrivilege: RootJsonFormat[SimpleSource] = jsonFormat11(SimpleSource)
+  implicit val formatTablePrivilege: RootJsonFormat[Source] = jsonFormat11(Source)
+  implicit val formatSimpleTablePrivilege: RootJsonFormat[SimpleSource] = jsonFormat10(SimpleSource)
 
-  implicit val formatUser: RootJsonFormat[User] = jsonFormat12(User)
-  implicit val formatSimpleUser: RootJsonFormat[SimpleUser] = jsonFormat11(SimpleUser)
+  implicit val formatUser: RootJsonFormat[User] = jsonFormat11(User)
+  implicit val formatSimpleUser: RootJsonFormat[SimpleUser] = jsonFormat10(SimpleUser)
 
   implicit val formatRelUserGroup: RootJsonFormat[RelUserGroup] = jsonFormat8(RelUserGroup)
   implicit val formatRelSimpleUserGroup: RootJsonFormat[SimpleRelUserGroup] = jsonFormat7(SimpleRelUserGroup)
 
-  implicit val formatDashboard: RootJsonFormat[Dashboard] = jsonFormat10(Dashboard)
-  implicit val formatSimpleDashboard: RootJsonFormat[SimpleDashboard] = jsonFormat9(SimpleDashboard)
+  implicit val formatDashboard: RootJsonFormat[Dashboard] = jsonFormat9(Dashboard)
+  implicit val formatSimpleDashboard: RootJsonFormat[SimpleDashboard] = jsonFormat8(SimpleDashboard)
 
   implicit val formatRelDashboardWidget: RootJsonFormat[RelDashboardWidget] = jsonFormat12(RelDashboardWidget)
   implicit val formatSimpleRelDashboardWidget: RootJsonFormat[SimpleRelDashboardWidget] = jsonFormat11(SimpleRelDashboardWidget)
 
-  implicit val formatWidget: RootJsonFormat[Widget] = jsonFormat14(Widget)
-  implicit val formatSimpleWidget: RootJsonFormat[SimpleWidget] = jsonFormat13(SimpleWidget)
+  implicit val formatWidget: RootJsonFormat[Widget] = jsonFormat13(Widget)
+  implicit val formatSimpleWidget: RootJsonFormat[SimpleWidget] = jsonFormat12(SimpleWidget)
 
   implicit val formatLibWidget: RootJsonFormat[LibWidget] = jsonFormat7(LibWidget)
   implicit val formatSimpleLibWidget: RootJsonFormat[SimpleLibWidget] = jsonFormat6(SimpleLibWidget)
 
-  implicit val formatDomain: RootJsonFormat[Domain] = jsonFormat8(Domain)
-  implicit val formatSimpleDomain: RootJsonFormat[SimpleDomain] = jsonFormat7(SimpleDomain)
-
-  implicit val formatBizlogic: RootJsonFormat[Bizlogic] = jsonFormat10(Bizlogic)
-  implicit val formatSimpleBizlogic: RootJsonFormat[SimpleBizlogic] = jsonFormat9(SimpleBizlogic)
+  implicit val formatBizlogic: RootJsonFormat[Bizlogic] = jsonFormat9(Bizlogic)
+  implicit val formatSimpleBizlogic: RootJsonFormat[SimpleBizlogic] = jsonFormat8(SimpleBizlogic)
 
   implicit val formatRelGroupBizlogic: RootJsonFormat[RelGroupBizlogic] = jsonFormat9(RelGroupBizlogic)
   implicit val formatSimpleRelGroupBizlogic: RootJsonFormat[SimpleRelGroupBizlogic] = jsonFormat8(SimpleRelGroupBizlogic)
@@ -52,7 +49,7 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatChangePwdClass: RootJsonFormat[ChangePwdClass] = jsonFormat2(ChangePwdClass)
 
-  implicit val formatSessionClass: RootJsonFormat[SessionClass] = jsonFormat5(SessionClass)
+  implicit val formatSessionClass: RootJsonFormat[SessionClass] = jsonFormat4(SessionClass)
 
   implicit val formatPaginationClass: RootJsonFormat[PaginationClass] = jsonFormat2(PaginationClass)
 
@@ -106,8 +103,6 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatLibWidgetSeq: RootJsonFormat[LibWidgetSeq] = jsonFormat1(LibWidgetSeq)
 
-  implicit val formatDomainSeq: RootJsonFormat[DomainSeq] = jsonFormat1(DomainSeq)
-
   implicit val formatSourceSeq: RootJsonFormat[SourceSeq] = jsonFormat1(SourceSeq)
 
   implicit val formatSqlSeq: RootJsonFormat[SqlSeq] = jsonFormat1(SqlSeq)
@@ -136,7 +131,6 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
       case biz: Bizlogic => biz.toJson
       case dashboard: Dashboard => dashboard.toJson
       case group: Group => group.toJson
-      case domain: Domain => domain.toJson
       case ligWidget: LibWidget => ligWidget.toJson
       case source: Source => source.toJson
       case sql: Sql => sql.toJson

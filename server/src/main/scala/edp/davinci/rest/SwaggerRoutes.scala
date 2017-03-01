@@ -15,8 +15,7 @@ class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
     typeOf[LoginRoutes],
     typeOf[UserRoutes],
     typeOf[ChangePwdRoutes],
-    typeOf[SourceRoutes],
-    typeOf[DomainRoutes]
+    typeOf[SourceRoutes]
     //    typeOf[BizlogicRoutes],
     //    typeOf[DashboardRoutes],
     //    typeOf[WidgetRoutes],

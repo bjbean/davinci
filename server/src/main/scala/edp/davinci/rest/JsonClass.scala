@@ -8,7 +8,7 @@ import scala.reflect.ClassTag
 //token class
 case class LoginClass(username: String, password: String)
 
-case class SessionClass(userId: Long, domainId: Long, groupIdList: List[Long], admin: Boolean, currentTs: Long = System.currentTimeMillis())
+case class SessionClass(userId: Long, groupIdList: List[Long], admin: Boolean, currentTs: Long = System.currentTimeMillis())
 
 case class ChangePwdClass(oldPass: String, newPass: String)
 
@@ -68,8 +68,6 @@ case class WidgetClassSeq(payload: Seq[WidgetClass]) extends BaseClassSeq
 case class BizlogicSeq(payload: Seq[Bizlogic])
 
 case class DashboardSeq(payload: Seq[Dashboard])
-
-case class DomainSeq(payload: Seq[Domain])
 
 case class GroupSeq(payload: Seq[Group])
 

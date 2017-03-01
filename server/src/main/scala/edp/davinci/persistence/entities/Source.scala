@@ -4,7 +4,6 @@ import edp.davinci.persistence.base.{BaseEntity, BaseTable}
 import slick.jdbc.H2Profile.api._
 
 case class Source(id: Long,
-                  domain_id: Long,
                   group_id: Long,
                   name: String,
                   desc: String,
@@ -16,8 +15,7 @@ case class Source(id: Long,
                   update_time: String,
                   update_by: Long) extends BaseEntity
 
-case class SimpleSource(domain_id: Long,
-                        group_id: Long,
+case class SimpleSource(group_id: Long,
                         name: String,
                         desc: String,
                         `type`: String,
@@ -49,5 +47,5 @@ class SourceTable(tag: Tag) extends BaseTable[Source](tag, "source") {
 
   def update_by = column[Long]("update_by")
 
-  def * = (id, domain_id, group_id, name, desc, `type`, config, active, create_time, create_by, update_time, update_by) <> (Source.tupled, Source.unapply)
+  def * = (id, group_id, name, desc, `type`, config, active, create_time, create_by, update_time, update_by) <> (Source.tupled, Source.unapply)
 }

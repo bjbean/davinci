@@ -4,7 +4,6 @@ import edp.davinci.persistence.base.{BaseEntity, BaseTable}
 import slick.jdbc.H2Profile.api._
 
 case class Sql(id: Long,
-               domain_id: Long,
                bizlogic_id: Long,
                name: String,
                sql_type: String,
@@ -17,8 +16,7 @@ case class Sql(id: Long,
                update_time: String,
                update_by: Long) extends BaseEntity
 
-case class SimpleSql(domain_id: Long,
-                     bizlogic_id: Long,
+case class SimpleSql(bizlogic_id: Long,
                      name: String,
                      sql_type: String,
                      sql_tmpl: String,
@@ -31,11 +29,10 @@ case class SimpleSql(domain_id: Long,
                      update_by: Long)
 
 class SqlTable(tag: Tag) extends BaseTable[Sql](tag, "sql") {
-//  def domain_id = column[Long]("domain_id")
 
   def bizlogic_id = column[Long]("bizlogic_id")
 
-//  def name = column[String]("name")
+  //  def name = column[String]("name")
 
   def sql_type = column[String]("sql_type")
 
@@ -53,5 +50,5 @@ class SqlTable(tag: Tag) extends BaseTable[Sql](tag, "sql") {
 
   def update_by = column[Long]("update_by")
 
-  def * = (id, domain_id, bizlogic_id, name, sql_type, sql_tmpl, sql_order, desc, active, create_time, create_by, update_time, update_by) <> (Sql.tupled, Sql.unapply)
+  def * = (id, bizlogic_id, name, sql_type, sql_tmpl, sql_order, desc, active, create_time, create_by, update_time, update_by) <> (Sql.tupled, Sql.unapply)
 }

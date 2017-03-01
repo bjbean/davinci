@@ -23,7 +23,6 @@ trait PersistenceModule {
   val relDashboardWidgetDal: BaseDal[RelDashboardWidgetTable, RelDashboardWidget]
   val widgetDal: BaseDal[WidgetTable, Widget]
   val libWidgetDal: BaseDal[LibWidgetTable, LibWidget]
-  val domainDal: BaseDal[DomainTable, Domain]
   val bizlogicDal: BaseDal[BizlogicTable, Bizlogic]
   val relGroupBizlogicDal: BaseDal[RelGroupBizlogicTable, RelGroupBizlogic]
 }
@@ -49,7 +48,6 @@ trait PersistenceModuleImpl extends PersistenceModule with DbModule {
   override val relDashboardWidgetDal = new BaseDalImpl[RelDashboardWidgetTable, RelDashboardWidget](TableQuery[RelDashboardWidgetTable])
   override val widgetDal = new BaseDalImpl[WidgetTable, Widget](TableQuery[WidgetTable])
   override val libWidgetDal = new BaseDalImpl[LibWidgetTable, LibWidget](TableQuery[LibWidgetTable])
-  override val domainDal = new BaseDalImpl[DomainTable, Domain](TableQuery[DomainTable])
   override val bizlogicDal = new BaseDalImpl[BizlogicTable, Bizlogic](TableQuery[BizlogicTable])
   override val relGroupBizlogicDal = new BaseDalImpl[RelGroupBizlogicTable, RelGroupBizlogic](TableQuery[RelGroupBizlogicTable])
 

@@ -26,7 +26,7 @@ object Boot extends App {
   modules.userDal.createTable()
   modules.groupDal.createTable()
   modules.relUserGroupDal.createTable()
-  modules.userDal.insert(User(0, 1, "122@qq.com", "123456", "test", "haha", true, true, "2016-12-02 11:53:49.0", 1L, "2016-12-02 11:53:49.0", 1L))
+  modules.userDal.insert(User(0, "122@qq.com", "123456", "test", "haha", true, true, "2016-12-02 11:53:49.0", 1L, "2016-12-02 11:53:49.0", 1L))
   modules.relUserGroupDal.insert(RelUserGroup(1, 1, 1, true, "2016-12-02 11:53:49.0", 1, "2016-12-02 11:53:49.0", 1))
   modules.relUserGroupDal.insert(RelUserGroup(1, 1, 2, true, "2016-12-02 11:53:49.0", 1, "2016-12-02 11:53:49.0", 1))
   //
@@ -46,7 +46,6 @@ object Boot extends App {
   modules.sourceDal.createTable()
   //  modules.libWidgetDal.createTable()
   //  modules.groupDal.createTable()
-  modules.domainDal.createTable()
 
   Http().bindAndHandle(new RoutesApi(modules).routes, host, port)
 }

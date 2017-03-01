@@ -4,7 +4,6 @@ import edp.davinci.persistence.base.{BaseEntity, BaseTable}
 import slick.jdbc.H2Profile.api._
 
 case class Bizlogic(id: Long,
-                    domain_id: Long,
                     source_id: Long,
                     name: String,
                     desc: String,
@@ -14,8 +13,7 @@ case class Bizlogic(id: Long,
                     update_time: String,
                     update_by: Long) extends BaseEntity
 
-case class SimpleBizlogic(domain_id: Long,
-                          source_id: Long,
+case class SimpleBizlogic(source_id: Long,
                           name: String,
                           desc: String,
                           active: Boolean,
@@ -25,7 +23,6 @@ case class SimpleBizlogic(domain_id: Long,
                           update_by: Long)
 
 class BizlogicTable(tag: Tag) extends BaseTable[Bizlogic](tag, "bizlogic") {
-//  def domain_id = column[Long]("domain_id")
 
   def source_id = column[Long]("source_id")
 
@@ -41,5 +38,5 @@ class BizlogicTable(tag: Tag) extends BaseTable[Bizlogic](tag, "bizlogic") {
 
   def update_by = column[Long]("update_by")
 
-  def * = (id, domain_id, source_id, name, desc, active, create_time, create_by, update_time, update_by) <> (Bizlogic.tupled, Bizlogic.unapply)
+  def * = (id, source_id, name, desc, active, create_time, create_by, update_time, update_by) <> (Bizlogic.tupled, Bizlogic.unapply)
 }
