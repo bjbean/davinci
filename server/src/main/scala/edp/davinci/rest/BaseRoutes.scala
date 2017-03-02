@@ -24,7 +24,7 @@ trait BaseRoutes {
 
   def deleteByBatchRoute(route: String): Route
 
-  def paginateRoute(route: String, column: String): Route
+//  def paginateRoute(route: String, column: String): Route
 
 }
 
@@ -86,19 +86,19 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     }
   }
 
-  override def paginateRoute(route: String, column: String): Route
-
-  = path(route) {
-    get {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session =>
-          parameters('page.as[Int], 'size.as[Int] ? 20) { (offset, limit) =>
-            val future = baseDal.paginate(_.active === true)(offset, limit).mapTo[Seq[BaseEntity]]
-            getByAllComplete(route, session, future)
-          }
-      }
-    }
-  }
+//  override def paginateRoute(route: String, column: String): Route
+//
+//  = path(route) {
+//    get {
+//      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+//        session =>
+//          parameters('page.as[Int], 'size.as[Int] ? 20) { (offset, limit) =>
+//            val future = baseDal.paginate(_.active === true)(offset, limit).mapTo[Seq[BaseEntity]]
+//            getByAllComplete(route, session, future)
+//          }
+//      }
+//    }
+//  }
 
   def getByIdComplete(route: String, id: Long, session: SessionClass): Route = {
     if (session.admin || access(route, "id"))
@@ -114,23 +114,24 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
 
   def getByNameComplete(route: String, name: String, session: SessionClass): Route = {
     if (session.admin || access(route, "name"))
-      onComplete(baseDal.findByFilter(_.name === name)) {
-        case Success(baseSeq) =>
-          if (baseSeq.nonEmpty) complete(OK, ResponseJson[Seq[BaseEntity]](getHeader(200, session), baseSeq))
-          else complete(NotFound, getHeader(404, session))
+      onComplete(baseDal.findByName(name)) {
+        case Success(baseEntityOpt) => baseEntityOpt match {
+          case Some(baseEntity) => complete(OK, ResponseJson[BaseEntity](getHeader(200, session), baseEntity))
+          case None => complete(NotFound, getHeader(404, session))
+        }
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       } else complete(Forbidden, getHeader(403, session))
   }
 
 
-  def getByAll(session: SessionClass): Future[Seq[BaseEntity]] = baseDal.findByFilter(_.active === true)
+  def getByAll(session: SessionClass): Future[Seq[(Long, String)]] = baseDal.findAll(_.active === true)
 
 
-  def getByAllComplete(route: String, session: SessionClass, future: Future[Seq[BaseEntity]]): Route = {
+  def getByAllComplete(route: String, session: SessionClass, future: Future[Seq[(Long,String)]]): Route = {
     if (session.admin || access(route, "all")) {
       onComplete(future) {
         case Success(baseSeq) =>
-          if (baseSeq.nonEmpty) complete(OK, ResponseJson[Seq[BaseEntity]](getHeader(200, session), baseSeq))
+          if (baseSeq.nonEmpty) complete(OK, ResponseJson[Seq[(Long,String)]](getHeader(200, session), baseSeq))
           else complete(NotFound, getHeader(404, session))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }

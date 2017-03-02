@@ -48,7 +48,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def getUserByAllRoute = modules.userRoutes.getByAllRoute("users")
+  def getUserByAllRoute:Route = modules.userRoutes.getByAllRoute("users")
 
   //  @Path("{page=\\d+&size=\\d+}")
   //  @ApiOperation(value = "get users with paginate", notes = "", nickname = "", httpMethod = "GET")
