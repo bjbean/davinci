@@ -50,20 +50,6 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   ))
   def getUserByAllRoute:Route = modules.userRoutes.getByAllRoute("users")
 
-  //  @Path("{page=\\d+&size=\\d+}")
-  //  @ApiOperation(value = "get users with paginate", notes = "", nickname = "", httpMethod = "GET")
-  //  @ApiImplicitParams(Array(
-  //    new ApiImplicitParam(name = "paginate", value = "paginate information", required = true, dataType = "String", paramType = "path")
-  //  ))
-  //  @ApiResponses(Array(
-  //    new ApiResponse(code = 200, message = "OK"),
-  //    new ApiResponse(code = 403, message = "user is not admin"),
-  //    new ApiResponse(code = 401, message = "authorization error"),
-  //    new ApiResponse(code = 500, message = "internal server error")
-  //  ))
-  //  def getUserByPageRoute = modules.userRoutes.paginateRoute("users", "domain_id")
-
-
   @ApiOperation(value = "Add new users to the system", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "users", value = "User objects to be added", required = true, dataType = "edp.davinci.rest.SimpleUserSeq", paramType = "body")

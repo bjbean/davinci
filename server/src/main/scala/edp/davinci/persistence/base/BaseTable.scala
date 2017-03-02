@@ -14,6 +14,5 @@ abstract class BaseTable[T](tag: Tag, desc: String) extends Table[T](tag, desc) 
 
   def `type` = column[String]("type")
 
-  def publish = column[String]("publish")
 
 }

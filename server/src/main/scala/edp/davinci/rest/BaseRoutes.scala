@@ -7,9 +7,7 @@ import edp.davinci.persistence.entities._
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
-import slick.jdbc._
 import slick.jdbc.MySQLProfile.api._
-import slick.lifted.CanBeQueryCondition
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -74,33 +72,13 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
 
 
   def getByIdComplete(route: String, id: Long, session: SessionClass): Route = {
-    if (route != "dashboard") {
-      onComplete(baseDal.findById(id)) {
-        case Success(baseEntityOpt) => baseEntityOpt match {
-          case Some(baseEntity) => complete(OK, ResponseJson[BaseEntity](getHeader(200, session), baseEntity))
-          case None => complete(NotFound, getHeader(404, session))
-        }
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+    onComplete(baseDal.findById(id)) {
+      case Success(baseEntityOpt) => baseEntityOpt match {
+        case Some(baseEntity) => complete(OK, ResponseJson[BaseEntity](getHeader(200, session), baseEntity))
+        case None => complete(NotFound, getHeader(404, session))
       }
-    } else getDashboardById(route, id, session)
-  }
-
-  def getDashboardById(route: String, id: Long, session: SessionClass): Route = {
-    val future = if(session.admin) baseDal.findById(id) else baseDal.findByFilter(obj => obj.id === id && obj.publish === true).result.headOption
-    if (session.admin){
-      onComplete(future) {
-        case Success(baseEntityOpt) => baseEntityOpt match {
-          case Some(baseEntity) => {
-            val dashboard = baseEntity
-            complete(NotFound, getHeader(404, session))
-//            onComplete()
-          }
-          case None => complete(NotFound, getHeader(404, session))
-        }
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
+      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
     }
-
   }
 
 
@@ -119,11 +97,11 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
   def getByAll(session: SessionClass): Future[Seq[(Long, String)]] = baseDal.findAll(_.active === true)
 
 
-  def getByAllComplete(route: String, session: SessionClass, future: Future[Seq[(Long,String)]]): Route = {
+  def getByAllComplete(route: String, session: SessionClass, future: Future[Seq[(Long, String)]]): Route = {
     if (session.admin || access(route, "all")) {
       onComplete(future) {
         case Success(baseSeq) =>
-          if (baseSeq.nonEmpty) complete(OK, ResponseJson[Seq[(Long,String)]](getHeader(200, session), baseSeq))
+          if (baseSeq.nonEmpty) complete(OK, ResponseJson[Seq[(Long, String)]](getHeader(200, session), baseSeq))
           else complete(NotFound, getHeader(404, session))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }

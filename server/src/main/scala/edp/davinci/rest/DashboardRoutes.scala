@@ -2,11 +2,17 @@ package edp.davinci.rest
 
 import javax.ws.rs.Path
 
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module._
+import edp.davinci.persistence.entities.RelDashboardWidget
 import edp.davinci.util.AuthorizationProvider
+import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
+import slick.jdbc.MySQLProfile.api._
+
+import scala.util.{Failure, Success}
 
 @Api(value = "/dashboards", consumes = "application/json", produces = "application/json")
 @Path("/dashboards")
@@ -26,6 +32,25 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 500, message = "internal server error")
   ))
   def getDashboardByIdRoute: Route = modules.dashboardRoutes.getByIdRoute("dashboards")
+
+//  def getDashboardById(route: String, id: Long, session: SessionClass): Route = {
+//    val future = if (session.admin) modules.dashboardDal.findById(id) else modules.dashboardDal.findByFilter(obj => obj.id === id && obj.publish === true && obj.active === true).map(seq => seq.headOption)
+//    onComplete(future) {
+//      case Success(dashboardOpt) => dashboardOpt match {
+//        case Some(dashboard) => {
+//          onComplete(modules.relDashboardWidgetDal.findByFilter(obj => obj.dashboard_id === id && obj.active === true).mapTo[Seq[RelDashboardWidget]]){
+//            case Success(relSeq) =>
+//              relSeq.isEmpty
+//            case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+//          }
+//        }
+//        case None => complete(NotFound, getHeader(404, session))
+//      }
+//      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+//    }
+//
+//
+//  }
 
 
   @Path("/{name}")
