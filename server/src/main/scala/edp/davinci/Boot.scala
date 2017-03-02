@@ -42,8 +42,9 @@ object Boot extends App {
   //  modules.widgetDal.insert(Widget(1, 1, 1, 1, "wid", "widget", "aa", "aa", true, true, "11", 1, "12", 1))
   //  modules.widgetDal.insert(Widget(2, 1, 2, 1, "wid", "widget", "cc", "cc", true, true, "11", 1, "12", 1))
   //
-  //  modules.sqlDal.createTable()
+  modules.sqlDal.createTable()
   modules.sourceDal.createTable()
+  modules.widgetDal.createTable()
   //  modules.libWidgetDal.createTable()
   //  modules.groupDal.createTable()
 

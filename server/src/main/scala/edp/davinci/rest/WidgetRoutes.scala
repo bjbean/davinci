@@ -5,6 +5,7 @@ import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.util.AuthorizationProvider
 import io.swagger.annotations._
+import edp.davinci.util.JsonProtocol._
 
 @Api(value = "/widgets", consumes = "application/json", produces = "application/json")
 @Path("/widgets")
@@ -29,7 +30,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   @Path("/{id}")
   @ApiOperation(value = "get one widget from system by id", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "widgetid", value = "widget id", required = true, dataType = "integer", paramType = "path")
+    new ApiImplicitParam(name = "id", value = "widget id", required = true, dataType = "integer", paramType = "path")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
@@ -52,6 +53,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 500, message = "internal server error")
   ))
   def getWidgetByNameRoute: Route = modules.widgetRoutes.getByNameRoute("widgets")
+
 
   @ApiOperation(value = "Add a new widget to the system", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
@@ -91,7 +93,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       entity(as[WidgetSeq]) {
         widgetSeq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => modules.userRoutes.putComplete(session, widgetSeq.payload)
+            session => modules.widgetRoutes.putComplete(session, widgetSeq.payload)
           }
       }
     }

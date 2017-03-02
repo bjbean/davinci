@@ -120,5 +120,5 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def deleteUserByIdRoute() = modules.userRoutes.deleteByIdRoute("users")
+  def deleteUserByIdRoute: Route = modules.userRoutes.deleteByIdRoute("users")
 }
