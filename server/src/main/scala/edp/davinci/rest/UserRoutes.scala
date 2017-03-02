@@ -31,7 +31,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   @Path("/{name}")
   @ApiOperation(value = "get one user from system by name", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "name", value = "user name", required = true, dataType = "String", paramType = "path")
+    new ApiImplicitParam(name = "name", value = "user name", required = true, dataType = "string", paramType = "path")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
@@ -48,7 +48,21 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def getUserByAllRoute = modules.userRoutes.getByAllRoute("users")
+  def getUserByAllRoute:Route = modules.userRoutes.getByAllRoute("users")
+
+  //  @Path("{page=\\d+&size=\\d+}")
+  //  @ApiOperation(value = "get users with paginate", notes = "", nickname = "", httpMethod = "GET")
+  //  @ApiImplicitParams(Array(
+  //    new ApiImplicitParam(name = "paginate", value = "paginate information", required = true, dataType = "String", paramType = "path")
+  //  ))
+  //  @ApiResponses(Array(
+  //    new ApiResponse(code = 200, message = "OK"),
+  //    new ApiResponse(code = 403, message = "user is not admin"),
+  //    new ApiResponse(code = 401, message = "authorization error"),
+  //    new ApiResponse(code = 500, message = "internal server error")
+  //  ))
+  //  def getUserByPageRoute = modules.userRoutes.paginateRoute("users", "domain_id")
+
 
   @ApiOperation(value = "Add new users to the system", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
@@ -60,7 +74,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def postUserRoute = path("users") {
+  def postUserRoute: Route = path("users") {
     post {
       entity(as[SimpleUserSeq]) {
         userSeq =>
@@ -70,6 +84,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
       }
     }
   }
+
 
   @ApiOperation(value = "update users in the system", notes = "", nickname = "", httpMethod = "PUT")
   @ApiImplicitParams(Array(
@@ -82,7 +97,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def putUserRoute = path("users") {
+  def putUserRoute: Route = path("users") {
     put {
       entity(as[UserSeq]) {
         userSeq =>
@@ -92,6 +107,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
       }
     }
   }
+
 
   @Path("/{id}")
   @ApiOperation(value = "delete user by id", notes = "", nickname = "", httpMethod = "DELETE")
@@ -104,7 +120,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def deleteUserByIdRoute = modules.userRoutes.deleteByIdRoute("users")
+  def deleteUserByIdRoute: Route = modules.userRoutes.deleteByIdRoute("users")
 
   //  @Path("{page=\\d+&size=\\d+}")
   //  @ApiOperation(value = "get users with paginate", notes = "", nickname = "", httpMethod = "GET")

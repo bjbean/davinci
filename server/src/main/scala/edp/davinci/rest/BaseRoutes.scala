@@ -33,6 +33,7 @@ trait BaseRoutes {
 
 class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A]) extends BaseRoutes with Directives {
 
+
   override def getByIdRoute(route: String): Route = path(route / LongNumber) {
     id =>
       get {
@@ -104,23 +105,25 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
 
 
   def getByNameComplete(route: String, name: String, session: SessionClass): Route = {
-    onComplete(baseDal.findByFilter(_.name === name)) {
-      case Success(baseSeq) =>
-        if (baseSeq.nonEmpty) complete(OK, ResponseJson[Seq[BaseEntity]](getHeader(200, session), baseSeq))
-        else complete(NotFound, getHeader(404, session))
-      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-    }
+    if (session.admin || access(route, "name"))
+      onComplete(baseDal.findByName(name)) {
+        case Success(baseEntityOpt) => baseEntityOpt match {
+          case Some(baseEntity) => complete(OK, ResponseJson[BaseEntity](getHeader(200, session), baseEntity))
+          case None => complete(NotFound, getHeader(404, session))
+        }
+        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+      } else complete(Forbidden, getHeader(403, session))
   }
 
 
-  def getByAll(session: SessionClass): Future[Seq[BaseEntity]] = baseDal.findByFilter(_.active === true)
+  def getByAll(session: SessionClass): Future[Seq[(Long, String)]] = baseDal.findAll(_.active === true)
 
 
-  def getByAllComplete(route: String, session: SessionClass, future: Future[Seq[BaseEntity]]): Route = {
-    if (access(route)) {
+  def getByAllComplete(route: String, session: SessionClass, future: Future[Seq[(Long,String)]]): Route = {
+    if (session.admin || access(route, "all")) {
       onComplete(future) {
         case Success(baseSeq) =>
-          if (baseSeq.nonEmpty) complete(OK, ResponseJson[Seq[BaseEntity]](getHeader(200, session), baseSeq))
+          if (baseSeq.nonEmpty) complete(OK, ResponseJson[Seq[(Long,String)]](getHeader(200, session), baseSeq))
           else complete(NotFound, getHeader(404, session))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
@@ -233,9 +236,14 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     }
   }
 
-  def access(route: String): Boolean = route match {
-    case "users" => false
-    case _ => true
+  def access(route: String, `type`: String): Boolean = route match {
+    case "groups" | "widgets" | "dashboards" | "bizLogics" => true
+    case "users" => `type` match {
+      case "id" => true
+      case "name" => true
+      case "all" => false
+    }
+    case _ => false
   }
 
 

@@ -13,7 +13,7 @@ import io.swagger.annotations._
 @Path("/sources")
 class SourceRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
-  val routes: Route = getSourceByIdRoute ~ postSourceRoute ~ putSourceRoute ~ deleteSourceByIdRoute
+  val routes: Route = getSourceByIdRoute ~ getSourceByNameRoute ~ getSourceByAllRoute ~ postSourceRoute ~ putSourceRoute ~ deleteSourceByIdRoute
 
   @Path("/{id}")
   @ApiOperation(value = "get one source from system by id", notes = "", nickname = "", httpMethod = "GET")
@@ -28,14 +28,28 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   ))
   def getSourceByIdRoute: Route = modules.sourceRoutes.getByIdRoute("sources")
 
-  //  @ApiOperation(value = "get all source with the same domain", notes = "", nickname = "", httpMethod = "GET")
-  //  @ApiResponses(Array(
-  //    new ApiResponse(code = 200, message = "OK"),
-  //    new ApiResponse(code = 403, message = "user is not admin"),
-  //    new ApiResponse(code = 401, message = "authorization error"),
-  //    new ApiResponse(code = 500, message = "internal server error")
-  //  ))
-  //  def getSourceByAllRoute = modules.sourceRoutes.getByAllRoute("sources", "domain_id")
+  @Path("/{name}")
+  @ApiOperation(value = "get one source from system by name", notes = "", nickname = "", httpMethod = "GET")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "name", value = "source name", required = true, dataType = "string", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "OK"),
+    new ApiResponse(code = 401, message = "authorization error"),
+    new ApiResponse(code = 404, message = "source not found"),
+    new ApiResponse(code = 500, message = "internal server error")
+  ))
+  def getSourceByNameRoute: Route = modules.sourceRoutes.getByNameRoute("sources")
+
+
+  @ApiOperation(value = "get all source with the same domain", notes = "", nickname = "", httpMethod = "GET")
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "OK"),
+    new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 401, message = "authorization error"),
+    new ApiResponse(code = 500, message = "internal server error")
+  ))
+  def getSourceByAllRoute: Route = modules.sourceRoutes.getByAllRoute("sources")
 
   //  @Path("{page=\\d+&size=\\d+}")
   //  @ApiOperation(value = "get sources with pagenifation", notes = "", nickname = "", httpMethod = "GET")
@@ -64,9 +78,10 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   def postSourceRoute: Route = path("sources") {
     post {
       entity(as[SimpleSourceSeq]) {
-        sourceSeq => authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-          session => modules.sourceRoutes.postComplete(session, sourceSeq.payload)
-        }
+        sourceSeq =>
+          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+            session => modules.sourceRoutes.postComplete(session, sourceSeq.payload)
+          }
       }
     }
   }
@@ -86,9 +101,10 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   def putSourceRoute: Route = path("sources") {
     put {
       entity(as[SourceSeq]) {
-        sourceSeq => authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-          session => modules.sourceRoutes.putComplete(session, sourceSeq.payload)
-        }
+        sourceSeq =>
+          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+            session => modules.sourceRoutes.putComplete(session, sourceSeq.payload)
+          }
       }
     }
   }
