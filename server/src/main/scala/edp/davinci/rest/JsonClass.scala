@@ -23,8 +23,6 @@ case class BizlogicClass(source_id: Long, name: String, desc: String) extends Ba
 
 case class DashboardClass(name: String, desc: String, publish: Boolean) extends BaseClassN
 
-case class DomainClass(name: String, desc: String) extends BaseClassN
-
 case class GroupClass(name: String, desc: String) extends BaseClassN
 
 case class LibWidgetClass(`type`: String) extends BaseClass
@@ -50,8 +48,6 @@ case class UserClassSeq(payload: Seq[UserClass]) extends BaseClassSeq
 case class BizlogicClassSeq(payload: Seq[BizlogicClass]) extends BaseClassSeq
 
 case class DashboardClassSeq(payload: Seq[DashboardClass]) extends BaseClassSeq
-
-case class DomainClassSeq(payload: Seq[DomainClass]) extends BaseClassSeq
 
 case class GroupClassSeq(payload: Seq[GroupClass]) extends BaseClassSeq
 

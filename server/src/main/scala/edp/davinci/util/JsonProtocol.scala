@@ -57,8 +57,6 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatDashboardClass: RootJsonFormat[DashboardClass] = jsonFormat3(DashboardClass)
 
-  implicit val formatDomainClass: RootJsonFormat[DomainClass] = jsonFormat2(DomainClass)
-
   implicit val formatLibWidgetClass: RootJsonFormat[LibWidgetClass] = jsonFormat1(LibWidgetClass)
 
   implicit val formatSourceClass: RootJsonFormat[SourceClass] = jsonFormat5(SourceClass)
@@ -82,8 +80,6 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatGroupClassSeq: RootJsonFormat[GroupClassSeq] = jsonFormat1(GroupClassSeq)
 
   implicit val formatLibWidgetClassSeq: RootJsonFormat[LibWidgetClassSeq] = jsonFormat1(LibWidgetClassSeq)
-
-  implicit val formatDomainClassSeq: RootJsonFormat[DomainClassSeq] = jsonFormat1(DomainClassSeq)
 
   implicit val formatSourceClassSeq: RootJsonFormat[SourceClassSeq] = jsonFormat1(SourceClassSeq)
 
