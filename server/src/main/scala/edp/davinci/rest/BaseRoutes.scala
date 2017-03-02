@@ -25,7 +25,6 @@ trait BaseRoutes {
   //  def deleteByBatchRoute(route: String): Route
 
   //  def paginateRoute(route: String, column: String): Route
-
 }
 
 class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A]) extends BaseRoutes with Directives {

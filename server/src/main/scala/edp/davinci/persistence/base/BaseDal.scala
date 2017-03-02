@@ -33,7 +33,6 @@ trait BaseDal[T, A] {
   def deleteByFilter[C: CanBeQueryCondition](f: (T) => C): Future[Int]
 
   def createTable(): Future[Unit]
-
   //  def paginate[C: CanBeQueryCondition](f: (T) => C)(offset: Int, limit: Int): Future[Seq[A]]
 }
 
