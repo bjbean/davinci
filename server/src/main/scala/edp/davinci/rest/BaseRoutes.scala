@@ -22,9 +22,9 @@ trait BaseRoutes {
 
   def deleteByIdRoute(route: String): Route
 
-  def deleteByBatchRoute(route: String): Route
+  //  def deleteByBatchRoute(route: String): Route
 
-//  def paginateRoute(route: String, column: String): Route
+  //  def paginateRoute(route: String, column: String): Route
 
 }
 
@@ -71,34 +71,30 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
       }
   }
 
-  override def deleteByBatchRoute(route: String): Route
+  //  override def deleteByBatchRoute(route: String): Route = path(route) {
+  //    delete {
+  //      entity(as[String]) {
+  //        idStr => {
+  //          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+  //            val ids = idStr.split(",").map(_.toLong)
+  //            session => deleteByBatchComplete(ids, session)
+  //          }
+  //        }
+  //      }
+  //    }
+  //  }
 
-  = path(route) {
-    delete {
-      entity(as[String]) {
-        idStr => {
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            val ids = idStr.split(",").map(_.toLong)
-            session => deleteByBatchComplete(ids, session)
-          }
-        }
-      }
-    }
-  }
-
-//  override def paginateRoute(route: String, column: String): Route
-//
-//  = path(route) {
-//    get {
-//      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-//        session =>
-//          parameters('page.as[Int], 'size.as[Int] ? 20) { (offset, limit) =>
-//            val future = baseDal.paginate(_.active === true)(offset, limit).mapTo[Seq[BaseEntity]]
-//            getByAllComplete(route, session, future)
-//          }
-//      }
-//    }
-//  }
+  //  override def paginateRoute(route: String, column: String): Route = path(route) {
+  //    get {
+  //      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+  //        session =>
+  //          parameters('page.as[Int], 'size.as[Int] ? 20) { (offset, limit) =>
+  //            val future = baseDal.paginate(_.active === true)(offset, limit).mapTo[Seq[BaseEntity]]
+  //            getByAllComplete(route, session, future)
+  //          }
+  //      }
+  //    }
+  //  }
 
   def getByIdComplete(route: String, id: Long, session: SessionClass): Route = {
     if (session.admin || access(route, "id"))
@@ -179,15 +175,15 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
   }
 
 
-  def deleteByBatchComplete(ids: Seq[Long], session: SessionClass): Route = {
-    if (session.admin) {
-      onComplete(baseDal.deleteById(ids).mapTo[Int]) {
-        case Success(_) => complete(OK, getHeader(200, session))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    } else complete(Forbidden, getHeader(403, session))
-
-  }
+  //  def deleteByBatchComplete(ids: Seq[Long], session: SessionClass): Route = {
+  //    if (session.admin) {
+  //      onComplete(baseDal.deleteById(ids).mapTo[Int]) {
+  //        case Success(_) => complete(OK, getHeader(200, session))
+  //        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+  //      }
+  //    } else complete(Forbidden, getHeader(403, session))
+  //
+  //  }
 
 
   //  def generateEntity(simple: SimpleBaseEntity, session: SessionClass): BaseEntity = {
