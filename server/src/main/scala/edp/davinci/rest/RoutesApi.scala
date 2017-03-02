@@ -10,7 +10,7 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
   val changePwd = new ChangePwdRoutes(modules)
   val users = new UserRoutes(modules)
   val source = new SourceRoutes(modules)
-  //  val bizlogic = new BizlogicRoutes(modules)
+  val bizlogic = new BizlogicRoutes(modules)
   //  val dashboard = new DashboardRoutes(modules)
   //  val widget = new WidgetRoutes(modules)
   //  val sql = new SqlRoutes(modules)
@@ -24,8 +24,8 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
         corsHandler(login.routes) ~
           corsHandler(users.routes) ~
           corsHandler(changePwd.routes) ~
-          corsHandler(source.routes)
-        //          corsHandler(bizlogic.routes) ~
+          corsHandler(source.routes) ~
+          corsHandler(bizlogic.routes)
         //          corsHandler(dashboard.routes) ~
         //          corsHandler(widget.routes) ~
         //          corsHandler(sql.routes) ~

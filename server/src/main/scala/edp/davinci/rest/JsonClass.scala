@@ -12,7 +12,13 @@ case class SessionClass(userId: Long, groupIdList: List[Long], admin: Boolean, c
 
 case class ChangePwdClass(oldPass: String, newPass: String)
 
-case class PaginationClass(pageIndex: Int, size: Int)
+//case class PaginationClass(pageIndex: Int, size: Int)
+
+case class WidgetInfo()
+
+case class DashboardInfo(dashboard: Dashboard, widgets: Seq[Widget])
+
+case class DashboardInfoSeq(payload: Seq[DashboardInfo])
 
 case class SimpleUserSeq(payload: Seq[SimpleUser])
 

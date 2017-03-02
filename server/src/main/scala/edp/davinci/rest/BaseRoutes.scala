@@ -6,8 +6,11 @@ import edp.davinci.persistence.base.{BaseDal, BaseEntity, BaseTable, SimpleBaseE
 import edp.davinci.persistence.entities._
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
-import slick.jdbc.MySQLProfile.api._
 import edp.davinci.util.JsonProtocol._
+import slick.jdbc._
+import slick.jdbc.MySQLProfile.api._
+import slick.lifted.CanBeQueryCondition
+
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -29,7 +32,6 @@ trait BaseRoutes {
 }
 
 class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A]) extends BaseRoutes with Directives {
-
 
   override def getByIdRoute(route: String): Route = path(route / LongNumber) {
     id =>
@@ -60,9 +62,7 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
   }
 
 
-  override def deleteByIdRoute(route: String): Route
-
-  = path(route / LongNumber) {
+  override def deleteByIdRoute(route: String): Route = path(route / LongNumber) {
     id =>
       delete {
         authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
@@ -71,51 +71,45 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
       }
   }
 
-  //  override def deleteByBatchRoute(route: String): Route = path(route) {
-  //    delete {
-  //      entity(as[String]) {
-  //        idStr => {
-  //          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-  //            val ids = idStr.split(",").map(_.toLong)
-  //            session => deleteByBatchComplete(ids, session)
-  //          }
-  //        }
-  //      }
-  //    }
-  //  }
-
-  //  override def paginateRoute(route: String, column: String): Route = path(route) {
-  //    get {
-  //      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-  //        session =>
-  //          parameters('page.as[Int], 'size.as[Int] ? 20) { (offset, limit) =>
-  //            val future = baseDal.paginate(_.active === true)(offset, limit).mapTo[Seq[BaseEntity]]
-  //            getByAllComplete(route, session, future)
-  //          }
-  //      }
-  //    }
-  //  }
 
   def getByIdComplete(route: String, id: Long, session: SessionClass): Route = {
-    if (session.admin || access(route, "id"))
+    if (route != "dashboard") {
       onComplete(baseDal.findById(id)) {
         case Success(baseEntityOpt) => baseEntityOpt match {
           case Some(baseEntity) => complete(OK, ResponseJson[BaseEntity](getHeader(200, session), baseEntity))
           case None => complete(NotFound, getHeader(404, session))
         }
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      } else complete(Forbidden, getHeader(403, session))
+      }
+    } else getDashboardById(route, id, session)
+  }
+
+  def getDashboardById(route: String, id: Long, session: SessionClass): Route = {
+    val future = if(session.admin) baseDal.findById(id) else baseDal.findByFilter(obj => obj.id === id && obj.publish === true).result.headOption
+    if (session.admin){
+      onComplete(future) {
+        case Success(baseEntityOpt) => baseEntityOpt match {
+          case Some(baseEntity) => {
+            val dashboard = baseEntity
+            complete(NotFound, getHeader(404, session))
+//            onComplete()
+          }
+          case None => complete(NotFound, getHeader(404, session))
+        }
+        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+      }
+    }
+
   }
 
 
   def getByNameComplete(route: String, name: String, session: SessionClass): Route = {
-    if (session.admin || access(route, "name"))
-      onComplete(baseDal.findByFilter(_.name === name)) {
-        case Success(baseSeq) =>
-          if (baseSeq.nonEmpty) complete(OK, ResponseJson[Seq[BaseEntity]](getHeader(200, session), baseSeq))
-          else complete(NotFound, getHeader(404, session))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      } else complete(Forbidden, getHeader(403, session))
+    onComplete(baseDal.findByFilter(_.name === name)) {
+      case Success(baseSeq) =>
+        if (baseSeq.nonEmpty) complete(OK, ResponseJson[Seq[BaseEntity]](getHeader(200, session), baseSeq))
+        else complete(NotFound, getHeader(404, session))
+      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+    }
   }
 
 
@@ -123,7 +117,7 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
 
 
   def getByAllComplete(route: String, session: SessionClass, future: Future[Seq[BaseEntity]]): Route = {
-    if (session.admin || access(route, "all")) {
+    if (access(route)) {
       onComplete(future) {
         case Success(baseSeq) =>
           if (baseSeq.nonEmpty) complete(OK, ResponseJson[Seq[BaseEntity]](getHeader(200, session), baseSeq))
@@ -173,6 +167,31 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     } else complete(Forbidden, getHeader(403, session))
   }
 
+  //  override def deleteByBatchRoute(route: String): Route = path(route) {
+  //    delete {
+  //      entity(as[String]) {
+  //        idStr => {
+  //          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+  //            val ids = idStr.split(",").map(_.toLong)
+  //            session => deleteByBatchComplete(ids, session)
+  //          }
+  //        }
+  //      }
+  //    }
+  //  }
+
+  //  override def paginateRoute(route: String, column: String): Route = path(route) {
+  //    get {
+  //      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+  //        session =>
+  //          parameters('page.as[Int], 'size.as[Int] ? 20) { (offset, limit) =>
+  //            val future = baseDal.paginate(_.active === true)(offset, limit).mapTo[Seq[BaseEntity]]
+  //            getByAllComplete(route, session, future)
+  //          }
+  //      }
+  //    }
+  //  }
+
 
   //  def deleteByBatchComplete(ids: Seq[Long], session: SessionClass): Route = {
   //    if (session.admin) {
@@ -214,14 +233,9 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     }
   }
 
-  def access(route: String, `type`: String): Boolean = route match {
-    case "groups" | "widgets" | "dashboards" | "bizLogics" => true
-    case "users" => `type` match {
-      case "id" => true
-      case "name" => true
-      case "all" => false
-    }
-    case _ => false
+  def access(route: String): Boolean = route match {
+    case "users" => false
+    case _ => true
   }
 
 

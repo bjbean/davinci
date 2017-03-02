@@ -51,7 +51,7 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatSessionClass: RootJsonFormat[SessionClass] = jsonFormat4(SessionClass)
 
-  implicit val formatPaginationClass: RootJsonFormat[PaginationClass] = jsonFormat2(PaginationClass)
+//  implicit val formatPaginationClass: RootJsonFormat[PaginationClass] = jsonFormat2(PaginationClass)
 
   implicit val formatUserClassSeq: RootJsonFormat[SimpleUserSeq] = jsonFormat1(SimpleUserSeq)
 
@@ -90,6 +90,10 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatWidgetSeq: RootJsonFormat[WidgetSeq] = jsonFormat1(WidgetSeq)
 
   implicit val formatResponseHeader: RootJsonFormat[ResponseHeader] = jsonFormat3(ResponseHeader)
+
+  implicit val formatDashboardInfo: RootJsonFormat[DashboardInfo] = jsonFormat2(DashboardInfo)
+
+  implicit val formatDashboardInfoSeq: RootJsonFormat[DashboardInfoSeq] = jsonFormat1(DashboardInfoSeq)
 
   implicit def formatRequestJson[A: JsonFormat]: RootJsonFormat[RequestJson[A]] = jsonFormat1(RequestJson.apply[A])
 
