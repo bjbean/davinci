@@ -109,6 +109,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     }
   }
 
+
   @Path("/{id}")
   @ApiOperation(value = "delete user by id", notes = "", nickname = "", httpMethod = "DELETE")
   @ApiImplicitParams(Array(

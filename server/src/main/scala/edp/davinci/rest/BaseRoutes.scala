@@ -13,6 +13,7 @@ import scala.util.{Failure, Success}
 
 trait BaseRoutes {
 
+
   def getByIdRoute(route: String): Route
 
   def getByNameRoute(route: String): Route
