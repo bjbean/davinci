@@ -1,11 +1,11 @@
 package edp.davinci.rest
 
 import javax.ws.rs.Path
+
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module._
-import edp.davinci.util.JsonProtocol._
-import edp.davinci.persistence.entities.{SimpleUser, User}
 import edp.davinci.util.AuthorizationProvider
+import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
 
 @Api(value = "/users", consumes = "application/json", produces = "application/json")
@@ -41,7 +41,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   ))
   def getUserByNameRoute: Route = modules.userRoutes.getByNameRoute("users")
 
-  @ApiOperation(value = "get all user with the same domain", notes = "", nickname = "", httpMethod = "GET")
+  @ApiOperation(value = "get all users with the same domain", notes = "", nickname = "", httpMethod = "GET")
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -50,23 +50,23 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   ))
   def getUserByAllRoute = modules.userRoutes.getByAllRoute("users")
 
-  @Path("{page=\\d+&size=\\d+}")
-  @ApiOperation(value = "get users with paginate", notes = "", nickname = "", httpMethod = "GET")
-  @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "paginate", value = "paginate information", required = true, dataType = "String", paramType = "path")
-  ))
-  @ApiResponses(Array(
-    new ApiResponse(code = 200, message = "OK"),
-    new ApiResponse(code = 403, message = "user is not admin"),
-    new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
-  ))
-  def getUserByPageRoute = modules.userRoutes.paginateRoute("users", "domain_id")
+  //  @Path("{page=\\d+&size=\\d+}")
+  //  @ApiOperation(value = "get users with paginate", notes = "", nickname = "", httpMethod = "GET")
+  //  @ApiImplicitParams(Array(
+  //    new ApiImplicitParam(name = "paginate", value = "paginate information", required = true, dataType = "String", paramType = "path")
+  //  ))
+  //  @ApiResponses(Array(
+  //    new ApiResponse(code = 200, message = "OK"),
+  //    new ApiResponse(code = 403, message = "user is not admin"),
+  //    new ApiResponse(code = 401, message = "authorization error"),
+  //    new ApiResponse(code = 500, message = "internal server error")
+  //  ))
+  //  def getUserByPageRoute = modules.userRoutes.paginateRoute("users", "domain_id")
 
 
-  @ApiOperation(value = "Add a new user to the system", notes = "", nickname = "", httpMethod = "POST")
+  @ApiOperation(value = "Add new users to the system", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "user", value = "User object to be added", required = true, dataType = "edp.davinci.rest.SimpleUserSeq", paramType = "body")
+    new ApiImplicitParam(name = "users", value = "User objects to be added", required = true, dataType = "edp.davinci.rest.SimpleUserSeq", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
@@ -85,25 +85,24 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     }
   }
 
-  @Path("/{id}")
-  @ApiOperation(value = "update a user in the system", notes = "", nickname = "", httpMethod = "PUT")
+
+  @ApiOperation(value = "update users in the system", notes = "", nickname = "", httpMethod = "PUT")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "id", value = "user id", required = true, dataType = "integer", paramType = "path"),
-    new ApiImplicitParam(name = "user", value = "User object to be updated", required = true, dataType = "edp.davinci.persistence.entities.User", paramType = "body")
+    new ApiImplicitParam(name = "user", value = "User objects to be updated", required = true, dataType = "edp.davinci.rest.UserSeq", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "put success"),
     new ApiResponse(code = 403, message = "user is not admin"),
-    new ApiResponse(code = 404, message = "user not found"),
+    new ApiResponse(code = 404, message = "users not found"),
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def putUserRoute = path("users" / LongNumber) { id =>
+  def putUserRoute = path("users") {
     put {
-      entity(as[User]) {
-        user =>
+      entity(as[UserSeq]) {
+        userSeq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => modules.userRoutes.putComplete(session, user)
+            session => modules.userRoutes.putComplete(session, userSeq.payload)
           }
       }
     }
