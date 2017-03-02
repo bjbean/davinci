@@ -12,7 +12,7 @@ import io.swagger.annotations._
 @Path("/users")
 class UserRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
-  val routes = getUserByIdRoute ~ postUserRoute ~ putUserRoute ~ getUserByPageRoute ~ deleteUserByIdRoute
+  val routes = getUserByIdRoute ~ getUserByNameRoute ~ postUserRoute ~ putUserRoute ~ getUserByAllRoute ~ deleteUserByIdRoute
 
   @Path("/{id}")
   @ApiOperation(value = "get one user from system by id", notes = "", nickname = "", httpMethod = "GET")
@@ -27,14 +27,28 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   ))
   def getUserByIdRoute: Route = modules.userRoutes.getByIdRoute("users")
 
-  //  @ApiOperation(value = "get all user with the same domain", notes = "", nickname = "", httpMethod = "GET")
-  //  @ApiResponses(Array(
-  //    new ApiResponse(code = 200, message = "OK"),
-  //    new ApiResponse(code = 403, message = "user is not admin"),
-  //    new ApiResponse(code = 401, message = "authorization error"),
-  //    new ApiResponse(code = 500, message = "internal server error")
-  //  ))
-  //  def getUserByAllRoute = modules.userRoutes.getByAllRoute("users", "domain_id")
+
+  @Path("/{name}")
+  @ApiOperation(value = "get one user from system by name", notes = "", nickname = "", httpMethod = "GET")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "name", value = "user name", required = true, dataType = "String", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "OK"),
+    new ApiResponse(code = 401, message = "authorization error"),
+    new ApiResponse(code = 404, message = "user not found"),
+    new ApiResponse(code = 500, message = "internal server error")
+  ))
+  def getUserByNameRoute: Route = modules.userRoutes.getByNameRoute("users")
+
+  @ApiOperation(value = "get all user with the same domain", notes = "", nickname = "", httpMethod = "GET")
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "OK"),
+    new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 401, message = "authorization error"),
+    new ApiResponse(code = 500, message = "internal server error")
+  ))
+  def getUserByAllRoute = modules.userRoutes.getByAllRoute("users")
 
   @Path("{page=\\d+&size=\\d+}")
   @ApiOperation(value = "get users with paginate", notes = "", nickname = "", httpMethod = "GET")
@@ -83,12 +97,12 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def putUserRoute = path("users" / LongNumber) { id =>
+  def putUserRoute = path("users" ) {
     put {
-      entity(as[UserClass]) {
+      entity(as[Seq[UserClass]]) {
         user =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => modules.userRoutes.putComplete(session, user, id)
+            session => modules.userRoutes.putComplete(session, user)
           }
       }
     }

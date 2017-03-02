@@ -15,7 +15,9 @@ trait BaseRoutes {
 
   def getByIdRoute(route: String): Route
 
-  def getByAllRoute(route: String, column: String): Route
+  def getByNameRoute(route: String): Route
+
+  def getByAllRoute(route: String): Route
 
   def deleteByIdRoute(route: String): Route
 
@@ -37,17 +39,29 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
       }
   }
 
+  override def getByNameRoute(route: String): Route = path(route / Segment) {
+    name =>
+      get {
+        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          session => getByNameComplete(route, name, session)
+        }
 
-  override def getByAllRoute(route: String, column: String): Route = path(route) {
+      }
+  }
+
+
+  override def getByAllRoute(route: String): Route = path(route) {
     get {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session => getByAllComplete(route, session, getByAll(session, column))
+        session => getByAllComplete(route, session, getByAll(session))
       }
     }
   }
 
 
-  override def deleteByIdRoute(route: String): Route = path(route / LongNumber) {
+  override def deleteByIdRoute(route: String): Route
+
+  = path(route / LongNumber) {
     id =>
       delete {
         authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
@@ -56,7 +70,9 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
       }
   }
 
-  override def deleteByBatchRoute(route: String): Route = path(route) {
+  override def deleteByBatchRoute(route: String): Route
+
+  = path(route) {
     delete {
       entity(as[String]) {
         idStr => {
@@ -69,7 +85,9 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     }
   }
 
-  override def paginateRoute(route: String, column: String): Route = path(route) {
+  override def paginateRoute(route: String, column: String): Route
+
+  = path(route) {
     get {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
         session =>
@@ -92,7 +110,19 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
       } else complete(Forbidden, getHeader(403, session))
   }
 
-  def getByAll(session: SessionClass, column: String): Future[Seq[BaseEntity]] = baseDal.findByFilter(_.active === true)
+
+  def getByNameComplete(route: String, name: String, session: SessionClass): Route = {
+    if (session.admin || access(route, "name"))
+      onComplete(baseDal.findByFilter(_.name === name)) {
+        case Success(baseSeq) =>
+          if (baseSeq.nonEmpty) complete(OK, ResponseJson[Seq[BaseEntity]](getHeader(200, session), baseSeq))
+          else complete(NotFound, getHeader(404, session))
+        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+      } else complete(Forbidden, getHeader(403, session))
+  }
+
+
+  def getByAll(session: SessionClass): Future[Seq[BaseEntity]] = baseDal.findByFilter(_.active === true)
 
 
   def getByAllComplete(route: String, session: SessionClass, future: Future[Seq[BaseEntity]]): Route = {
@@ -116,6 +146,9 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     } else complete(Forbidden, getHeader(403, session))
   }
 
+  def postByIdComplete(session: SessionClass, baseId: Long, extendId: Long) = {
+
+  }
 
   def insertByPost(session: SessionClass, seq: Seq[BaseClass]): Future[Seq[BaseEntity]] = {
     val entitySeq = seq.map {
@@ -125,11 +158,10 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
   }
 
 
-  def putComplete(session: SessionClass, baseClass: BaseClass, id: Long): Route = {
+  def putComplete(session: SessionClass, baseClass: Seq[BaseClass]): Route = {
     if (session.admin) {
-      val updateEntity = generateEntityAsActive(baseClass, session)
-      onComplete(baseDal.update(updateEntity.asInstanceOf[A], id).mapTo[Int]) {
-        case Success(_) => complete(OK, ResponseJson[BaseEntity](getHeader(200, session), updateEntity))
+      onComplete(baseDal.update(baseClass.asInstanceOf[Seq[A]])) {
+        case Success(_) => complete(OK, getHeader(200, session))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     }
@@ -192,6 +224,7 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     case "groups" | "widgets" | "dashboards" | "bizLogics" => true
     case "users" => `type` match {
       case "id" => true
+      case "name" => true
       case "all" => false
     }
     case _ => false
