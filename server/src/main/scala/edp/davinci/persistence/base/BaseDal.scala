@@ -1,15 +1,14 @@
 package edp.davinci.persistence.base
 
 import edp.davinci.module.DbModule
-import slick.jdbc.MySQLProfile.api._
 import slick.jdbc.JdbcProfile
+import slick.jdbc.MySQLProfile.api._
 import slick.lifted.CanBeQueryCondition
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 trait BaseDal[T, A] {
-
 
   def insert(row: A): Future[A]
 
