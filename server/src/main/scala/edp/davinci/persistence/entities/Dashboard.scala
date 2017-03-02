@@ -1,6 +1,6 @@
 package edp.davinci.persistence.entities
 
-import edp.davinci.persistence.base.{BaseEntity, BaseTable}
+import edp.davinci.persistence.base.{BaseEntity, BaseTable, SimpleBaseEntity}
 import slick.jdbc.H2Profile.api._
 
 case class Dashboard(id: Long,
@@ -20,7 +20,7 @@ case class SimpleDashboard(name: String,
                            create_time: String,
                            create_by: Long,
                            update_time: String,
-                           update_by: Long)
+                           update_by: Long) extends SimpleBaseEntity
 
 class DashboardTable(tag: Tag) extends BaseTable[Dashboard](tag, "dashboard") {
 

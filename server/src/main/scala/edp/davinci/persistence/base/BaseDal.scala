@@ -15,7 +15,7 @@ trait BaseDal[T, A] {
 
   def insert(rows: Seq[A]): Future[Seq[A]]
 
-  def update(row: A,id:Long): Future[Int]
+  def update(row: A): Future[Int]
 
   def update(rows: Seq[A]): Future[Unit]
 
@@ -41,15 +41,15 @@ class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(imp
   override def insert(row: A): Future[A] = insert(Seq(row)).map(_.head)
 
   override def insert(rows: Seq[A]): Future[Seq[A]] = {
-    val ids = db.run(tableQ returning tableQ.map(_.id) ++= rows.filter(_.isValid))
+    val ids = db.run(tableQ returning tableQ.map(_.id) ++= rows)
     ids.flatMap[Seq[A]] {
       seq => findByFilter(_.id inSet seq)
     }
   }
 
-  override def update(row: A,id:Long): Future[Int] = if (row.isValid) db.run(tableQ.filter(_.id === id).update(row)) else Future(0)
+  override def update(row: A): Future[Int] = db.run(tableQ.filter(_.id === row.id).update(row))
 
-  override def update(rows: Seq[A]): Future[Unit] = db.run(DBIO.seq(rows.filter(_.isValid).map(r => {tableQ.filter(_.id === r.id).update(r)}): _*))
+  override def update(rows: Seq[A]): Future[Unit] = db.run(DBIO.seq(rows.map(r => {tableQ.filter(_.id === r.id).update(r)}): _*))
 
   override def findById(id: Long): Future[Option[A]] = db.run(tableQ.filter(obj => obj.id === id && obj.active === true).result.headOption)
 

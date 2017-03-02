@@ -1,6 +1,6 @@
 package edp.davinci.persistence.entities
 
-import edp.davinci.persistence.base.{BaseEntity, BaseTable}
+import edp.davinci.persistence.base.{BaseEntity, BaseTable, SimpleBaseEntity}
 import slick.jdbc.H2Profile.api._
 
 case class RelUserGroup(id: Long,
@@ -18,7 +18,7 @@ case class SimpleRelUserGroup(user_id: Long,
                               create_time: String,
                               create_by: Long,
                               update_time: String,
-                              update_by: Long)
+                              update_by: Long) extends SimpleBaseEntity
 
 class RelUserGroupTable(tag: Tag) extends BaseTable[RelUserGroup](tag, "rel_user_group") {
   def user_id = column[Long]("user_id")

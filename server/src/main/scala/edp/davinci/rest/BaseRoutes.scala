@@ -2,7 +2,7 @@ package edp.davinci.rest
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
-import edp.davinci.persistence.base.{BaseDal, BaseEntity, BaseTable}
+import edp.davinci.persistence.base.{BaseDal, BaseEntity, BaseTable, SimpleBaseEntity}
 import edp.davinci.persistence.entities._
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
@@ -107,29 +107,26 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
   }
 
 
-  def postComplete(session: SessionClass, seq: Seq[BaseClass]): Route = {
+  def postComplete(session: SessionClass, seq: Seq[SimpleBaseEntity]): Route = {
     if (session.admin) {
       onComplete(insertByPost(session, seq).mapTo[Seq[BaseEntity]]) {
-        case Success(baseSeq) => complete(OK, ResponseJson[Seq[BaseEntity]](getHeader(200, session), baseSeq))
+        case Success(baseSeq) => complete(OK, ResponseSeqJson[BaseEntity](getHeader(200, session), baseSeq))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.toString, session))
       }
     } else complete(Forbidden, getHeader(403, session))
   }
 
 
-  def insertByPost(session: SessionClass, seq: Seq[BaseClass]): Future[Seq[BaseEntity]] = {
-    val entitySeq = seq.map {
-      generateEntityAsActive(_, session)
-    }
+  def insertByPost(session: SessionClass, seq: Seq[SimpleBaseEntity]): Future[Seq[BaseEntity]] = {
+    val entitySeq = seq.map(generateEntity(_, session))
     baseDal.insert(entitySeq.asInstanceOf[Seq[A]])
   }
 
 
-  def putComplete(session: SessionClass, baseClass: BaseClass, id: Long): Route = {
+  def putComplete(session: SessionClass, baseEntity: BaseEntity): Route = {
     if (session.admin) {
-      val updateEntity = generateEntityAsActive(baseClass, session)
-      onComplete(baseDal.update(updateEntity.asInstanceOf[A], id).mapTo[Int]) {
-        case Success(_) => complete(OK, ResponseJson[BaseEntity](getHeader(200, session), updateEntity))
+      onComplete(baseDal.update(baseEntity.asInstanceOf[A]).mapTo[Int]) {
+        case Success(_) => complete(OK, ResponseJson[BaseEntity](getHeader(200, session), baseEntity))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     }
@@ -158,35 +155,34 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
   }
 
 
-  def generateEntityAsActive(baseClass: BaseClass, session: SessionClass): BaseEntity = {
-    baseClass match {
-      case bizLogic: BizlogicClass => Bizlogic(0, bizLogic.source_id, bizLogic.name, bizLogic.desc, active = true, currentTime, session.userId, currentTime, session.userId)
-      case dashboard: DashboardClass => Dashboard(0, dashboard.name, dashboard.desc, dashboard.publish, active = true, currentTime, session.userId, currentTime, session.userId)
-      case group: GroupClass => Group(0, group.name, group.desc, active = true, currentTime, session.userId, currentTime, session.userId)
-      case libWidget: LibWidgetClass => LibWidget(0, libWidget.`type`, active = true, currentTime, session.userId, currentTime, session.userId)
-      case source: SourceClass => Source(0, source.group_id, source.name, source.desc, source.`type`, source.config, active = true, currentTime, session.userId, currentTime, session.userId)
-      case sql: SqlClass => Sql(0, sql.bizlogic_id, sql.name, sql.sql_type, sql.sql_tmpl, sql.sql_order, sql.desc, active = true, currentTime, session.userId, currentTime, session.userId)
-      case sqlLog: SqlLogClass => SqlLog(0, sqlLog.sql_id, session.userId, sqlLog.start_time, sqlLog.end_time, active = true, sqlLog.success, sqlLog.error)
-      case user: UserClass => User(0, user.email, "123456", user.title, user.name, admin = false, active = true, currentTime, session.userId, currentTime, session.userId)
-      case widget: WidgetClass => Widget(0, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish, active = true, currentTime, session.userId, currentTime, session.userId)
+//  def generateEntity(simple: SimpleBaseEntity, session: SessionClass): BaseEntity = {
+//    simple match {
+//      case bizLogic: SimpleBizlogic => Bizlogic(0, bizLogic.source_id, bizLogic.name, bizLogic.desc, bizLogic.active, currentTime, session.userId, currentTime, session.userId)
+//      case dashboard: SimpleDashboard => Dashboard(0, dashboard.name, dashboard.desc, dashboard.publish, active = true, currentTime, session.userId, currentTime, session.userId)
+//      case group: SimpleGroup => Group(0, group.name, group.desc, active = true, currentTime, session.userId, currentTime, session.userId)
+//      case libWidget: SimpleLibWidget => LibWidget(0, libWidget.`type`, active = true, currentTime, session.userId, currentTime, session.userId)
+//      case source: SimpleSource => Source(0, source.group_id, source.name, source.desc, source.`type`, source.config, active = true, currentTime, session.userId, currentTime, session.userId)
+//      case sql: SimpleSql => Sql(0, sql.bizlogic_id, sql.name, sql.sql_type, sql.sql_tmpl, sql.sql_order, sql.desc, active = true, currentTime, session.userId, currentTime, session.userId)
+//      case sqlLog: SimpleSqlLog => SqlLog(0, sqlLog.sql_id, session.userId, sqlLog.start_time, sqlLog.end_time, active = true, sqlLog.success, sqlLog.error)
+//      case user: SimpleUserSeq => User(0, user.email, "123456", user.title, user.name, admin = false, active = true, currentTime, session.userId, currentTime, session.userId)
+//      case widget: SimpleWidget => Widget(0, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish, active = true, currentTime, session.userId, currentTime, session.userId)
+//    }
+//  }
+
+
+    def generateEntity(simple: SimpleBaseEntity, session: SessionClass): BaseEntity = {
+      simple match {
+        case bizLogic: SimpleBizlogic => Bizlogic(0, bizLogic.source_id, bizLogic.name, bizLogic.desc, bizLogic.active, bizLogic.create_time, bizLogic.create_by, bizLogic.update_time, bizLogic.update_by)
+        case dashboard: SimpleDashboard => Dashboard(0, dashboard.name, dashboard.desc, dashboard.publish, dashboard.active, dashboard.create_time, dashboard.create_by, dashboard.update_time, dashboard.update_by)
+        case group: SimpleGroup => Group(0, group.name, group.desc, group.active, group.create_time, group.create_by, group.update_time, group.update_by)
+        case libWidget: SimpleLibWidget => LibWidget(0, libWidget.`type`, libWidget.active, libWidget.create_time, libWidget.create_by, libWidget.update_time, libWidget.update_by)
+        case source: SimpleSource => Source(0, source.group_id, source.name, source.desc, source.`type`, source.config, source.active, source.create_time, source.create_by, source.update_time, source.update_by)
+        case sql: SimpleSql => Sql(0, sql.bizlogic_id, sql.name, sql.sql_type, sql.sql_tmpl, sql.sql_order, sql.desc, active = false, sql.create_time, sql.create_by, sql.update_time, sql.update_by)
+        case sqlLog: SimpleSqlLog => SqlLog(0, sqlLog.sql_id, sqlLog.user_id, sqlLog.start_time, sqlLog.end_time, sqlLog.active, sqlLog.success, sqlLog.error)
+        case user: SimpleUser => User(0, user.email, user.password, user.title, user.name, user.admin, user.active, user.create_time, user.create_by, user.update_time, user.update_by)
+        case widget: SimpleWidget => Widget(0, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish, widget.active, widget.create_time, widget.create_by, widget.update_time, widget.update_by)
+      }
     }
-  }
-
-
-  //  def generateEntityAsInactive(baseEntity: BaseEntity, session: SessionClass): BaseEntity = {
-  //    baseEntity match {
-  //      case bizLogic: Bizlogic => Bizlogic(bizLogic.id, bizLogic.domain_id, bizLogic.source_id, bizLogic.name, bizLogic.desc, active = false, bizLogic.create_time, bizLogic.create_by, currentTime, session.userId)
-  //      case dashboard: Dashboard => Dashboard(dashboard.id, dashboard.domain_id, dashboard.name, dashboard.desc, dashboard.publish, active = false, dashboard.create_time, dashboard.create_by, currentTime, session.userId)
-  //      case domain: Domain => Domain(domain.id, domain.name, domain.desc, active = false, domain.create_time, domain.create_by, currentTime, session.userId)
-  //      case group: Group => Group(group.id, group.domain_id, group.name, group.desc, active = false, group.create_time, group.create_by, currentTime, session.userId)
-  //      case libWidget: LibWidget => LibWidget(libWidget.id, libWidget.`type`, active = false, libWidget.create_time, libWidget.create_by, currentTime, session.userId)
-  //      case source: Source => Source(source.id, source.domain_id, source.group_id, source.name, source.desc, source.`type`, source.config, active = false, source.create_time, source.create_by, currentTime, session.userId)
-  //      case sql: Sql => Sql(sql.id, sql.domain_id, sql.bizlogic_id, sql.name, sql.sql_type, sql.sql_tmpl, sql.sql_order, sql.desc, active = false, sql.create_time, sql.create_by, currentTime, session.userId)
-  //      case sqlLog: SqlLog => SqlLog(sqlLog.id, sqlLog.sql_id, sqlLog.user_id, sqlLog.start_time, sqlLog.end_time, active = false, sqlLog.success, sqlLog.error)
-  //      case user: User => User(user.id, user.domain_id, user.email, user.password, user.title, user.name, user.admin, active = false, user.create_time, user.create_by, currentTime, session.userId)
-  //      case widget: Widget => Widget(widget.id, widget.domain_id, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish, active = false, widget.create_time, widget.create_by, currentTime, session.userId)
-  //    }
-  //  }
 
   def access(route: String, `type`: String): Boolean = route match {
     case "groups" | "widgets" | "dashboards" | "bizLogics" => true

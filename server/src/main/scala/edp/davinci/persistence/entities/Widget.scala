@@ -1,6 +1,6 @@
 package edp.davinci.persistence.entities
 
-import edp.davinci.persistence.base.{BaseEntity, BaseTable}
+import edp.davinci.persistence.base.{BaseEntity, BaseTable, SimpleBaseEntity}
 import slick.jdbc.H2Profile.api._
 
 case class Widget(id: Long,
@@ -28,7 +28,7 @@ case class SimpleWidget(widgetlib_id: Long,
                         create_time: String,
                         create_by: Long,
                         update_time: String,
-                        update_by: Long)
+                        update_by: Long) extends SimpleBaseEntity
 
 class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "Widget") {
 

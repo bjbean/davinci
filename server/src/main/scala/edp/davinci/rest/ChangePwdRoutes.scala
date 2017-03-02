@@ -40,7 +40,7 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
               case Success(userOpt) => userOpt match {
                 case Some(user) =>
                   if (user.password == changePwd.oldPass) {
-                    onComplete(modules.userDal.update(updatePass(user, changePwd.newPass),user.id).mapTo[Int]) {
+                    onComplete(modules.userDal.update(updatePass(user, changePwd.newPass)).mapTo[Int]) {
                       case Success(_) => complete(OK, getHeader(200, session))
                       case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage,session))
                     }
