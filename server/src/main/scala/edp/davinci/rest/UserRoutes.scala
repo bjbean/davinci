@@ -74,7 +74,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def postUserRoute = path("users") {
+  def postUserRoute: Route = path("users") {
     post {
       entity(as[SimpleUserSeq]) {
         userSeq =>
@@ -97,7 +97,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def putUserRoute = path("users") {
+  def putUserRoute: Route = path("users") {
     put {
       entity(as[UserSeq]) {
         userSeq =>
@@ -120,5 +120,5 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def deleteUserByIdRoute = modules.userRoutes.deleteByIdRoute("users")
+  def deleteUserByIdRoute() = modules.userRoutes.deleteByIdRoute("users")
 }
