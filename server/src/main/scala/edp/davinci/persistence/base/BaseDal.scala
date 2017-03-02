@@ -30,7 +30,7 @@ trait BaseDal[T, A] {
 
   def createTable(): Future[Unit]
 
-  def paginate[C: CanBeQueryCondition](f: (T) => C)(offset: Int, limit: Int): Future[Seq[A]]
+  //  def paginate[C: CanBeQueryCondition](f: (T) => C)(offset: Int, limit: Int): Future[Seq[A]]
 }
 
 class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(implicit val db: JdbcProfile#Backend#Database, implicit val profile: JdbcProfile) extends BaseDal[T, A] with DbModule {
@@ -48,7 +48,9 @@ class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(imp
 
   override def update(row: A): Future[Int] = db.run(tableQ.filter(_.id === row.id).update(row))
 
-  override def update(rows: Seq[A]): Future[Unit] = db.run(DBIO.seq(rows.map(r => {tableQ.filter(_.id === r.id).update(r)}): _*))
+  override def update(rows: Seq[A]): Future[Unit] = db.run(DBIO.seq(rows.map(r => {
+    tableQ.filter(_.id === r.id).update(r)
+  }): _*))
 
   override def findById(id: Long): Future[Option[A]] = db.run(tableQ.filter(obj => obj.id === id && obj.active === true).result.headOption)
 
@@ -62,5 +64,5 @@ class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(imp
 
   override def createTable(): Future[Unit] = db.run(DBIO.seq(tableQ.schema.create))
 
-  override def paginate[C: CanBeQueryCondition](f: (T) => C)(offset: Int, limit: Int): Future[Seq[A]] = db.run(tableQ.withFilter(f).sortBy(_.id.nullsFirst).drop(offset).take(limit).result)
+  //  override def paginate[C: CanBeQueryCondition](f: (T) => C)(offset: Int, limit: Int): Future[Seq[A]] = db.run(tableQ.withFilter(f).sortBy(_.id.nullsFirst).drop(offset).take(limit).result)
 }
