@@ -12,54 +12,25 @@ case class SessionClass(userId: Long, groupIdList: List[Long], admin: Boolean, c
 
 case class ChangePwdClass(oldPass: String, newPass: String)
 
-//request body class
-trait BaseClass
-
-trait BaseClassN extends BaseClass {
-  val name: String
-}
-
-case class BizlogicClass(source_id: Long, name: String, desc: String) extends BaseClassN
-
-case class DashboardClass(name: String, desc: String, publish: Boolean) extends BaseClassN
-
-case class GroupClass(name: String, desc: String) extends BaseClassN
-
-case class LibWidgetClass(`type`: String) extends BaseClass
-
-case class SourceClass(group_id: Long, name: String, desc: String, `type`: String, config: String) extends BaseClassN
-
-case class SqlClass(bizlogic_id: Long, name: String, sql_type: String, sql_tmpl: String, sql_order: Int, desc: String) extends BaseClassN
-
-case class SqlLogClass(sql_id: Long, start_time: String, end_time: String, active: Boolean, success: Boolean, error: String) extends BaseClass
-
-case class UserClass(name: String, email: String, title: String) extends BaseClassN
-
-case class WidgetClass(widgetlib_id: Long, bizlogic_id: Long, name: String, desc: String, trigger_type: String, trigger_params: String, publish: Boolean) extends BaseClassN
-
 case class PaginationClass(pageIndex: Int, size: Int)
 
-trait BaseClassSeq{
-  val payload: Seq[BaseClass]
-}
+case class SimpleUserSeq(payload: Seq[SimpleUser])
 
-case class UserClassSeq(payload: Seq[UserClass]) extends BaseClassSeq
+case class SimpleBizlogicSeq(payload: Seq[SimpleBizlogic])
 
-case class BizlogicClassSeq(payload: Seq[BizlogicClass]) extends BaseClassSeq
+case class SimpleDashboardSeq(payload: Seq[SimpleDashboard]) 
 
-case class DashboardClassSeq(payload: Seq[DashboardClass]) extends BaseClassSeq
+case class SimpleGroupSeq(payload: Seq[SimpleGroup])
 
-case class GroupClassSeq(payload: Seq[GroupClass]) extends BaseClassSeq
+case class SimpleLibWidgetSeq(payload: Seq[LibWidget])
 
-case class LibWidgetClassSeq(payload: Seq[LibWidgetClass]) extends BaseClassSeq
+case class SimpleSourceSeq(payload: Seq[SimpleSource])
 
-case class SourceClassSeq(payload: Seq[SourceClass]) extends BaseClassSeq
+case class SimpleSqlSeq(payload: Seq[SimpleSql])
 
-case class SqlClassSeq(payload: Seq[SqlClass]) extends BaseClassSeq
+case class SimpleSqlLogSeq(payload: Seq[SimpleSqlLog])
 
-case class SqlLogClassSeq(payload: Seq[SqlLogClass]) extends BaseClassSeq
-
-case class WidgetClassSeq(payload: Seq[WidgetClass]) extends BaseClassSeq
+case class SimpleWidgetSeq(payload: Seq[SimpleWidget])
 
 case class BizlogicSeq(payload: Seq[Bizlogic])
 
@@ -86,3 +57,5 @@ case class RequestSeqJson[A](payload: Seq[A])
 case class ResponseHeader(code: Int, msg: String, token: String = null)
 
 case class ResponseJson[A](header: ResponseHeader, payload: A)
+
+case class ResponseSeqJson[A](header: ResponseHeader, payload: Seq[A])

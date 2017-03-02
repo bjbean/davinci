@@ -4,7 +4,7 @@ import javax.ws.rs.Path
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module._
 import edp.davinci.util.JsonProtocol._
-import edp.davinci.persistence.entities.User
+import edp.davinci.persistence.entities.{SimpleUser, User}
 import edp.davinci.util.AuthorizationProvider
 import io.swagger.annotations._
 
@@ -66,7 +66,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
 
   @ApiOperation(value = "Add a new user to the system", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "user", value = "User object to be added", required = true, dataType = "edp.davinci.rest.UserClassSeq", paramType = "body")
+    new ApiImplicitParam(name = "user", value = "User object to be added", required = true, dataType = "edp.davinci.rest.SimpleUserSeq", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
@@ -76,19 +76,20 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   ))
   def postUserRoute = path("users") {
     post {
-      entity(as[Seq[UserClass]]) {
+      entity(as[SimpleUserSeq]) {
         userSeq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => modules.userRoutes.postComplete(session, userSeq)
+            session => modules.userRoutes.postComplete(session, userSeq.payload)
           }
       }
     }
   }
 
-
+  @Path("/{id}")
   @ApiOperation(value = "update a user in the system", notes = "", nickname = "", httpMethod = "PUT")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "user", value = "User object to be updated", required = true, dataType = "edp.davinci.rest.UserClass", paramType = "body")
+    new ApiImplicitParam(name = "id", value = "user id", required = true, dataType = "integer", paramType = "path"),
+    new ApiImplicitParam(name = "user", value = "User object to be updated", required = true, dataType = "edp.davinci.persistence.entities.User", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "put success"),
@@ -97,9 +98,9 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def putUserRoute = path("users" ) {
+  def putUserRoute = path("users" / LongNumber) { id =>
     put {
-      entity(as[Seq[UserClass]]) {
+      entity(as[User]) {
         user =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
             session => modules.userRoutes.putComplete(session, user)

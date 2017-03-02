@@ -5,7 +5,7 @@ import javax.ws.rs.Path
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.util.JsonProtocol._
-import edp.davinci.persistence.entities.Source
+import edp.davinci.persistence.entities.{SimpleSource, Source}
 import edp.davinci.util.AuthorizationProvider
 import io.swagger.annotations._
 
@@ -54,7 +54,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   @ApiOperation(value = "Add a new source to the system", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "source", value = "Source object to be added", required = true, dataType = "edp.davinci.rest.SourceClassSeq", paramType = "body")
+    new ApiImplicitParam(name = "source", value = "Source object to be added", required = true, dataType = "edp.davinci.rest.SimpleSourceSeq", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
@@ -64,9 +64,9 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   ))
   def postSourceRoute: Route = path("sources") {
     post {
-      entity(as[Seq[SourceClass]]) {
+      entity(as[SimpleSourceSeq]) {
         sourceSeq =>authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize){
-          session => modules.sourceRoutes.postComplete(session,sourceSeq)
+          session => modules.sourceRoutes.postComplete(session,sourceSeq.payload)
         }
       }
     }
@@ -76,7 +76,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   @ApiOperation(value = "update a source in the system", notes = "", nickname = "", httpMethod = "PUT")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "id", value = "source id", required = true, dataType = "integer", paramType = "path"),
-    new ApiImplicitParam(name = "source", value = "Source object to be updated", required = true, dataType = "edp.davinci.rest.SourceClass", paramType = "body")
+    new ApiImplicitParam(name = "source", value = "Source object to be updated", required = true, dataType = "edp.davinci.persistence.entities.Source", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "put success"),
@@ -88,9 +88,9 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   def putSourceRoute: Route = path("sources" / LongNumber) {
     id =>
     put {
-      entity(as[SourceClass]) {
+      entity(as[Source]) {
         source => authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize){
-          session =>modules.sourceRoutes.putComplete(session,source,id)
+          session =>modules.sourceRoutes.putComplete(session,source)
         }
       }
     }

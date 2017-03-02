@@ -1,6 +1,6 @@
 package edp.davinci.persistence.entities
 
-import edp.davinci.persistence.base.{BaseEntity, BaseTable}
+import edp.davinci.persistence.base.{BaseEntity, BaseTable, SimpleBaseEntity}
 import slick.jdbc.H2Profile.api._
 
 case class SqlLog(id: Long,
@@ -18,7 +18,7 @@ case class SimpleSqlLog(sql_id: Long,
                         end_time: String,
                         active: Boolean,
                         success: Boolean,
-                        error: String)
+                        error: String) extends SimpleBaseEntity
 
 class SqlLogTable(tag: Tag) extends BaseTable[SqlLog](tag, "sql_log") {
   def sql_id = column[Long]("sql_id")

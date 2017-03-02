@@ -53,41 +53,23 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatPaginationClass: RootJsonFormat[PaginationClass] = jsonFormat2(PaginationClass)
 
-  implicit val formatBizlogicClass: RootJsonFormat[BizlogicClass] = jsonFormat3(BizlogicClass)
+  implicit val formatUserClassSeq: RootJsonFormat[SimpleUserSeq] = jsonFormat1(SimpleUserSeq)
 
-  implicit val formatDashboardClass: RootJsonFormat[DashboardClass] = jsonFormat3(DashboardClass)
+  implicit val formatBizlogicClassSeq: RootJsonFormat[SimpleBizlogicSeq] = jsonFormat1(SimpleBizlogicSeq)
 
-  implicit val formatLibWidgetClass: RootJsonFormat[LibWidgetClass] = jsonFormat1(LibWidgetClass)
+  implicit val formatDashboardClassSeq: RootJsonFormat[SimpleDashboardSeq] = jsonFormat1(SimpleDashboardSeq)
 
-  implicit val formatSourceClass: RootJsonFormat[SourceClass] = jsonFormat5(SourceClass)
+  implicit val formatGroupClassSeq: RootJsonFormat[SimpleGroupSeq] = jsonFormat1(SimpleGroupSeq)
 
-  implicit val formatSqlClass: RootJsonFormat[SqlClass] = jsonFormat6(SqlClass)
+  implicit val formatLibWidgetClassSeq: RootJsonFormat[SimpleLibWidgetSeq] = jsonFormat1(SimpleLibWidgetSeq)
 
-  implicit val formatSqlLogClass: RootJsonFormat[SqlLogClass] = jsonFormat6(SqlLogClass)
+  implicit val formatSourceClassSeq: RootJsonFormat[SimpleSourceSeq] = jsonFormat1(SimpleSourceSeq)
 
-  implicit val formatWidgetClass: RootJsonFormat[WidgetClass] = jsonFormat7(WidgetClass)
+  implicit val formatSqlClassSeq: RootJsonFormat[SimpleSqlSeq] = jsonFormat1(SimpleSqlSeq)
 
-  implicit val formatUserClass: RootJsonFormat[UserClass] = jsonFormat3(UserClass)
+  implicit val formatSqlLogClassSeq: RootJsonFormat[SimpleSqlLogSeq] = jsonFormat1(SimpleSqlLogSeq)
 
-  implicit val formatPostGroupClass: RootJsonFormat[GroupClass] = jsonFormat2(GroupClass)
-
-  implicit val formatUserClassSeq: RootJsonFormat[UserClassSeq] = jsonFormat1(UserClassSeq)
-
-  implicit val formatBizlogicClassSeq: RootJsonFormat[BizlogicClassSeq] = jsonFormat1(BizlogicClassSeq)
-
-  implicit val formatDashboardClassSeq: RootJsonFormat[DashboardClassSeq] = jsonFormat1(DashboardClassSeq)
-
-  implicit val formatGroupClassSeq: RootJsonFormat[GroupClassSeq] = jsonFormat1(GroupClassSeq)
-
-  implicit val formatLibWidgetClassSeq: RootJsonFormat[LibWidgetClassSeq] = jsonFormat1(LibWidgetClassSeq)
-
-  implicit val formatSourceClassSeq: RootJsonFormat[SourceClassSeq] = jsonFormat1(SourceClassSeq)
-
-  implicit val formatSqlClassSeq: RootJsonFormat[SqlClassSeq] = jsonFormat1(SqlClassSeq)
-
-  implicit val formatSqlLogClassSeq: RootJsonFormat[SqlLogClassSeq] = jsonFormat1(SqlLogClassSeq)
-
-  implicit val formatWidgetClassSeq: RootJsonFormat[WidgetClassSeq] = jsonFormat1(WidgetClassSeq)
+  implicit val formatWidgetClassSeq: RootJsonFormat[SimpleWidgetSeq] = jsonFormat1(SimpleWidgetSeq)
 
   implicit val formatUserSeq: RootJsonFormat[UserSeq] = jsonFormat1(UserSeq)
 
@@ -107,16 +89,15 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatWidgetSeq: RootJsonFormat[WidgetSeq] = jsonFormat1(WidgetSeq)
 
-  //  implicit val formatUserJson = jsonFormat1(UserJson)
-  //  implicit val formatUserJsonSeq = jsonFormat1(UserJsonSeq)
+  implicit val formatResponseHeader: RootJsonFormat[ResponseHeader] = jsonFormat3(ResponseHeader)
 
   implicit def formatRequestJson[A: JsonFormat]: RootJsonFormat[RequestJson[A]] = jsonFormat1(RequestJson.apply[A])
 
   implicit def formatRequestSeqJson[A: JsonFormat]: RootJsonFormat[RequestSeqJson[A]] = jsonFormat1(RequestSeqJson.apply[A])
 
-  implicit val formatResponseHeader: RootJsonFormat[ResponseHeader] = jsonFormat3(ResponseHeader)
-
   implicit def formatResponseJson[A: JsonFormat]: RootJsonFormat[ResponseJson[A]] = jsonFormat2(ResponseJson.apply[A])
+
+  implicit def formatResponseSeqJson[A: JsonFormat]: RootJsonFormat[ResponseSeqJson[A]] = jsonFormat2(ResponseSeqJson.apply[A])
 
 
   //  implicit val formatResponseStatusClass = jsonFormat1(ResponseStatusClass)
@@ -143,27 +124,6 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
     }
   }
 
-  implicit object formatBaseClass extends RootJsonFormat[BaseClass] {
-    def write(obj: BaseClass): JsValue = obj match {
-      case user: UserClass => user.toJson
-      case unknown@_ => serializationError(s"Marshalling issue with $unknown")
-    }
-
-    def read(value: JsValue): Nothing = {
-      value match {
-        case unknown@_ => deserializationError(s"Unmarshalling issue with $unknown ")
-      }
-    }
-  }
-
-  //  private def typeInfer(list: List[String], map: scala.Predef.Map[scala.Predef.String, spray.json.JsValue]): Boolean = {
-  //    var flag = true
-  //    for (field <- list) {
-  //      if (flag && map.contains(field)) flag = true
-  //      else flag = false
-  //    }
-  //    flag
-  //  }
 
 }
 
