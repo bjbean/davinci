@@ -31,7 +31,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   @Path("/{name}")
   @ApiOperation(value = "get one user from system by name", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "name", value = "user name", required = true, dataType = "String", paramType = "path")
+    new ApiImplicitParam(name = "name", value = "user name", required = true, dataType = "string", paramType = "path")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
