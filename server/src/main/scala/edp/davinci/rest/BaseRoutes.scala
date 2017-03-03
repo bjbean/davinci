@@ -8,7 +8,6 @@ import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
 import slick.jdbc.MySQLProfile.api._
-
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -95,6 +94,9 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
 
 
   def getByAll(session: SessionClass): Future[Seq[(Long, String)]] = baseDal.findAll(_.active === true)
+
+
+  def getAllByGroupId(session:SessionClass): Future[Seq[(Long, String)]]= baseDal.findAll(obj =>obj.active === true)
 
 
   def getByAllComplete(route: String, session: SessionClass, future: Future[Seq[(Long, String)]]): Route = {
