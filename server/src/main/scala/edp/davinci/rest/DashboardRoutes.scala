@@ -5,18 +5,20 @@ import javax.ws.rs.Path
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module._
-import edp.davinci.persistence.entities.RelDashboardWidget
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
-import slick.jdbc.MySQLProfile.api._
+import slick.jdbc.H2Profile.api._
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 @Api(value = "/dashboards", consumes = "application/json", produces = "application/json")
 @Path("/dashboards")
 class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
+
 
   val routes = getDashboardByIdRoute ~ getDashboardByNameRoute ~ postDashboardRoute ~ putDashboardRoute ~ getDashboardByAllRoute ~ deleteDashboardByIdRoute
 
@@ -31,26 +33,35 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 404, message = "dashboard not found"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def getDashboardByIdRoute: Route = modules.dashboardRoutes.getByIdRoute("dashboards")
+  def getDashboardByIdRoute: Route = path("dashboards" / LongNumber) {
+    id =>
+      get {
+        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          session => getDashboardById(id, session)
+        }
+      }
+  }
 
-//  def getDashboardById(route: String, id: Long, session: SessionClass): Route = {
-//    val future = if (session.admin) modules.dashboardDal.findById(id) else modules.dashboardDal.findByFilter(obj => obj.id === id && obj.publish === true && obj.active === true).map(seq => seq.headOption)
-//    onComplete(future) {
-//      case Success(dashboardOpt) => dashboardOpt match {
-//        case Some(dashboard) => {
-//          onComplete(modules.relDashboardWidgetDal.findByFilter(obj => obj.dashboard_id === id && obj.active === true).mapTo[Seq[RelDashboardWidget]]){
-//            case Success(relSeq) =>
-//              relSeq.isEmpty
-//            case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-//          }
-//        }
-//        case None => complete(NotFound, getHeader(404, session))
-//      }
-//      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-//    }
-//
-//
-//  }
+  private def getDashboardById(id: Long, session: SessionClass): Route = {
+    val future =
+      if (session.admin) modules.dashboardDal.findById(id)
+      else Future(None)
+    onComplete(future) {
+      case Success(dashboardOpt) => dashboardOpt match {
+        case Some(dashboard) => {
+          val query = for {
+            (r, w) <- modules.relDashboardWidgetQuery.filter(obj => obj.dashboard_id === id && obj.active === true) join modules.widgetQuery.filter(_.active === true) on (_.widget_id === _.id)
+          } yield (r.id, r.dashboard_id, w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.desc, w.trigger_type, w.trigger_params, w.publish, w.active, r.position_x, r.position_y, r.length, r.width, r.create_time, r.create_by, r.update_time, r.update_by)
+          onComplete(modules.db.run(query.result).mapTo[Seq[WidgetInfo]]) {
+            case Success(widgetInfoSeq) => complete(OK, ResponseJson[DashboardInfo](getHeader(200, session), DashboardInfo(dashboard, widgetInfoSeq)))
+            case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+          }
+        }
+        case None => complete(NotFound, getHeader(404, session))
+      }
+      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+    }
+  }
 
 
   @Path("/{name}")

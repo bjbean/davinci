@@ -91,9 +91,9 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatResponseHeader: RootJsonFormat[ResponseHeader] = jsonFormat3(ResponseHeader)
 
-  implicit val formatDashboardInfo: RootJsonFormat[DashboardInfo] = jsonFormat2(DashboardInfo)
+  implicit val formatWidgetInfo: RootJsonFormat[WidgetInfo] = jsonFormat19(WidgetInfo)
 
-  implicit val formatDashboardInfoSeq: RootJsonFormat[DashboardInfoSeq] = jsonFormat1(DashboardInfoSeq)
+  implicit val formatDashboardInfo: RootJsonFormat[DashboardInfo] = jsonFormat2(DashboardInfo)
 
   implicit def formatRequestJson[A: JsonFormat]: RootJsonFormat[RequestJson[A]] = jsonFormat1(RequestJson.apply[A])
 

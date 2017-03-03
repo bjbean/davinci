@@ -14,17 +14,15 @@ case class ChangePwdClass(oldPass: String, newPass: String)
 
 //case class PaginationClass(pageIndex: Int, size: Int)
 
-case class WidgetInfo()
+case class WidgetInfo(id: Long, dashboard_id: Long, widget_id: Long, widgetlib_id: Long, bizlogic_id: Long, name: String, desc: String, trigger_type: String, trigger_params: String, publish: Boolean, active: Boolean, position_x: Int, position_y: Int, length: Int, width: Int, create_time: String, create_by: Long, update_time: String, update_by: Long)
 
-case class DashboardInfo(dashboard: Dashboard, widgets: Seq[Widget])
-
-case class DashboardInfoSeq(payload: Seq[DashboardInfo])
+case class DashboardInfo(dashboard: Dashboard, widgets: Seq[WidgetInfo])
 
 case class SimpleUserSeq(payload: Seq[SimpleUser])
 
 case class SimpleBizlogicSeq(payload: Seq[SimpleBizlogic])
 
-case class SimpleDashboardSeq(payload: Seq[SimpleDashboard]) 
+case class SimpleDashboardSeq(payload: Seq[SimpleDashboard])
 
 case class SimpleGroupSeq(payload: Seq[SimpleGroup])
 
