@@ -36,7 +36,7 @@ object Boot extends App {
   modules.widgetDal.insert(Widget(0, 1, 1, "test", "test", "insert", "i", true, true, "2017-03-03 12:00:00", 1, "2017-03-03 12:00:00", 1))
   modules.relDashboardWidgetDal.insert(RelDashboardWidget(0, 1, 1, 10, 10, 10, 10, true, "2017-03-03 12:00:00", 1, "2017-03-03 12:00:00", 1))
   //
-  //  modules.bizlogicDal.createTable()
+    modules.bizlogicDal.createTable()
   //  modules.bizlogicDal.insert(Bizlogic(1, 1, 1, "biz", "***", true, "2016-11-24 11:11:11", 1, "2016-11-24 11:12:12", 1))
   //  modules.bizlogicDal.insert(Bizlogic(2, 1, 1, "bi", "***", true, "2016-11-25 11:11:11", 1, "2016-11-25 11:12:12", 1))
 

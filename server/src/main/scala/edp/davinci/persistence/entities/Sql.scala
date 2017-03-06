@@ -30,7 +30,7 @@ case class SimpleSql(bizlogic_id: Long,
 
 class SqlTable(tag: Tag) extends BaseTable[Sql](tag, "sql") {
 
-  def bizlogic_id = column[Long]("bizlogic_id")
+  override def bizlogic_id = column[Long]("bizlogic_id")
 
   //  def name = column[String]("name")
 

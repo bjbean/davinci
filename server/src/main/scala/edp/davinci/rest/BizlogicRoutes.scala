@@ -5,14 +5,18 @@ import javax.ws.rs.Path
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module._
 import edp.davinci.util.AuthorizationProvider
+import edp.davinci.util.CommonUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
+import slick.jdbc.H2Profile.api._
+import akka.http.scaladsl.model.StatusCodes._
+import scala.util.{Failure, Success}
 
 @Api(value = "/bizlogics", consumes = "application/json", produces = "application/json")
 @Path("/bizlogics")
 class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
-  val routes = getBizlogicByIdRoute ~ getBizlogicByNameRoute ~ postBizlogicRoute ~ putBizlogicRoute ~ getBizlogicByAllRoute ~ deleteBizlogicByIdRoute
+  val routes = getBizlogicByIdRoute ~ getBizlogicByNameRoute ~ getSqlFromBizlogicRoute ~ postBizlogicRoute ~ putBizlogicRoute ~ getBizlogicByAllRoute ~ deleteBizlogicByIdRoute
 
   @Path("/{id}")
   @ApiOperation(value = "get one bizlogic from system by id", notes = "", nickname = "", httpMethod = "GET")
@@ -44,11 +48,32 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   @ApiOperation(value = "get all bizlogics with the same domain", notes = "", nickname = "", httpMethod = "GET")
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
-    new ApiResponse(code = 403, message = "bizlogic is not admin"),
+    new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
   def getBizlogicByAllRoute = modules.bizlogicRoutes.getByAllRoute("bizlogics")
+
+
+  @Path("/{id}/sqls")
+  @ApiOperation(value = "get sql from bizlogic by id", notes = "", nickname = "", httpMethod = "GET")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "id", value = "bizlogic id", required = true, dataType = "integer", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "OK"),
+    new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 401, message = "authorization error"),
+    new ApiResponse(code = 500, message = "internal server error")
+  ))
+  def getSqlFromBizlogicRoute: Route = path("bizlogics" / LongNumber / "sqls") { bizligicId =>
+    get {
+      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        session => getSqlFromBizlogicComplete(bizligicId, session)
+      }
+    }
+  }
+
 
   @ApiOperation(value = "Add new bizlogics to the system", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
@@ -56,7 +81,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
-    new ApiResponse(code = 403, message = "bizlogic is not admin"),
+    new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
@@ -77,7 +102,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "put success"),
-    new ApiResponse(code = 403, message = "bizlogic is not admin"),
+    new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "bizlogics not found"),
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
@@ -100,9 +125,20 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "delete success"),
-    new ApiResponse(code = 403, message = "bizlogic is not admin"),
+    new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def deleteBizlogicByIdRoute = modules.bizlogicRoutes.deleteByIdRoute("bizlogics")
+  def deleteBizlogicByIdRoute: Route = modules.bizlogicRoutes.deleteByIdRoute("bizlogics")
+
+
+  private def getSqlFromBizlogicComplete(bizlogicId: Long, session: SessionClass): Route = {
+    onComplete(modules.sqlDal.findAll(obj => obj.bizlogic_id === bizlogicId && obj.active === true).mapTo[Seq[(Long, String)]]) {
+      case Success(sqlSeq) =>
+        if (sqlSeq.nonEmpty) complete(OK, ResponseJson[Seq[(Long, String)]](getHeader(200, session), sqlSeq))
+        else complete(NotFound, getHeader(404, session))
+      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+    }
+  }
+
 }

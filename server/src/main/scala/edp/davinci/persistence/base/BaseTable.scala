@@ -14,5 +14,9 @@ abstract class BaseTable[T](tag: Tag, desc: String) extends Table[T](tag, desc) 
 
   def `type` = column[String]("type")
 
+  def bizlogic_id = column[Long]("bizlogic_id")
+
+  def group_id = column[Long]("group_id")
+
 
 }

@@ -23,9 +23,9 @@ case class SimpleRelGroupBizlogic(group_id: Long,
                                   update_by: Long) extends SimpleBaseEntity
 
 class RelGroupBizlogicTable(tag: Tag) extends BaseTable[RelGroupBizlogic](tag, "rel_group_bizlogic") {
-  def group_id = column[Long]("group_id")
+  override def group_id = column[Long]("group_id")
 
-  def bizlogic_id = column[Long]("bizlogic_id")
+  override def bizlogic_id = column[Long]("bizlogic_id")
 
   def sql_params = column[String]("sql_params")
 
