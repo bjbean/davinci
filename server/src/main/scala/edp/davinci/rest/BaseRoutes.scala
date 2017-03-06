@@ -96,7 +96,7 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
   def getByAll(session: SessionClass): Future[Seq[(Long, String)]] = baseDal.findAll(_.active === true)
 
 
-  def getAllByGroupId(session:SessionClass): Future[Seq[(Long, String)]]= baseDal.findAll(obj =>obj.active === true)
+  def getAllByGroupId(session: SessionClass): Future[Seq[(Long, String)]] = baseDal.findAll(obj => obj.active === true)
 
 
   def getByAllComplete(route: String, session: SessionClass, future: Future[Seq[(Long, String)]]): Route = {
@@ -204,7 +204,7 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
 
   def generateEntity(simple: SimpleBaseEntity, session: SessionClass): BaseEntity = {
     simple match {
-      case bizLogic: SimpleBizlogic => Bizlogic(0, bizLogic.source_id, bizLogic.name, bizLogic.desc, bizLogic.active, bizLogic.create_time, bizLogic.create_by, bizLogic.update_time, bizLogic.update_by)
+      case bizLogic: SimpleBizlogic => Bizlogic(0, bizLogic.name, bizLogic.desc, bizLogic.active, bizLogic.create_time, bizLogic.create_by, bizLogic.update_time, bizLogic.update_by)
       case dashboard: SimpleDashboard => Dashboard(0, dashboard.name, dashboard.desc, dashboard.publish, dashboard.active, dashboard.create_time, dashboard.create_by, dashboard.update_time, dashboard.update_by)
       case group: SimpleGroup => Group(0, group.name, group.desc, group.active, group.create_time, group.create_by, group.update_time, group.update_by)
       case libWidget: SimpleLibWidget => LibWidget(0, libWidget.`type`, libWidget.active, libWidget.create_time, libWidget.create_by, libWidget.update_time, libWidget.update_by)
