@@ -34,7 +34,7 @@ class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "Widget") {
 
   def widgetlib_id = column[Long]("widgetlib_id")
 
-  def bizlogic_id = column[Long]("bizlogic_id")
+  override def bizlogic_id = column[Long]("bizlogic_id")
 
   //  def name = column[String]("name")
 

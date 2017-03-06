@@ -13,7 +13,7 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
   val bizlogic = new BizlogicRoutes(modules)
   val dashboard = new DashboardRoutes(modules)
   val widget = new WidgetRoutes(modules)
-  //  val sql = new SqlRoutes(modules)
+  val sql = new SqlRoutes(modules)
   //  val source = new SourceRoutes(modules)
   //  val libWidget = new LibWidgetRoutes(modules)
   //  val group = new GroupRoutes(modules)
@@ -27,10 +27,9 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
           corsHandler(source.routes) ~
           corsHandler(bizlogic.routes) ~
           corsHandler(widget.routes) ~
-          corsHandler(dashboard.routes)
-        //          corsHandler(widget.routes) ~
-        //          corsHandler(sql.routes) ~
-        //          corsHandler(source.routes) ~
+          corsHandler(dashboard.routes) ~
+          corsHandler(widget.routes) ~
+          corsHandler(sql.routes)
         //          corsHandler(libWidget.routes) ~
         //          corsHandler(group.routes) ~
 

@@ -55,7 +55,7 @@ object Boot extends App {
   modules.sqlDal.createTable()
   modules.sourceDal.createTable()
   //  modules.libWidgetDal.createTable()
-
+  //  modules.groupDal.createTable()
 
   Http().bindAndHandle(new RoutesApi(modules).routes, host, port)
 }
