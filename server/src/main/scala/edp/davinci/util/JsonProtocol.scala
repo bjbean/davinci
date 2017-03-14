@@ -71,6 +71,12 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatWidgetClassSeq: RootJsonFormat[SimpleWidgetSeq] = jsonFormat1(SimpleWidgetSeq)
 
+  implicit val formatRelUserGroupSeq: RootJsonFormat[SimpleRelUserGroupSeq] = jsonFormat1(SimpleRelUserGroupSeq)
+
+  implicit val formatRelGroupBizlogicSeq: RootJsonFormat[SimpleRelGroupBizlogicSeq] = jsonFormat1(SimpleRelGroupBizlogicSeq)
+
+  implicit val formatRelDashboardWidgetSeq: RootJsonFormat[SimpleRelDashboardWidgetSeq] = jsonFormat1(SimpleRelDashboardWidgetSeq)
+
   implicit val formatUserSeq: RootJsonFormat[UserSeq] = jsonFormat1(UserSeq)
 
   implicit val formatBizlogicSeq: RootJsonFormat[BizlogicSeq] = jsonFormat1(BizlogicSeq)

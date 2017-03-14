@@ -29,7 +29,7 @@ case class SimpleSource(group_id: Long,
 class SourceTable(tag: Tag) extends BaseTable[Source](tag, "source") {
   //  def domain_id = column[Long]("domain_id")
 
-  override def group_id = column[Long]("group_id")
+  def group_id = column[Long]("group_id")
 
 //  def name = column[String]("name")
 

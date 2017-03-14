@@ -212,6 +212,7 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
       case sqlLog: SimpleSqlLog => SqlLog(0, sqlLog.sql_id, sqlLog.user_id, sqlLog.start_time, sqlLog.end_time, sqlLog.active, sqlLog.success, sqlLog.error)
       case user: SimpleUser => User(0, user.email, user.password, user.title, user.name, user.admin, user.active, user.create_time, user.create_by, user.update_time, user.update_by)
       case widget: SimpleWidget => Widget(0, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish, widget.active, widget.create_time, widget.create_by, widget.update_time, widget.update_by)
+      case relUserGroup: SimpleRelUserGroup => RelUserGroup(0, relUserGroup.user_id, relUserGroup.group_id, relUserGroup.active, relUserGroup.create_time, relUserGroup.create_by, relUserGroup.update_time, relUserGroup.update_by)
     }
   }
 
