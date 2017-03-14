@@ -2,7 +2,7 @@ package edp.davinci.persistence.base
 
 import edp.davinci.module.DbModule
 import slick.jdbc.JdbcProfile
-import slick.jdbc.H2Profile.api._
+import slick.jdbc.MySQLProfile.api._
 import slick.lifted.CanBeQueryCondition
 
 import scala.concurrent.ExecutionContext.Implicits.global

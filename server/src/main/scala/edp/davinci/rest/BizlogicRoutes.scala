@@ -2,14 +2,15 @@ package edp.davinci.rest
 
 import javax.ws.rs.Path
 
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module._
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
-import slick.jdbc.H2Profile.api._
-import akka.http.scaladsl.model.StatusCodes._
+import slick.jdbc.MySQLProfile.api._
+
 import scala.util.{Failure, Success}
 
 @Api(value = "/bizlogics", consumes = "application/json", produces = "application/json")

@@ -12,8 +12,7 @@
 //import edp.davinci.util.Utils._
 //import edp.davinci.util.{AuthorizationProvider, Utils}
 //import io.swagger.annotations._
-//import slick.jdbc.H2Profile.api._
-//
+//import slick.jdbc.MySQLProfile.api._
 //import scala.util.{Failure, Success}
 //
 //@Api(value = "/libWidgets", consumes = "application/json", produces = "application/json")

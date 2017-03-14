@@ -10,9 +10,9 @@ import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
-import slick.jdbc.H2Profile.api._
+import slick.jdbc.MySQLProfile.api._
+
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 @Api(value = "/dashboards", consumes = "application/json", produces = "application/json")

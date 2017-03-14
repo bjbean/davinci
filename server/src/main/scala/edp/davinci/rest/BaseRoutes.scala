@@ -7,7 +7,8 @@ import edp.davinci.persistence.entities._
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
-import slick.jdbc.H2Profile.api._
+import slick.jdbc.MySQLProfile.api._
+
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 

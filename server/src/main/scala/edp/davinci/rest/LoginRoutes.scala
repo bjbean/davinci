@@ -5,9 +5,9 @@ import javax.ws.rs.Path
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule}
-import edp.davinci.util.JsonProtocol._
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
+import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
 
 import scala.util.{Failure, Success}
@@ -33,10 +33,18 @@ class LoginRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       entity(as[LoginClass]) { login =>
         onComplete(AuthorizationProvider.createSessionClass(login)) {
           case Success(sessionEither) =>
-            sessionEither.fold(authorizationError => complete(Unauthorized, getHeader(authorizationError.statusCode, authorizationError.desc, null)),
+            sessionEither.fold(authorizationError =>
+              {
+                println(authorizationError)
+                println(authorizationError.statusCode, authorizationError.desc)
+                complete(Unauthorized, getHeader(authorizationError.statusCode, authorizationError.desc, null))
+              },
+
               session => complete(OK, getHeader(200, session))
             )
-          case Failure(ex) => complete(InternalServerError, getHeader(500, null))
+          case Failure(ex) =>
+            println("failure")
+            complete(InternalServerError, getHeader(500, null))
         }
       }
     }

@@ -15,8 +15,8 @@ trait PersistenceModule {
   // davinci
 
   // use an alternative database configuration ex:
-  // private val dbConfig : DatabaseConfig[JdbcProfile]  = DatabaseConfig.forConfig("pgdb")
-  private val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("h2db")
+   private val dbConfig : DatabaseConfig[JdbcProfile]  = DatabaseConfig.forConfig("mysqldb")
+//  private val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("h2db")
 
   implicit val profile: JdbcProfile = dbConfig.profile
   implicit val db: JdbcProfile#Backend#Database = dbConfig.db

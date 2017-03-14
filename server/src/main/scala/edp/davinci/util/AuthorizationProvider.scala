@@ -4,7 +4,7 @@ import akka.http.scaladsl.server.directives.Credentials
 import edp.davinci.module.{ConfigurationModuleImpl, PersistenceModuleImpl}
 import edp.davinci.persistence.entities.User
 import edp.davinci.rest.{LoginClass, SessionClass}
-import slick.jdbc.H2Profile.api._
+import slick.jdbc.MySQLProfile.api._
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -33,10 +33,14 @@ object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceMod
               session
           }
       }.map(Right(_)).recover {
-        case e: AuthorizationError => Left(e)
+        case e: AuthorizationError =>
+          println(e)
+          Left(e)
       }
     } catch {
-      case e: AuthorizationError => Future.successful(Left(e))
+      case e: AuthorizationError =>
+        println(e)
+        Future.successful(Left(e))
     }
 
   }
@@ -57,7 +61,9 @@ object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceMod
           case Some(user) =>
             if (verifyPassWord(user.password, login.password)) user
             else throw new PassWordError()
-          case None => throw new UserNotFoundError()
+          case None =>
+            println("not found")
+            throw new UserNotFoundError()
         }
     }
   }
@@ -67,10 +73,7 @@ object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceMod
       val session = JwtSupport.decodeToken(token)
       Future.successful(Some(session))
     } catch {
-      case ex: Exception =>
-        println("validate token fail")
-        println(ex)
-        Future.successful(None)
+      case ex: Exception => Future.successful(None)
     }
   }
 
