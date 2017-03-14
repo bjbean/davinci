@@ -13,8 +13,8 @@ case class SessionClass(userId: Long, groupIdList: List[Long], admin: Boolean, c
 case class ChangePwdClass(oldPass: String, newPass: String)
 
 //case class PaginationClass(pageIndex: Int, size: Int)
-
-case class WidgetInfo(id: Long, dashboard_id: Long, widget_id: Long, widgetlib_id: Long, bizlogic_id: Long, name: String, desc: String, hidden: Boolean, trigger_type: String, trigger_params: String, publish: Boolean, active: Boolean, position_x: Int, position_y: Int, length: Int, width: Int, create_time: String, create_by: Long, update_time: String, update_by: Long)
+case class BaseInfo(id:Long,name:String)
+case class WidgetInfo(id: Long, dashboard_id: Long, widget_id: Long, widgetlib_id: Long, bizlogic_id: Long, name: String, desc: String, trigger_type: String, trigger_params: String, publish: Boolean, active: Boolean, position_x: Int, position_y: Int, length: Int, width: Int, create_time: String, create_by: Long, update_time: String, update_by: Long)
 
 case class DashboardInfo(dashboard: Dashboard, widgets: Seq[WidgetInfo])
 

@@ -17,7 +17,7 @@ import scala.util.{Failure, Success}
 @Path("/bizlogics")
 class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
-  val routes = getBizlogicByIdRoute ~ getBizlogicByNameRoute ~ getSqlFromBizlogicRoute ~ postBizlogicRoute ~ putBizlogicRoute ~ getBizlogicByAllRoute ~ deleteBizlogicByIdRoute
+  val routes: Route = getBizlogicByIdRoute ~ getBizlogicByNameRoute ~ getSqlFromBizlogicRoute ~ postBizlogicRoute ~ putBizlogicRoute ~ getBizlogicByAllRoute ~ deleteBizlogicByIdRoute
 
   @Path("/{id}")
   @ApiOperation(value = "get one bizlogic from system by id", notes = "", nickname = "", httpMethod = "GET")
@@ -53,11 +53,11 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def getBizlogicByAllRoute = modules.bizlogicRoutes.getByAllRoute("bizlogics")
+  def getBizlogicByAllRoute: Route = modules.bizlogicRoutes.getByAllRoute("bizlogics")
 
 
-  @Path("/{id}/sqls")
-  @ApiOperation(value = "get sql from bizlogic by id", notes = "", nickname = "", httpMethod = "GET")
+  @Path("/{bizlogicid}/sqls")
+  @ApiOperation(value = "get sqls from bizlogic by id", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "id", value = "bizlogic id", required = true, dataType = "integer", paramType = "path")
   ))
@@ -75,6 +75,16 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     }
   }
 
+  private def getSqlFromBizlogicComplete(bizlogicId: Long, session: SessionClass): Route = {
+    onComplete(modules.sqlDal.findAll(obj => obj.bizlogic_id === bizlogicId && obj.active === true)) {
+      case Success(sqlSeqOpt) => sqlSeqOpt match {
+        case Some(sqlSeq) => complete(OK, ResponseSeqJson[BaseInfo](getHeader(200, session), sqlSeq))
+        case None => complete(NotFound, getHeader(404, session))
+      }
+      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+    }
+  }
+
 
   @ApiOperation(value = "Add new bizlogics to the system", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
@@ -86,7 +96,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def postBizlogicRoute = path("bizlogics") {
+  def postBizlogicRoute: Route = path("bizlogics") {
     post {
       entity(as[SimpleBizlogicSeq]) {
         bizlogicSeq =>
@@ -108,7 +118,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def putBizlogicRoute = path("bizlogics") {
+  def putBizlogicRoute: Route = path("bizlogics") {
     put {
       entity(as[BizlogicSeq]) {
         bizlogicSeq =>
@@ -132,14 +142,3 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   ))
   def deleteBizlogicByIdRoute: Route = modules.bizlogicRoutes.deleteByIdRoute("bizlogics")
 
-
-  private def getSqlFromBizlogicComplete(bizlogicId: Long, session: SessionClass): Route = {
-    onComplete(modules.sqlDal.findAll(obj => obj.bizlogic_id === bizlogicId && obj.active === true).mapTo[Seq[(Long, String)]]) {
-      case Success(sqlSeq) =>
-        if (sqlSeq.nonEmpty) complete(OK, ResponseJson[Seq[(Long, String)]](getHeader(200, session), sqlSeq))
-        else complete(NotFound, getHeader(404, session))
-      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-    }
-  }
-
-}
