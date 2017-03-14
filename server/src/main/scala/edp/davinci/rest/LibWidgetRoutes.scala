@@ -32,5 +32,4 @@ class LibWidgetRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 500, message = "internal server error")
   ))
   def getLibWidgetByAllRoute: Route = modules.libWidgetRoutes.getByAllRoute("libWidgets")
-
 }

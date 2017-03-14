@@ -141,4 +141,5 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 500, message = "internal server error")
   ))
   def deleteBizlogicByIdRoute: Route = modules.bizlogicRoutes.deleteByIdRoute("bizlogics")
+}
 

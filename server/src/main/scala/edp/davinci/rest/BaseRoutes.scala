@@ -8,10 +8,9 @@ import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
 import slick.jdbc.MySQLProfile.api._
-
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-import edp.davinci.rest.BaseInfo
+
 
 trait BaseRoutes {
 
