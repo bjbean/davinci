@@ -13,6 +13,7 @@ case class SessionClass(userId: Long, groupIdList: List[Long], admin: Boolean, c
 case class ChangePwdClass(oldPass: String, newPass: String)
 
 //case class PaginationClass(pageIndex: Int, size: Int)
+case class BaseInfo(id: Long, name: String)
 
 case class WidgetInfo(id: Long, dashboard_id: Long, widget_id: Long, widgetlib_id: Long, bizlogic_id: Long, name: String, desc: String, hidden: Boolean, trigger_type: String, trigger_params: String, publish: Boolean, active: Boolean, position_x: Int, position_y: Int, length: Int, width: Int, create_time: String, create_by: Long, update_time: String, update_by: Long)
 
@@ -35,6 +36,12 @@ case class SimpleSqlSeq(payload: Seq[SimpleSql])
 case class SimpleSqlLogSeq(payload: Seq[SimpleSqlLog])
 
 case class SimpleWidgetSeq(payload: Seq[SimpleWidget])
+
+case class SimpleRelUserGroupSeq(payload: Seq[SimpleRelUserGroup])
+
+case class SimpleRelGroupBizlogicSeq(payload: Seq[SimpleRelGroupBizlogic])
+
+case class SimpleRelDashboardWidgetSeq(payload: Seq[SimpleRelDashboardWidget])
 
 case class BizlogicSeq(payload: Seq[Bizlogic])
 

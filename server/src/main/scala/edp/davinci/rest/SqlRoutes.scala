@@ -1,18 +1,17 @@
 package edp.davinci.rest
 
 import javax.ws.rs.Path
-
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.util.AuthorizationProvider
-import io.swagger.annotations._
 import edp.davinci.util.JsonProtocol._
+import io.swagger.annotations._
 
 @Api(value = "/sqls", consumes = "application/json", produces = "application/json")
 @Path("/sqls")
 class SqlRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
-  val routes = getSqlByIdRoute ~ getSqlByAllRoute ~ postSqlRoute ~ putSqlRoute ~ deleteSqlByIdRoute
+  val routes: Route = getSqlByIdRoute ~ getSqlByAllRoute ~ postSqlRoute ~ putSqlRoute ~ deleteSqlByIdRoute
 
   @Path("/{id}")
   @ApiOperation(value = "get one sql from system by id", notes = "", nickname = "", httpMethod = "GET")
@@ -118,12 +117,4 @@ class SqlRoutes(modules: ConfigurationModule with PersistenceModule with Busines
   ))
   def deleteSqlByIdRoute: Route = modules.sqlRoutes.deleteByIdRoute("sqls")
 
-  //  @ApiOperation(value = "delete all sqls with the same domain", notes = "", nickname = "", httpMethod = "DELETE")
-  //  @ApiResponses(Array(
-  //    new ApiResponse(code = 200, message = "delete success"),
-  //    new ApiResponse(code = 403, message = "user is not admin"),
-  //    new ApiResponse(code = 401, message = "authorization error"),
-  //    new ApiResponse(code = 500, message = "internal server error")
-  //  ))
-  //  def deleteSqlByAllRoute = modules.sqlRoutes.deleteByAllRoute("sqls")
 }

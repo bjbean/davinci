@@ -23,7 +23,7 @@ case class SimpleRelUserGroup(user_id: Long,
 class RelUserGroupTable(tag: Tag) extends BaseTable[RelUserGroup](tag, "rel_user_group") {
   def user_id = column[Long]("user_id")
 
-  override def group_id = column[Long]("group_id")
+  def group_id = column[Long]("group_id")
 
   def create_time = column[String]("create_time")
 

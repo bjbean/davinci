@@ -2,15 +2,15 @@ package edp.davinci.rest
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
-import edp.davinci.persistence.base.{BaseDal, BaseEntity, BaseTable, SimpleBaseEntity}
+import edp.davinci.persistence.base._
 import edp.davinci.persistence.entities._
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
 import slick.jdbc.MySQLProfile.api._
-
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
+
 
 trait BaseRoutes {
 
@@ -94,18 +94,19 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
   }
 
 
-  def getByAll(session: SessionClass): Future[Seq[(Long, String)]] = baseDal.findAll(_.active === true)
+  def getByAll(session: SessionClass): Future[Option[Seq[BaseInfo]]] = baseDal.findAll(_.active === true)
 
 
-  def getAllByGroupId(session: SessionClass): Future[Seq[(Long, String)]] = baseDal.findAll(obj => obj.active === true)
+  def getAllByGroupId(session: SessionClass): Future[Option[Seq[BaseInfo]]] = baseDal.findAll(obj => obj.active === true)
 
 
-  def getByAllComplete(route: String, session: SessionClass, future: Future[Seq[(Long, String)]]): Route = {
+  def getByAllComplete(route: String, session: SessionClass, future: Future[Option[Seq[BaseInfo]]]): Route = {
     if (session.admin || access(route, "all")) {
       onComplete(future) {
-        case Success(baseSeq) =>
-          if (baseSeq.nonEmpty) complete(OK, ResponseJson[Seq[(Long, String)]](getHeader(200, session), baseSeq))
-          else complete(NotFound, getHeader(404, session))
+        case Success(baseSeqOpt) => baseSeqOpt match {
+          case Some(baseEntity) => complete(OK, ResponseSeqJson[BaseInfo](getHeader(200, session), baseEntity))
+          case None => complete(NotFound, getHeader(404, session))
+        }
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     } else complete(Forbidden, getHeader(403, session))
@@ -121,9 +122,6 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     } else complete(Forbidden, getHeader(403, session))
   }
 
-  def postByIdComplete(session: SessionClass, baseId: Long, extendId: Long) = {
-
-  }
 
   def insertByPost(session: SessionClass, seq: Seq[SimpleBaseEntity]): Future[Seq[BaseEntity]] = {
     val entitySeq = seq.map(generateEntity(_, session))
@@ -214,11 +212,12 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
       case sqlLog: SimpleSqlLog => SqlLog(0, sqlLog.sql_id, sqlLog.user_id, sqlLog.start_time, sqlLog.end_time, sqlLog.active, sqlLog.success, sqlLog.error)
       case user: SimpleUser => User(0, user.email, user.password, user.title, user.name, user.admin, user.active, user.create_time, user.create_by, user.update_time, user.update_by)
       case widget: SimpleWidget => Widget(0, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish, widget.active, widget.create_time, widget.create_by, widget.update_time, widget.update_by)
+      case relUserGroup: SimpleRelUserGroup => RelUserGroup(0, relUserGroup.user_id, relUserGroup.group_id, relUserGroup.active, relUserGroup.create_time, relUserGroup.create_by, relUserGroup.update_time, relUserGroup.update_by)
     }
   }
 
   def access(route: String, `type`: String): Boolean = route match {
-    case "groups" | "widgets" | "dashboards" | "bizLogics" => true
+    case "groups" | "widgets" | "dashboards" | "bizlogics" => true
     case "users" => `type` match {
       case "id" => true
       case "name" => true

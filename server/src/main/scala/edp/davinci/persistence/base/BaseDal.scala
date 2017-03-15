@@ -1,6 +1,7 @@
 package edp.davinci.persistence.base
 
 import edp.davinci.module.DbModule
+import edp.davinci.rest.BaseInfo
 import slick.jdbc.JdbcProfile
 import slick.jdbc.MySQLProfile.api._
 import slick.lifted.CanBeQueryCondition
@@ -22,7 +23,7 @@ trait BaseDal[T, A] {
 
   def findByName(name:String):Future[Option[A]]
 
-  def findAll[C: CanBeQueryCondition](f: (T) => C):Future[Seq[(Long,String)]]
+  def findAll[C: CanBeQueryCondition](f: (T) => C):Future[Option[Seq[BaseInfo]]]
 
   def findByFilter[C: CanBeQueryCondition](f: (T) => C): Future[Seq[A]]
 
@@ -59,7 +60,7 @@ class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(imp
 
   override def findByName(name: String): Future[Option[A]] = db.run(tableQ.filter(obj => obj.name === name && obj.active === true).result.headOption)
 
-  override def findAll[C: CanBeQueryCondition](f: (T) => C): Future[Seq[(Long, String)]] = db.run(tableQ.withFilter(f).map(r=>(r.id,r.name)).result)
+  override def findAll[C: CanBeQueryCondition](f: (T) => C): Future[Option[Seq[BaseInfo]]] = db.run(tableQ.withFilter(f).map(r=>(r.id,r.name)).result).mapTo[Option[Seq[BaseInfo]]]
 
   override def findByFilter[C: CanBeQueryCondition](f: (T) => C): Future[Seq[A]] = db.run(tableQ.withFilter(f).result)
 
@@ -67,7 +68,7 @@ class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(imp
 
   override def deleteById(ids: Seq[Long]): Future[Int] = db.run(tableQ.filter(_.id.inSet(ids)).map(x => x.active).update(false))
 
-  override def deleteByFilter[C: CanBeQueryCondition](f: (T) => C): Future[Int] = db.run(tableQ.withFilter(f).delete)
+  override def deleteByFilter[C: CanBeQueryCondition](f: (T) => C): Future[Int] = db.run(tableQ.withFilter(f).map(x => x.active).update(false))
 
   override def createTable(): Future[Unit] = db.run(DBIO.seq(tableQ.schema.create))
 
