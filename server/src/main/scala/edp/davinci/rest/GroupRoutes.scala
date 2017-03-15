@@ -9,7 +9,9 @@ import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
+import slick.dbio.Effect.Read
 import slick.jdbc.MySQLProfile.api._
+import slick.sql.FixedSqlStreamingAction
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -139,12 +141,14 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def getUsersByGroupIdRoute: Route = path("groups" / LongNumber / "users") { groupId =>
+  def getUsersByGroupIdRoute:Route = path("groups" / LongNumber / "users") { groupId =>
     get {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
         session =>
-          val future = modules.relUserGroupDal.findAll(obj => obj.group_id === groupId && obj.active === true)
-          getByGroupIdComplete(future, groupId, session)
+          val query = (modules.relUserGroupQuery.filter(obj => obj.group_id === groupId && obj.active === true) join
+          modules.userQuery.filter(_.active === true) on (_.user_id === _.id)).map(r => (r._2.id,r._2.name)).result
+          val future = modules.db.run(query).mapTo[Seq[BaseInfo]]
+          getByGroupIdComplete(future, session)
       }
     }
   }
@@ -215,8 +219,10 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     get {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
         session =>
-          val future = modules.relGroupBizlogicDal.findAll(obj => obj.group_id === groupId && obj.active === true)
-          getByGroupIdComplete(future, groupId, session)
+          val query = (modules.relGroupBizlogicQuery.filter(obj => obj.group_id === groupId && obj.active === true) join
+            modules.bizlogicQuery.filter(_.active === true) on (_.bizlogic_id === _.id)).map(r => (r._2.id,r._2.name)).result
+          val future = modules.db.run(query).mapTo[Seq[BaseInfo]]
+          getByGroupIdComplete(future, session)
       }
     }
   }
@@ -267,7 +273,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     }
   }
 
-  private def getByGroupIdComplete(future: Future[Seq[BaseInfo]], groupId: Long, session: SessionClass): Route = {
+  private def getByGroupIdComplete(future: Future[Seq[BaseInfo]], session: SessionClass): Route = {
     onComplete(future) {
       case Success(baseSeq) =>
         if (baseSeq.nonEmpty) complete(OK, ResponseSeqJson[BaseInfo](getHeader(200, session), baseSeq))
