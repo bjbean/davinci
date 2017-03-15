@@ -56,7 +56,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   def getBizlogicByAllRoute: Route = modules.bizlogicRoutes.getByAllRoute("bizlogics")
 
 
-  @Path("/{bizlogicid}/sqls")
+  @Path("/{id}/sqls")
   @ApiOperation(value = "get sqls from bizlogic by id", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "id", value = "bizlogic id", required = true, dataType = "integer", paramType = "path")
@@ -77,10 +77,10 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
 
   private def getSqlFromBizlogicComplete(bizlogicId: Long, session: SessionClass): Route = {
     onComplete(modules.sqlDal.findAll(obj => obj.bizlogic_id === bizlogicId && obj.active === true)) {
-      case Success(sqlSeqOpt) => sqlSeqOpt match {
-        case Some(sqlSeq) => complete(OK, ResponseSeqJson[BaseInfo](getHeader(200, session), sqlSeq))
-        case None => complete(NotFound, getHeader(404, session))
-      }
+      case Success(sqlSeq) =>
+        if(sqlSeq.nonEmpty) complete(OK, ResponseSeqJson[BaseInfo](getHeader(200, session), sqlSeq))
+        else complete(NotFound, getHeader(404, session))
+
       case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
     }
   }

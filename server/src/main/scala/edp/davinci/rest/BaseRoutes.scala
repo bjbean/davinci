@@ -94,19 +94,18 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
   }
 
 
-  def getByAll(session: SessionClass): Future[Option[Seq[BaseInfo]]] = baseDal.findAll(_.active === true)
+  def getByAll(session: SessionClass): Future[Seq[BaseInfo]] = baseDal.findAll(_.active === true)
 
 
-  def getAllByGroupId(session: SessionClass): Future[Option[Seq[BaseInfo]]] = baseDal.findAll(obj => obj.active === true)
+  def getAllByGroupId(session: SessionClass): Future[Seq[BaseInfo]] = baseDal.findAll(obj => obj.active === true)
 
 
-  def getByAllComplete(route: String, session: SessionClass, future: Future[Option[Seq[BaseInfo]]]): Route = {
+  def getByAllComplete(route: String, session: SessionClass, future: Future[Seq[BaseInfo]]): Route = {
     if (session.admin || access(route, "all")) {
       onComplete(future) {
-        case Success(baseSeqOpt) => baseSeqOpt match {
-          case Some(baseEntity) => complete(OK, ResponseSeqJson[BaseInfo](getHeader(200, session), baseEntity))
-          case None => complete(NotFound, getHeader(404, session))
-        }
+        case Success(baseSeq) =>
+          if (baseSeq.nonEmpty) complete(OK, ResponseSeqJson[BaseInfo](getHeader(200, session), baseSeq))
+          else complete(NotFound, getHeader(404, session))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     } else complete(Forbidden, getHeader(403, session))
@@ -213,6 +212,9 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
       case user: SimpleUser => User(0, user.email, user.password, user.title, user.name, user.admin, user.active, user.create_time, user.create_by, user.update_time, user.update_by)
       case widget: SimpleWidget => Widget(0, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish, widget.active, widget.create_time, widget.create_by, widget.update_time, widget.update_by)
       case relUserGroup: SimpleRelUserGroup => RelUserGroup(0, relUserGroup.user_id, relUserGroup.group_id, relUserGroup.active, relUserGroup.create_time, relUserGroup.create_by, relUserGroup.update_time, relUserGroup.update_by)
+      case relDashboardWidget: SimpleRelDashboardWidget => RelDashboardWidget(0, relDashboardWidget.dashboard_id, relDashboardWidget.widget_id, relDashboardWidget.position_x, relDashboardWidget.position_y, relDashboardWidget.length, relDashboardWidget.width,
+        relDashboardWidget.active, relDashboardWidget.create_time, relDashboardWidget.create_by, relDashboardWidget.update_time, relDashboardWidget.update_by)
+      case relGroupBizlogic: SimpleRelGroupBizlogic => RelGroupBizlogic(0, relGroupBizlogic.group_id, relGroupBizlogic.bizlogic_id, relGroupBizlogic.sql_params, relGroupBizlogic.active, relGroupBizlogic.create_time, relGroupBizlogic.create_by, relGroupBizlogic.update_time, relGroupBizlogic.update_by)
     }
   }
 

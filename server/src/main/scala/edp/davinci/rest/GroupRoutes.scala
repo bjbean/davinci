@@ -18,7 +18,7 @@ import scala.util.{Failure, Success}
 @Path("/groups")
 class GroupRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
-  val routes: Route = getGroupByIdRoute ~ getGroupByNameRoute ~ getGroupByAllRoute ~ postGroupRoute ~ postUser2GroupRoute ~ putGroupRoute ~ deleteGroupByIdRoute
+  val routes: Route = getGroupByIdRoute ~ getGroupByNameRoute ~ getGroupByAllRoute ~ getBizlogicsByGroupIdRoute ~ getUsersByGroupIdRoute ~ postGroupRoute ~ postUser2GroupRoute ~ postBizlogic2GroupRoute ~ putGroupRoute ~ deleteGroupByIdRoute ~ deleteBizlogicFromGroupRoute ~ deleteUserFromGroupRoute
 
   @Path("/{id}")
   @ApiOperation(value = "get one group from system by id", notes = "", nickname = "", httpMethod = "GET")
@@ -128,7 +128,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   ))
   def deleteGroupByIdRoute: Route = modules.groupRoutes.deleteByIdRoute("groups")
 
-  @Path("/{groupid}/users")
+  @Path("/{id}/users")
   @ApiOperation(value = "get users in a group", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "id", value = "group id", required = true, dataType = "integer", paramType = "path")
@@ -150,10 +150,12 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   }
 
 
-  @Path("/{groupid}/users")
+  @Path("/{id}/users")
   @ApiOperation(value = "Add user to a group", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "id", value = "group id", required = true, dataType = "integer", paramType = "path"),
     new ApiImplicitParam(name = "relUserGroup", value = "relUserGroup object to be added", required = true, dataType = "edp.davinci.rest.SimpleRelUserGroupSeq", paramType = "body")
+
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
@@ -161,19 +163,21 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def postUser2GroupRoute: Route = path("groups" / LongNumber / "users") { _ =>
-    post {
-      entity(as[SimpleRelUserGroupSeq]) {
-        simpleRelUserGroupSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => modules.relUserGroupRoutes.postComplete(session, simpleRelUserGroupSeq.payload)
-          }
+  def postUser2GroupRoute: Route = pathPrefix("groups" / LongNumber) { _ =>
+    path("users") {
+      post {
+        entity(as[SimpleRelUserGroupSeq]) {
+          simpleRelUserGroupSeq =>
+            authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+              session => modules.relUserGroupRoutes.postComplete(session, simpleRelUserGroupSeq.payload)
+            }
+        }
       }
     }
   }
 
 
-  @Path("/{groupid}/users/{userid}")
+  @Path("/{id}/users/{id}")
   @ApiOperation(value = "remove user from group by id", notes = "", nickname = "", httpMethod = "DELETE")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "id", value = "group id", required = true, dataType = "integer", paramType = "path"),
@@ -196,7 +200,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   }
 
 
-  @Path("/{groupid}/bizlogics")
+  @Path("/{id}/bizlogics")
   @ApiOperation(value = "get bizlogics in a group", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "id", value = "group id", required = true, dataType = "integer", paramType = "path")
@@ -207,7 +211,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def getBizlogicssByGroupIdRoute: Route = path("groups" / LongNumber / "bizlogics") { groupId =>
+  def getBizlogicsByGroupIdRoute: Route = path("groups" / LongNumber / "bizlogics") { groupId =>
     get {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
         session =>
@@ -217,10 +221,12 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     }
   }
 
-  @Path("/{groupid}/bizlogics")
+  @Path("/{id}/bizlogics")
   @ApiOperation(value = "Add bizlogics to a group", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "id", value = "group id", required = true, dataType = "integer", paramType = "path"),
     new ApiImplicitParam(name = "relGroupBizlogic", value = "relGroupBizlogic object to be added", required = true, dataType = "edp.davinci.rest.SimpleRelGroupBizlogicSeq", paramType = "body")
+
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
@@ -239,7 +245,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     }
   }
 
-  @Path("/{groupid}/bizlogics/{userid}")
+  @Path("/{id}/bizlogics/{id}")
   @ApiOperation(value = "remove bizlogic from group by id", notes = "", nickname = "", httpMethod = "DELETE")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "id", value = "group id", required = true, dataType = "integer", paramType = "path"),
@@ -261,19 +267,19 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     }
   }
 
-  private def getByGroupIdComplete(future: Future[Option[Seq[BaseInfo]]], groupId: Long, session: SessionClass): Route = {
+  private def getByGroupIdComplete(future: Future[Seq[BaseInfo]], groupId: Long, session: SessionClass): Route = {
     onComplete(future) {
-      case Success(baseSeqOpt) => baseSeqOpt match {
-        case Some(baseSeq) => complete(OK, ResponseSeqJson[BaseInfo](getHeader(200, session), baseSeq))
-        case None => complete(NotFound, getHeader(404, session))
-      }
+      case Success(baseSeq) =>
+        if (baseSeq.nonEmpty) complete(OK, ResponseSeqJson[BaseInfo](getHeader(200, session), baseSeq))
+        else complete(NotFound, getHeader(404, session))
+
       case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
     }
   }
 
   private def deleteFromGroupComplete(future: Future[Int], groupId: Long, insideId: Long, session: SessionClass) = {
     if (session.admin)
-      onComplete(modules.relUserGroupDal.deleteByFilter(obj => obj.user_id === insideId && obj.group_id === groupId).mapTo[Int]) {
+      onComplete(future) {
         case Success(_) => complete(OK, getHeader(200, session))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       } else complete(Forbidden, getHeader(403, session))

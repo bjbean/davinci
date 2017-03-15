@@ -126,6 +126,9 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
       case sqlLog: SqlLog => sqlLog.toJson
       case user: User => user.toJson
       case widget: Widget => widget.toJson
+      case relUserGroup: RelUserGroup => relUserGroup.toJson
+      case relGroupBizlogic: RelGroupBizlogic => relGroupBizlogic.toJson
+      case relDashboardWidget: RelDashboardWidget => relDashboardWidget.toJson
       case unknown@_ => serializationError(s"Marshalling issue with $unknown")
     }
 

@@ -19,7 +19,7 @@ import scala.util.{Failure, Success}
 @Path("/dashboards")
 class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
-  val routes = getDashboardByIdRoute ~ getDashboardByNameRoute ~ postDashboardRoute ~ putDashboardRoute ~ getDashboardByAllRoute ~ deleteDashboardByIdRoute
+  val routes: Route = getDashboardByIdRoute ~ getDashboardByNameRoute ~ postDashboardRoute ~ postWidget2DashboardRoute ~ putDashboardRoute ~ getDashboardByAllRoute ~ deleteDashboardByIdRoute ~ deleteWidgetFromDashboardByIdRoute
 
   @Path("/{dashboard_id}/groups/{group_id}")
   @ApiOperation(value = "get one dashboard from system by id", notes = "", nickname = "", httpMethod = "GET")
@@ -162,4 +162,55 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 500, message = "internal server error")
   ))
   def deleteDashboardByIdRoute = modules.dashboardRoutes.deleteByIdRoute("dashboards")
+
+  @Path("/{id}/widgets")
+  @ApiOperation(value = "add widgets to a dashboard", notes = "", nickname = "", httpMethod = "POST")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "relDashboardWidget", value = "RelDashboardWidget objects to be added", required = true, dataType = "edp.davinci.rest.SimpleDashboardSeq", paramType = "body")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "OK"),
+    new ApiResponse(code = 401, message = "authorization error"),
+    new ApiResponse(code = 404, message = "dashboard not found"),
+    new ApiResponse(code = 500, message = "internal server error")
+  ))
+  def postWidget2DashboardRoute: Route = path("dashboards" / LongNumber / "widgets") { _ =>
+    post {
+      entity(as[SimpleRelDashboardWidgetSeq]) {
+        relDashboardWidgetSeq =>
+          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+            session => modules.relDashboardWidgetRoutes.postComplete(session, relDashboardWidgetSeq.payload)
+          }
+      }
+    }
+  }
+
+  @Path("/{id}/widgets/{id}")
+  @ApiOperation(value = "delete widget from dashboard by id", notes = "", nickname = "", httpMethod = "DELETE")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "id", value = "dashboard id", required = true, dataType = "integer", paramType = "path"),
+    new ApiImplicitParam(name = "id", value = "widget id", required = true, dataType = "integer", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "delete success"),
+    new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 401, message = "authorization error"),
+    new ApiResponse(code = 500, message = "internal server error")
+  ))
+  def deleteWidgetFromDashboardByIdRoute: Route = path("dashboards" / LongNumber / "widgets" / LongNumber) { (dashboardId, widgetId) =>
+    delete {
+      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        session => deleteWidgetFromDashboardByIdComplete(dashboardId, widgetId, session)
+      }
+    }
+  }
+
+  private def deleteWidgetFromDashboardByIdComplete(dashboardId: Long, widgetId: Long, session: SessionClass): Route = {
+    if (session.admin)
+      onComplete(modules.relDashboardWidgetDal.deleteByFilter(obj => obj.dashboard_id === dashboardId && obj.widget_id === widgetId).mapTo[Int]) {
+        case Success(_) => complete(OK, getHeader(200, session))
+        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+      } else complete(Forbidden, getHeader(403, session))
+  }
+
 }

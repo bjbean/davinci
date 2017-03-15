@@ -21,9 +21,9 @@ trait BaseDal[T, A] {
 
   def findById(id: Long): Future[Option[A]]
 
-  def findByName(name:String):Future[Option[A]]
+  def findByName(name: String): Future[Option[A]]
 
-  def findAll[C: CanBeQueryCondition](f: (T) => C):Future[Option[Seq[BaseInfo]]]
+  def findAll[C: CanBeQueryCondition](f: (T) => C): Future[Seq[BaseInfo]]
 
   def findByFilter[C: CanBeQueryCondition](f: (T) => C): Future[Seq[A]]
 
@@ -34,6 +34,7 @@ trait BaseDal[T, A] {
   def deleteByFilter[C: CanBeQueryCondition](f: (T) => C): Future[Int]
 
   def createTable(): Future[Unit]
+
   //  def paginate[C: CanBeQueryCondition](f: (T) => C)(offset: Int, limit: Int): Future[Seq[A]]
 }
 
@@ -60,7 +61,7 @@ class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(imp
 
   override def findByName(name: String): Future[Option[A]] = db.run(tableQ.filter(obj => obj.name === name && obj.active === true).result.headOption)
 
-  override def findAll[C: CanBeQueryCondition](f: (T) => C): Future[Option[Seq[BaseInfo]]] = db.run(tableQ.withFilter(f).map(r=>(r.id,r.name)).result).mapTo[Option[Seq[BaseInfo]]]
+  override def findAll[C: CanBeQueryCondition](f: (T) => C): Future[Seq[BaseInfo]] = db.run(tableQ.withFilter(f).map(r => (r.id, r.name)).result).mapTo[Seq[BaseInfo]]
 
   override def findByFilter[C: CanBeQueryCondition](f: (T) => C): Future[Seq[A]] = db.run(tableQ.withFilter(f).result)
 
