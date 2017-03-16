@@ -14,7 +14,7 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
   val dashboard = new DashboardRoutes(modules)
   val widget = new WidgetRoutes(modules)
   val sql = new SqlRoutes(modules)
-  //  val libWidget = new LibWidgetRoutes(modules)
+  val libWidget = new LibWidgetRoutes(modules)
   val group = new GroupRoutes(modules)
 
   val routes: Route =
@@ -29,7 +29,7 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
           corsHandler(dashboard.routes) ~
           corsHandler(widget.routes) ~
           corsHandler(sql.routes) ~
-          //          corsHandler(libWidget.routes) ~
+          corsHandler(libWidget.routes) ~
           corsHandler(group.routes)
 
       }

@@ -30,7 +30,7 @@ case class SimpleWidget(widgetlib_id: Long,
                         update_time: String,
                         update_by: Long) extends SimpleBaseEntity
 
-class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "Widget") {
+class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
   def widgetlib_id = column[Long]("widgetlib_id")
 

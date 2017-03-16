@@ -163,10 +163,11 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   ))
   def deleteDashboardByIdRoute = modules.dashboardRoutes.deleteByIdRoute("dashboards")
 
-  @Path("/{id}/widgets")
+  @Path("/{dashboard_id}/widgets")
   @ApiOperation(value = "add widgets to a dashboard", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "relDashboardWidget", value = "RelDashboardWidget objects to be added", required = true, dataType = "edp.davinci.rest.SimpleDashboardSeq", paramType = "body")
+    new ApiImplicitParam(name = "dashboard_id", value = "dashboard id", required = true, dataType = "integer", paramType = "path"),
+    new ApiImplicitParam(name = "relDashboardWidget", value = "RelDashboardWidget objects to be added", required = true, dataType = "edp.davinci.rest.SimpleRelDashboardWidgetSeq", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
@@ -185,11 +186,11 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     }
   }
 
-  @Path("/{id}/widgets/{id}")
+  @Path("/{dashboard_id}/widgets/{widget_id}")
   @ApiOperation(value = "delete widget from dashboard by id", notes = "", nickname = "", httpMethod = "DELETE")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "id", value = "dashboard id", required = true, dataType = "integer", paramType = "path"),
-    new ApiImplicitParam(name = "id", value = "widget id", required = true, dataType = "integer", paramType = "path")
+    new ApiImplicitParam(name = "dashboard_id", value = "dashboard id", required = true, dataType = "integer", paramType = "path"),
+    new ApiImplicitParam(name = "widget_id", value = "widget id", required = true, dataType = "integer", paramType = "path")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "delete success"),
