@@ -67,3 +67,6 @@ DELETE /zoos/ID/animals/ID：删除某个指定动物园的指定动物
 ?page=2&per_page=100：指定第几页，以及每页的记录数。
 ?sortby=name&order=asc：指定返回结果按照哪个属性排序，以及排序顺序。
 ?animal_type_id=1：指定筛选条件
+
+
+???批量删除
