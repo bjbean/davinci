@@ -1,7 +1,6 @@
 package edp.davinci.rest
 
 import javax.ws.rs.Path
-
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, NotFound, OK}
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module._
@@ -10,7 +9,6 @@ import edp.davinci.util.CommonUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
 import slick.jdbc.MySQLProfile.api._
-
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -164,15 +162,13 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def postUser2GroupRoute: Route = pathPrefix("groups" / LongNumber) { _ =>
-    path("users") {
-      post {
-        entity(as[SimpleRelUserGroupSeq]) {
-          simpleRelUserGroupSeq =>
-            authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-              session => modules.relUserGroupRoutes.postComplete(session, simpleRelUserGroupSeq.payload)
-            }
-        }
+  def postUser2GroupRoute: Route = pathPrefix("groups" / LongNumber / "users") { _ =>
+    post {
+      entity(as[SimpleRelUserGroupSeq]) {
+        simpleRelUserGroupSeq =>
+          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+            session => modules.relUserGroupRoutes.postComplete(session, simpleRelUserGroupSeq.payload)
+          }
       }
     }
   }

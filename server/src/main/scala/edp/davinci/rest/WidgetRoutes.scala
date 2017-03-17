@@ -4,8 +4,8 @@ import javax.ws.rs.Path
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.util.AuthorizationProvider
-import io.swagger.annotations._
 import edp.davinci.util.JsonProtocol._
+import io.swagger.annotations._
 
 @Api(value = "/widgets", consumes = "application/json", produces = "application/json")
 @Path("/widgets")
