@@ -55,7 +55,7 @@ trait WidgetService extends Directives with WidgetRepository {
       onComplete(widgetDal.insert(widgetSeq)) {
         case Success(widgetWithIdSeq) =>
           val responseWidget = widgetWithIdSeq.map(widget=>PutWidgetInfo(widget.id,widget.widgetlib_id,widget.bizlogic_id,widget.name,widget.desc,widget.trigger_type,widget.trigger_params,widget.publish))
-          complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session),responseWidget)
+          complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session),responseWidget))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     } else complete(Forbidden, getHeader(403, session))
