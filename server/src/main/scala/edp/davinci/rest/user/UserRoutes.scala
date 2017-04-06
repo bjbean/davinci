@@ -13,7 +13,7 @@ import io.swagger.annotations._
 @Path("/users")
 class UserRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives with UserService {
 
-  val routes = postUserRoute ~ putUserRoute ~ putLoginUserRoute ~ getUserByAllRoute ~ deleteUserByIdRoute ~ getGroupsByUserIdRoute ~ postUser2GroupRoute ~ deleteUserFromGroupRoute
+  val routes = postUserRoute ~ putUserRoute ~ putLoginUserRoute ~ getUserByAllRoute ~ deleteUserByIdRoute ~ getGroupsByUserIdRoute  ~ deleteUserFromGroupRoute
 
 //  @Path("/{id}")
 //  @ApiOperation(value = "get one user from system by id", notes = "", nickname = "", httpMethod = "GET")

@@ -14,8 +14,8 @@ import scala.util.{Failure, Success}
 
 
 trait BizlogicRepository extends ConfigurationModuleImpl with PersistenceModuleImpl with Directives {
-  def getAllBiz: Future[Seq[PutBizlogicInfo]] = {
-    db.run(bizlogicQuery.filter(_.active === true).map(r => (r.id, r.name, r.source_id, r.sql_tmpl, r.result_table, r.desc)).result).mapTo[Seq[PutBizlogicInfo]]
+  def getAllBiz: Future[Seq[QueryBizlogic]] = {
+    db.run(bizlogicQuery.filter(_.active === true).map(r => (r.id, r.name, r.source_id, r.sql_tmpl, r.result_table, r.desc)).result).mapTo[Seq[QueryBizlogic]]
   }
 
   def updateBiz(bizlogicSeq: Seq[PutBizlogicInfo], session: SessionClass): Future[Unit] = {
@@ -32,6 +32,10 @@ trait BizlogicRepository extends ConfigurationModuleImpl with PersistenceModuleI
     }): _*)
     db.run(query)
   }
+
+  def getGroups(bizId: Long): Future[Seq[PutRelGroupBizlogic]] = {
+    db.run(relGroupBizlogicQuery.filter(_.bizlogic_id === bizId).map(rel => (rel.id, rel.group_id, rel.sql_params)).result).mapTo[Seq[PutRelGroupBizlogic]]
+  }
 }
 
 
@@ -40,11 +44,21 @@ trait BizlogicService extends BizlogicRepository with Directives {
     if (session.admin) {
       onComplete(getAllBiz) {
         case Success(bizlogicSeq) =>
-          if (bizlogicSeq.nonEmpty) complete(OK, ResponseSeqJson[PutBizlogicInfo](getHeader(200, session), bizlogicSeq))
+          if (bizlogicSeq.nonEmpty) complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), bizlogicSeq))
           else complete(NotFound, getHeader(404, session))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     } else complete(Forbidden, getHeader(403, session))
+  }
+
+  def getGroupsByBizId(session: SessionClass, bizId: Long): Route = {
+    val future = getGroups(bizId)
+    onComplete(future) {
+      case Success(relSeq) =>
+        if (relSeq.nonEmpty) complete(OK, ResponseSeqJson[PutRelGroupBizlogic](getHeader(200, session), relSeq))
+        else complete(NotFound, getHeader(404, session))
+      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+    }
   }
 
   def putBizlogicComplete(session: SessionClass, bizlogicSeq: Seq[PutBizlogicInfo]): Route = {

@@ -15,8 +15,8 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatGroupClassSeq: RootJsonFormat[PostGroupInfoSeq] = jsonFormat1(PostGroupInfoSeq)
   implicit val formatPutGroupSeq: RootJsonFormat[PutGroupInfoSeq] = jsonFormat1(PutGroupInfoSeq)
 
-  implicit val formatPostSourceInfo: RootJsonFormat[PostSourceInfo] = jsonFormat6(PostSourceInfo)
-  implicit val formatPutSourceInfo: RootJsonFormat[PutSourceInfo] = jsonFormat7(PutSourceInfo)
+  implicit val formatPostSourceInfo: RootJsonFormat[PostSourceInfo] = jsonFormat5(PostSourceInfo)
+  implicit val formatPutSourceInfo: RootJsonFormat[PutSourceInfo] = jsonFormat6(PutSourceInfo)
   implicit val formatPostSourceInfoSeq: RootJsonFormat[PostSourceInfoSeq] = jsonFormat1(PostSourceInfoSeq)
   implicit val formatPutSourceInfoSeq: RootJsonFormat[PutSourceInfoSeq] = jsonFormat1(PutSourceInfoSeq)
 
@@ -25,8 +25,8 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatSimpleSqlLogSeq: RootJsonFormat[SimpleSqlLogSeq] = jsonFormat1(SimpleSqlLogSeq)
   implicit val formatSqlLogSeq: RootJsonFormat[SqlLogSeq] = jsonFormat1(SqlLogSeq)
 
-  implicit val formatTablePrivilege: RootJsonFormat[Source] = jsonFormat12(Source)
-  implicit val formatSimpleTablePrivilege: RootJsonFormat[SimpleSource] = jsonFormat11(SimpleSource)
+  implicit val formatTablePrivilege: RootJsonFormat[Source] = jsonFormat11(Source)
+  implicit val formatSimpleTablePrivilege: RootJsonFormat[SimpleSource] = jsonFormat10(SimpleSource)
 
   implicit val formatRelUserGroupResponse: RootJsonFormat[PostRelUserGroup] = jsonFormat1(PostRelUserGroup)
   implicit val formatRelUserGroupResponseSeq: RootJsonFormat[PostRelUserGroupSeq] = jsonFormat1(PostRelUserGroupSeq)

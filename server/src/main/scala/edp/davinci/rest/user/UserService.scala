@@ -13,8 +13,8 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 trait UserRepository extends ConfigurationModuleImpl with PersistenceModuleImpl {
-  def getAll: Future[Seq[PutUserInfo]] =
-    db.run(userQuery.filter(_.active === true).map(r => (r.id, r.email, r.title, r.name, r.admin)).result).mapTo[Seq[PutUserInfo]]
+  def getAll: Future[Seq[QueryUserInfo]] =
+    db.run(userQuery.filter(_.active === true).map(r => (r.id, r.email, r.title, r.name, r.admin)).result).mapTo[Seq[QueryUserInfo]]
 
 
   def update(userSeq: Seq[PutUserInfo], session: SessionClass): Future[Unit] = {
@@ -49,7 +49,7 @@ trait UserService extends Directives with UserRepository {
     if (session.admin) {
       onComplete(getAll) {
         case Success(userSeq) =>
-          if (userSeq.nonEmpty) complete(OK, ResponseSeqJson[PutUserInfo](getHeader(200, session), userSeq))
+          if (userSeq.nonEmpty) complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), userSeq))
           else complete(NotFound, getHeader(404, session))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
