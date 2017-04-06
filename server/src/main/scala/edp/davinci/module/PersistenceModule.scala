@@ -21,8 +21,7 @@ trait PersistenceModule {
   implicit val profile: JdbcProfile = dbConfig.profile
   implicit val db: JdbcProfile#Backend#Database = dbConfig.db
 
-  val groupDal: BaseDal[GroupTable, Group]
-  val sqlDal: BaseDal[SqlTable, Sql]
+  val groupDal: BaseDal[GroupTable, UserGroup]
   val sqlLogDal: BaseDal[SqlLogTable, SqlLog]
   val sourceDal: BaseDal[SourceTable, Source]
   val userDal: BaseDal[UserTable, User]
@@ -34,8 +33,7 @@ trait PersistenceModule {
   val bizlogicDal: BaseDal[BizlogicTable, Bizlogic]
   val relGroupBizlogicDal: BaseDal[RelGroupBizlogicTable, RelGroupBizlogic]
 
-  val groupQuery = TableQuery[GroupTable]
-  val sqlQuery = TableQuery[SqlTable]
+  val groupQuery: TableQuery[GroupTable] = TableQuery[GroupTable]
   val sqlLogQuery = TableQuery[SqlLogTable]
   val sourceQuery = TableQuery[SourceTable]
   val userQuery = TableQuery[UserTable]
@@ -52,8 +50,7 @@ trait PersistenceModuleImpl extends PersistenceModule with DbModule {
   this: ConfigurationModule =>
 
   // davinci
-  override val groupDal = new BaseDalImpl[GroupTable, Group](groupQuery)
-  override val sqlDal = new BaseDalImpl[SqlTable, Sql](sqlQuery)
+  override val groupDal = new BaseDalImpl[GroupTable, UserGroup](groupQuery)
   override val sqlLogDal = new BaseDalImpl[SqlLogTable, SqlLog](sqlLogQuery)
   override val sourceDal = new BaseDalImpl[SourceTable, Source](sourceQuery)
   override val userDal = new BaseDalImpl[UserTable, User](userQuery)

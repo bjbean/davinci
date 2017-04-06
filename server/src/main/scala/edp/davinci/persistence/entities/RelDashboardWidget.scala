@@ -28,6 +28,22 @@ case class SimpleRelDashboardWidget(dashboard_id: Long,
                                     update_time: String,
                                     update_by: Long) extends SimpleBaseEntity
 
+case class PostRelDashboardWidget(dashboard_id: Long,
+                                  widget_id: Long,
+                                  position_x: Int,
+                                  position_y: Int,
+                                  length: Int,
+                                  width: Int) extends SimpleBaseEntity
+
+case class PutRelDashboardWidget(id: Long,
+                                 dashboard_id: Long,
+                                 widget_id: Long,
+                                 position_x: Int,
+                                 position_y: Int,
+                                 length: Int,
+                                 width: Int)
+
+
 class RelDashboardWidgetTable(tag: Tag) extends BaseTable[RelDashboardWidget](tag, "rel_dashboard_widget") {
   def dashboard_id = column[Long]("dashboard_id")
 

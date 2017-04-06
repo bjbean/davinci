@@ -30,6 +30,24 @@ case class SimpleWidget(widgetlib_id: Long,
                         update_time: String,
                         update_by: Long) extends SimpleBaseEntity
 
+
+case class PostWidgetInfo(widgetlib_id: Long,
+                          bizlogic_id: Long,
+                          name: String,
+                          desc: String,
+                          trigger_type: String,
+                          trigger_params: String,
+                          publish: Boolean) extends SimpleBaseEntity
+
+case class PutWidgetInfo(id: Long,
+                         widgetlib_id: Long,
+                         bizlogic_id: Long,
+                         name: String,
+                         desc: String,
+                         trigger_type: String,
+                         trigger_params: String,
+                         publish: Boolean)
+
 class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
   def widgetlib_id = column[Long]("widgetlib_id")

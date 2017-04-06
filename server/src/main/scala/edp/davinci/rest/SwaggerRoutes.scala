@@ -2,9 +2,15 @@ package edp.davinci.rest
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import com.github.swagger.akka.model.Info
 import com.github.swagger.akka.{HasActorSystem, SwaggerHttpService}
 import edp.davinci.Boot
+import edp.davinci.rest.bizlogic.BizlogicRoutes
+import edp.davinci.rest.dashboard.DashboardRoutes
+import edp.davinci.rest.group.GroupRoutes
+import edp.davinci.rest.source.SourceRoutes
+import edp.davinci.rest.sqllog.SqlLogRoutes
+import edp.davinci.rest.user.UserRoutes
+import edp.davinci.rest.widget.WidgetRoutes
 
 import scala.reflect.runtime.universe._
 
@@ -20,11 +26,10 @@ class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
     typeOf[WidgetRoutes],
     typeOf[DashboardRoutes],
     typeOf[WidgetRoutes],
-    typeOf[SqlRoutes],
     typeOf[SourceRoutes],
     typeOf[LibWidgetRoutes],
-    typeOf[GroupRoutes]
-
+    typeOf[GroupRoutes],
+    typeOf[SqlLogRoutes]
   )
 
   override val host = Boot.host + ":" + Boot.port

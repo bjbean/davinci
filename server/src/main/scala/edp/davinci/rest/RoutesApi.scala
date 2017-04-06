@@ -2,6 +2,13 @@ package edp.davinci.rest
 
 import akka.http.scaladsl.server._
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
+import edp.davinci.rest.bizlogic.BizlogicRoutes
+import edp.davinci.rest.dashboard.DashboardRoutes
+import edp.davinci.rest.group.GroupRoutes
+import edp.davinci.rest.source.SourceRoutes
+import edp.davinci.rest.sqllog.SqlLogRoutes
+import edp.davinci.rest.user.UserRoutes
+import edp.davinci.rest.widget.WidgetRoutes
 import edp.davinci.util.CorsSupport
 
 class RoutesApi(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives with CorsSupport {
@@ -13,9 +20,9 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
   val bizlogic = new BizlogicRoutes(modules)
   val dashboard = new DashboardRoutes(modules)
   val widget = new WidgetRoutes(modules)
-  val sql = new SqlRoutes(modules)
   val libWidget = new LibWidgetRoutes(modules)
   val group = new GroupRoutes(modules)
+  val sqlLog = new SqlLogRoutes(modules)
 
   val routes: Route =
     corsHandler(swagger.routes) ~ corsHandler(swagger.indexRoute) ~
@@ -28,9 +35,8 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
           corsHandler(widget.routes) ~
           corsHandler(dashboard.routes) ~
           corsHandler(widget.routes) ~
-          corsHandler(sql.routes) ~
           corsHandler(libWidget.routes) ~
-          corsHandler(group.routes)
-
+          corsHandler(group.routes) ~
+          corsHandler(sqlLog.routes)
       }
 }

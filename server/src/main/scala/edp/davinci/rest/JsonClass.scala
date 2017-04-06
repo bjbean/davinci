@@ -1,65 +1,70 @@
 package edp.davinci.rest
 
-import edp.davinci.persistence.base.BaseEntity
 import edp.davinci.persistence.entities._
-
-import scala.reflect.ClassTag
 
 //token class
 case class LoginClass(username: String, password: String)
+
+case class LoginUserInfo(title: String, name: String)
 
 case class SessionClass(userId: Long, groupIdList: List[Long], admin: Boolean, currentTs: Long = System.currentTimeMillis())
 
 case class ChangePwdClass(oldPass: String, newPass: String)
 
+case class ChangeUserPwdClass(id: Long, oldPass: String, newPass: String)
+
 //case class PaginationClass(pageIndex: Int, size: Int)
 case class BaseInfo(id: Long, name: String)
 
-case class WidgetInfo(id: Long, dashboard_id: Long, widget_id: Long, widgetlib_id: Long, bizlogic_id: Long, name: String, desc: String, hidden: Boolean, trigger_type: String, trigger_params: String, publish: Boolean, active: Boolean, position_x: Int, position_y: Int, length: Int, width: Int, create_time: String, create_by: Long, update_time: String, update_by: Long)
+case class DashboardInfo(id: Long, dashboard_id: Long, position_x: Int, position_y: Int, length: Int, width: Int, widgets: PutWidgetInfo)
 
-case class DashboardInfo(dashboard: Dashboard, widgets: Seq[WidgetInfo])
+case class PostRelUserGroupSeq(payload: Seq[PostRelUserGroup])
 
-case class SimpleUserSeq(payload: Seq[SimpleUser])
+case class PutRelUserGroupSeq(payload: Seq[PutRelUserGroup])
 
-case class SimpleBizlogicSeq(payload: Seq[SimpleBizlogic])
+case class PostRelDashboardWidgetSeq(payload:Seq[PostRelDashboardWidget])
 
-case class SimpleDashboardSeq(payload: Seq[SimpleDashboard])
+case class PutRelDashboardWidgetSeq(payload:Seq[PutRelDashboardWidget])
 
-case class SimpleGroupSeq(payload: Seq[SimpleGroup])
+case class PostRelGroupBizlogicSeq(payload:Seq[PostRelGroupBizlogic])
+
+case class PutRelGroupBizlogicSeq(payload:Seq[PutRelGroupBizlogic])
+
+case class PostUserInfoSeq(payload: Seq[PostUserInfo])
+
+case class PostBizlogicInfoSeq(payload: Seq[PostBizlogicInfo])
+
+case class PostDashboardInfoSeq(payload: Seq[PostDashboardInfo])
+
+case class PostGroupInfoSeq(payload: Seq[PostGroupInfo])
 
 case class SimpleLibWidgetSeq(payload: Seq[LibWidget])
 
-case class SimpleSourceSeq(payload: Seq[SimpleSource])
-
-case class SimpleSqlSeq(payload: Seq[SimpleSql])
+case class PostSourceInfoSeq(payload: Seq[PostSourceInfo])
 
 case class SimpleSqlLogSeq(payload: Seq[SimpleSqlLog])
 
-case class SimpleWidgetSeq(payload: Seq[SimpleWidget])
+case class PostWidgetInfoSeq(payload: Seq[PostWidgetInfo])
 
 case class SimpleRelUserGroupSeq(payload: Seq[SimpleRelUserGroup])
 
-case class SimpleRelGroupBizlogicSeq(payload: Seq[SimpleRelGroupBizlogic])
-
 case class SimpleRelDashboardWidgetSeq(payload: Seq[SimpleRelDashboardWidget])
 
-case class BizlogicSeq(payload: Seq[Bizlogic])
+case class PutBizlogicInfoSeq(payload: Seq[PutBizlogicInfo])
 
-case class DashboardSeq(payload: Seq[Dashboard])
+case class PutDashboardSeq(payload: Seq[PutDashboardInfo])
 
-case class GroupSeq(payload: Seq[Group])
+case class PutGroupInfoSeq(payload: Seq[PutGroupInfo])
 
 case class LibWidgetSeq(payload: Seq[LibWidget])
 
-case class SourceSeq(payload: Seq[Source])
-
-case class SqlSeq(payload: Seq[Sql])
+case class PutSourceInfoSeq(payload: Seq[PutSourceInfo])
 
 case class SqlLogSeq(payload: Seq[SqlLog])
 
-case class UserSeq(payload: Seq[User])
+case class PutUserInfoSeq(payload: Seq[PutUserInfo])
 
-case class WidgetSeq(payload: Seq[Widget])
+case class PutWidgetInfoSeq(payload: Seq[PutWidgetInfo])
 
 case class RequestJson[A](payload: A)
 

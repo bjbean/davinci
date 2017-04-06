@@ -69,7 +69,7 @@ class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(imp
 
   override def deleteById(ids: Seq[Long]): Future[Int] = db.run(tableQ.filter(_.id.inSet(ids)).map(x => x.active).update(false))
 
-  override def deleteByFilter[C: CanBeQueryCondition](f: (T) => C): Future[Int] = db.run(tableQ.withFilter(f).map(x => x.active).update(false))
+  override def deleteByFilter[C: CanBeQueryCondition](f: (T) => C) = db.run(tableQ.withFilter(f).map(x => x.active).update(false))
 
   override def createTable(): Future[Unit] = db.run(DBIO.seq(tableQ.schema.create))
 

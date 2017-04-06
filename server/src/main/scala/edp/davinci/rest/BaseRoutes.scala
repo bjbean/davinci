@@ -128,10 +128,10 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
   }
 
 
-  def putComplete(session: SessionClass, seq: Seq[BaseEntity]): Route = {
+  def putComplete(session: SessionClass, seq: Seq[SimpleBaseEntity]): Route = {
     if (session.admin) {
       onComplete(baseDal.update(seq.asInstanceOf[Seq[A]])) {
-        case Success(result) => complete(OK, ResponseSeqJson[BaseEntity](getHeader(200, session), seq))
+        case Success(_) => complete(OK, getHeader(200, session))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     }
@@ -202,19 +202,16 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
 
   def generateEntity(simple: SimpleBaseEntity, session: SessionClass): BaseEntity = {
     simple match {
-      case bizLogic: SimpleBizlogic => Bizlogic(0, bizLogic.name, bizLogic.desc, bizLogic.active, bizLogic.create_time, bizLogic.create_by, bizLogic.update_time, bizLogic.update_by)
-      case dashboard: SimpleDashboard => Dashboard(0, dashboard.name, dashboard.desc, dashboard.publish, dashboard.active, dashboard.create_time, dashboard.create_by, dashboard.update_time, dashboard.update_by)
-      case group: SimpleGroup => Group(0, group.name, group.desc, group.active, group.create_time, group.create_by, group.update_time, group.update_by)
+      case bizLogic: PostBizlogicInfo => Bizlogic(0, bizLogic.source_id, bizLogic.name, bizLogic.sql_tmpl, bizLogic.result_table, bizLogic.desc, active = true, null, session.userId, null, session.userId)
+      case dashboard: PostDashboardInfo => Dashboard(0, dashboard.name, dashboard.desc, dashboard.publish, active = true, null, session.userId, null, session.userId)
+      case group: PostGroupInfo => UserGroup(0, group.name, group.desc, active = true, null, session.userId, null, session.userId)
       case libWidget: SimpleLibWidget => LibWidget(0, libWidget.name, libWidget.`type`, libWidget.active, libWidget.create_time, libWidget.create_by, libWidget.update_time, libWidget.update_by)
-      case source: SimpleSource => Source(0, source.group_id, source.name, source.desc, source.`type`, source.config, source.active, source.create_time, source.create_by, source.update_time, source.update_by)
-      case sql: SimpleSql => Sql(0, sql.bizlogic_id, sql.name, sql.sql_type, sql.sql_tmpl, sql.sql_order, sql.desc, sql.active, sql.create_time, sql.create_by, sql.update_time, sql.update_by)
-      case sqlLog: SimpleSqlLog => SqlLog(0, sqlLog.sql_id, sqlLog.user_id, sqlLog.start_time, sqlLog.end_time, sqlLog.active, sqlLog.success, sqlLog.error)
-      case user: SimpleUser => User(0, user.email, user.password, user.title, user.name, user.admin, user.active, user.create_time, user.create_by, user.update_time, user.update_by)
-      case widget: SimpleWidget => Widget(0, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish, widget.active, widget.create_time, widget.create_by, widget.update_time, widget.update_by)
-      case relUserGroup: SimpleRelUserGroup => RelUserGroup(0, relUserGroup.user_id, relUserGroup.group_id, relUserGroup.active, relUserGroup.create_time, relUserGroup.create_by, relUserGroup.update_time, relUserGroup.update_by)
-      case relDashboardWidget: SimpleRelDashboardWidget => RelDashboardWidget(0, relDashboardWidget.dashboard_id, relDashboardWidget.widget_id, relDashboardWidget.position_x, relDashboardWidget.position_y, relDashboardWidget.length, relDashboardWidget.width,
-        relDashboardWidget.active, relDashboardWidget.create_time, relDashboardWidget.create_by, relDashboardWidget.update_time, relDashboardWidget.update_by)
-      case relGroupBizlogic: SimpleRelGroupBizlogic => RelGroupBizlogic(0, relGroupBizlogic.group_id, relGroupBizlogic.bizlogic_id, relGroupBizlogic.sql_params, relGroupBizlogic.active, relGroupBizlogic.create_time, relGroupBizlogic.create_by, relGroupBizlogic.update_time, relGroupBizlogic.update_by)
+      case source: PostSourceInfo => Source(0, source.group_id, source.name, source.connection_url, source.desc, source.`type`, source.config, active = true, null, session.userId, null, session.userId)
+      case sqlLog: SimpleSqlLog => SqlLog(0, sqlLog.user_id, sqlLog.user_email, sqlLog.sql, sqlLog.start_time, sqlLog.end_time, sqlLog.success, sqlLog.error)
+      case user: PostUserInfo => User(0, user.email, user.password, user.title, user.name, user.admin, active = true, null, session.userId, null, session.userId)
+      case widget: PostWidgetInfo => Widget(0, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish, active = true, null, session.userId, null, session.userId)
+      case relDashboardWidget: PostRelDashboardWidget => RelDashboardWidget(0, relDashboardWidget.dashboard_id, relDashboardWidget.widget_id, relDashboardWidget.position_x, relDashboardWidget.position_y, relDashboardWidget.length, relDashboardWidget.width,
+        active = true, null, session.userId, null, session.userId)
     }
   }
 

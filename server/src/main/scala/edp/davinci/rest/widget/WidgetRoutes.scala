@@ -1,16 +1,17 @@
-package edp.davinci.rest
+package edp.davinci.rest.widget
 
 import javax.ws.rs.Path
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
+import edp.davinci.rest.{PostWidgetInfoSeq, PutWidgetInfoSeq, SessionClass}
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
 
 @Api(value = "/widgets", consumes = "application/json", produces = "application/json")
 @Path("/widgets")
-class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
-  val routes = getAllWidgetsRoute ~ getWidgetByIdRoute ~ getWidgetByNameRoute ~ postWidgetRoute ~ deleteWidgetByIdRoute ~ putWidgetRoute
+class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives with WidgetService {
+  val routes = getAllWidgetsRoute ~ postWidgetRoute ~ deleteWidgetByIdRoute ~ putWidgetRoute
 
 
   @ApiOperation(value = "list all widgets", notes = "", nickname = "", httpMethod = "GET")
@@ -24,40 +25,46 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def getAllWidgetsRoute: Route = modules.widgetRoutes.getByAllRoute("widgets")
+  def getAllWidgetsRoute: Route = path("widgets") {
+    get {
+      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        session => getAllWidgetsComplete(session)
+      }
+    }
+  }
 
 
-  @Path("/{id}")
-  @ApiOperation(value = "get one widget from system by id", notes = "", nickname = "", httpMethod = "GET")
-  @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "id", value = "widget id", required = true, dataType = "integer", paramType = "path")
-  ))
-  @ApiResponses(Array(
-    new ApiResponse(code = 200, message = "OK"),
-    new ApiResponse(code = 404, message = "widget not found"),
-    new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
-  ))
-  def getWidgetByIdRoute: Route = modules.widgetRoutes.getByIdRoute("widgets")
-
-
-  @Path("/{name}")
-  @ApiOperation(value = "get one widget from system by name", notes = "", nickname = "", httpMethod = "GET")
-  @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "name", value = "widget name", required = true, dataType = "string", paramType = "path")
-  ))
-  @ApiResponses(Array(
-    new ApiResponse(code = 200, message = "OK"),
-    new ApiResponse(code = 404, message = "widget not found"),
-    new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
-  ))
-  def getWidgetByNameRoute: Route = modules.widgetRoutes.getByNameRoute("widgets")
+  //  @Path("/{id}")
+  //  @ApiOperation(value = "get one widget from system by id", notes = "", nickname = "", httpMethod = "GET")
+  //  @ApiImplicitParams(Array(
+  //    new ApiImplicitParam(name = "id", value = "widget id", required = true, dataType = "integer", paramType = "path")
+  //  ))
+  //  @ApiResponses(Array(
+  //    new ApiResponse(code = 200, message = "OK"),
+  //    new ApiResponse(code = 404, message = "widget not found"),
+  //    new ApiResponse(code = 401, message = "authorization error"),
+  //    new ApiResponse(code = 500, message = "internal server error")
+  //  ))
+  //  def getWidgetByIdRoute: Route = modules.widgetRoutes.getByIdRoute("widgets")
+  //
+  //
+  //  @Path("/{name}")
+  //  @ApiOperation(value = "get one widget from system by name", notes = "", nickname = "", httpMethod = "GET")
+  //  @ApiImplicitParams(Array(
+  //    new ApiImplicitParam(name = "name", value = "widget name", required = true, dataType = "string", paramType = "path")
+  //  ))
+  //  @ApiResponses(Array(
+  //    new ApiResponse(code = 200, message = "OK"),
+  //    new ApiResponse(code = 404, message = "widget not found"),
+  //    new ApiResponse(code = 401, message = "authorization error"),
+  //    new ApiResponse(code = 500, message = "internal server error")
+  //  ))
+  //  def getWidgetByNameRoute: Route = modules.widgetRoutes.getByNameRoute("widgets")
 
 
   @ApiOperation(value = "Add a new widget to the system", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "widget", value = "Widget object to be added", required = true, dataType = "edp.davinci.rest.SimpleWidgetSeq", paramType = "body")
+    new ApiImplicitParam(name = "widget", value = "Widget object to be added", required = true, dataType = "edp.davinci.rest.PostWidgetInfoSeq", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
@@ -67,10 +74,10 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   ))
   def postWidgetRoute: Route = path("widgets") {
     post {
-      entity(as[SimpleWidgetSeq]) {
+      entity(as[PostWidgetInfoSeq]) {
         widgetSeq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => modules.widgetRoutes.postComplete(session, widgetSeq.payload)
+            session => postWidget(session,widgetSeq.payload)
           }
       }
     }
@@ -79,7 +86,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   @ApiOperation(value = "update widgets in the system", notes = "", nickname = "", httpMethod = "PUT")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "widget", value = "Widget object to be updated", required = true, dataType = "edp.davinci.rest.WidgetSeq", paramType = "body")
+    new ApiImplicitParam(name = "widget", value = "Widget object to be updated", required = true, dataType = "edp.davinci.rest.PutWidgetInfoSeq", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "put success"),
@@ -90,10 +97,10 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   ))
   def putWidgetRoute: Route = path("widgets") {
     put {
-      entity(as[WidgetSeq]) {
+      entity(as[PutWidgetInfoSeq]) {
         widgetSeq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => modules.widgetRoutes.putComplete(session, widgetSeq.payload)
+            session => putWidgetComplete(session, widgetSeq.payload)
           }
       }
     }

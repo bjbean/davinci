@@ -22,9 +22,18 @@ case class SimpleDashboard(name: String,
                            update_time: String,
                            update_by: Long) extends SimpleBaseEntity
 
+case class PostDashboardInfo(name: String,
+                             desc: String,
+                             publish: Boolean) extends SimpleBaseEntity
+
+case class PutDashboardInfo(id: Long,
+                            name: String,
+                            desc: String,
+                            publish: Boolean)
+
 class DashboardTable(tag: Tag) extends BaseTable[Dashboard](tag, "dashboard") {
 
-//  def name = column[String]("name")
+  //  def name = column[String]("name")
 
   def desc = column[String]("desc")
 

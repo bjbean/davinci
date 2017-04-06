@@ -15,16 +15,26 @@ case class User(id: Long,
                 update_time: String,
                 update_by: Long) extends BaseEntity
 
-case class SimpleUser(email: String,
-                      password: String,
-                      title: String,
-                      name: String,
-                      admin: Boolean,
-                      active: Boolean,
-                      create_time: String,
-                      create_by: Long,
-                      update_time: String,
-                      update_by: Long) extends SimpleBaseEntity
+case class PostUserInfo(email: String,
+                        password: String,
+                        title: String,
+                        name: String,
+                        admin: Boolean,
+                        relUG: Seq[PostRelUserGroup]
+                       ) extends SimpleBaseEntity
+
+case class PutUserInfo(id: Long,
+                       email: String,
+                       title: String,
+                       name: String,
+                       admin: Boolean,
+                       relUG: Seq[PostRelUserGroup])
+
+case class QueryUserInfo(id: Long,
+                         email: String,
+                         title: String,
+                         name: String,
+                         admin: Boolean)
 
 class UserTable(tag: Tag) extends BaseTable[User](tag, "user") {
 

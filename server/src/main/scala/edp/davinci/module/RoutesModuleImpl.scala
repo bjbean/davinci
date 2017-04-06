@@ -7,8 +7,7 @@ import edp.davinci.rest.BaseRoutesImpl
 trait RoutesModuleImpl {
   this: ConfigurationModule with PersistenceModule =>
   // davinci
-   val groupRoutes = new BaseRoutesImpl[GroupTable, Group](groupDal)
-   val sqlRoutes = new BaseRoutesImpl[SqlTable, Sql](sqlDal)
+   val groupRoutes = new BaseRoutesImpl[GroupTable, UserGroup](groupDal)
    val sqlLogRoutes = new BaseRoutesImpl[SqlLogTable, SqlLog](sqlLogDal)
    val sourceRoutes = new BaseRoutesImpl[SourceTable, Source](sourceDal)
    val userRoutes = new BaseRoutesImpl[UserTable, User](userDal)

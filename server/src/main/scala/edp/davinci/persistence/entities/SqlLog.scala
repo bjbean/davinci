@@ -2,36 +2,40 @@ package edp.davinci.persistence.entities
 
 import edp.davinci.persistence.base.{BaseEntity, BaseTable, SimpleBaseEntity}
 import slick.jdbc.H2Profile.api._
+import slick.lifted.ProvenShape
 
 case class SqlLog(id: Long,
-                  sql_id: Long,
                   user_id: Long,
+                  user_email: String,
+                  sql: String,
                   start_time: String,
                   end_time: String,
-                  active: Boolean,
                   success: Boolean,
                   error: String) extends BaseEntity
 
-case class SimpleSqlLog(sql_id: Long,
-                        user_id: Long,
+case class SimpleSqlLog(user_id: Long,
+                        user_email: String,
+                        sql: String,
                         start_time: String,
                         end_time: String,
-                        active: Boolean,
                         success: Boolean,
                         error: String) extends SimpleBaseEntity
 
+
 class SqlLogTable(tag: Tag) extends BaseTable[SqlLog](tag, "sql_log") {
-  def sql_id = column[Long]("sql_id")
+  def user_email: Rep[String] = column[String]("user_email")
 
-  def user_id = column[Long]("user_id")
+  def sql: Rep[String] = column[String]("sql")
 
-  def start_time = column[String]("start_time")
+  def user_id: Rep[Long] = column[Long]("user_id")
 
-  def end_time = column[String]("end_time")
+  def start_time: Rep[String] = column[String]("start_time")
 
-  def success = column[Boolean]("success")
+  def end_time: Rep[String] = column[String]("end_time")
 
-  def error = column[String]("error")
+  def success: Rep[Boolean] = column[Boolean]("success")
 
-  def * = (id, sql_id, user_id, start_time, end_time, active, success, error) <> (SqlLog.tupled, SqlLog.unapply)
+  def error: Rep[String] = column[String]("error")
+
+  def * : ProvenShape[SqlLog] = (id, user_id, user_email, sql, start_time, end_time, success, error) <> (SqlLog.tupled, SqlLog.unapply)
 }
