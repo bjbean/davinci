@@ -13,8 +13,11 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 trait UserRepository extends ConfigurationModuleImpl with PersistenceModuleImpl {
-  def getAll: Future[Seq[QueryUserInfo]] =
-    db.run(userQuery.filter(_.active === true).map(r => (r.id, r.email, r.title, r.name, r.admin)).result).mapTo[Seq[QueryUserInfo]]
+  def getAll(session: SessionClass): Future[Seq[QueryUserInfo]] =
+    if (session.admin)
+      db.run(userQuery.filter(_.active === true).map(r => (r.id, r.email, r.title, r.name, r.admin)).result).mapTo[Seq[QueryUserInfo]]
+    else
+      db.run(userQuery.filter(_.id === session.userId).map(r => (r.id, r.email, r.title, r.name, r.admin)).result).mapTo[Seq[QueryUserInfo]]
 
 
   def update(userSeq: Seq[PutUserInfo], session: SessionClass): Future[Unit] = {
@@ -46,14 +49,12 @@ trait UserRepository extends ConfigurationModuleImpl with PersistenceModuleImpl 
 
 trait UserService extends Directives with UserRepository {
   def getAllUsersComplete(session: SessionClass): Route = {
-    if (session.admin) {
-      onComplete(getAll) {
-        case Success(userSeq) =>
-          if (userSeq.nonEmpty) complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), userSeq))
-          else complete(NotFound, getHeader(404, session))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    } else complete(Forbidden, getHeader(403, session))
+    onComplete(getAll(session)) {
+      case Success(userSeq) =>
+        if (userSeq.nonEmpty) complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), userSeq))
+        else complete(NotFound, getHeader(404, session))
+      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+    }
   }
 
   def putUserComplete(session: SessionClass, userSeq: Seq[PutUserInfo]): Route = {
@@ -77,13 +78,11 @@ trait UserService extends Directives with UserRepository {
   }
 
   def putLoginUserComplete(session: SessionClass, user: LoginUserInfo): Route = {
-    if (session.admin) {
-      val future = updateLoginUser(user, session)
-      onComplete(future) {
-        case Success(_) => complete(OK, getHeader(200, session))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    } else complete(Forbidden, getHeader(403, session))
+    val future = updateLoginUser(user, session)
+    onComplete(future) {
+      case Success(_) => complete(OK, getHeader(200, session))
+      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+    }
   }
 
   def getGroupsByUserIdComplete(session: SessionClass, userId: Long): Route = {
