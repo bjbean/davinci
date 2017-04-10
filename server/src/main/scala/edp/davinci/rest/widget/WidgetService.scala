@@ -14,8 +14,11 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 trait WidgetRepository extends ConfigurationModuleImpl with PersistenceModuleImpl {
-  def getAll: Future[Seq[PutWidgetInfo]] = {
-    db.run(widgetQuery.filter(_.active === true).map(r => (r.id, r.bizlogic_id, r.widgetlib_id, r.name, r.desc, r.trigger_type, r.trigger_params, r.publish)).result).mapTo[Seq[PutWidgetInfo]]
+  def getAll(session: SessionClass): Future[Seq[PutWidgetInfo]] = {
+    if (session.admin)
+      db.run(widgetQuery.filter(_.active === true).map(r => (r.id, r.bizlogic_id, r.widgetlib_id, r.name, r.desc, r.trigger_type, r.trigger_params, r.publish)).result).mapTo[Seq[PutWidgetInfo]]
+    else
+      db.run(widgetQuery.filter(obj => obj.active === true && obj.publish === true).map(r => (r.id, r.bizlogic_id, r.widgetlib_id, r.name, r.desc, r.trigger_type, r.trigger_params, r.publish)).result).mapTo[Seq[PutWidgetInfo]]
   }
 
   def update(widgetSeq: Seq[PutWidgetInfo], session: SessionClass): Future[Unit] = {
@@ -30,7 +33,7 @@ trait WidgetRepository extends ConfigurationModuleImpl with PersistenceModuleImp
 trait WidgetService extends Directives with WidgetRepository {
   def getAllWidgetsComplete(session: SessionClass): Route = {
     if (session.admin) {
-      onComplete(getAll) {
+      onComplete(getAll(session)) {
         case Success(widgetSeq) =>
           if (widgetSeq.nonEmpty) complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session), widgetSeq))
           else complete(NotFound, getHeader(404, session))
@@ -49,13 +52,13 @@ trait WidgetService extends Directives with WidgetRepository {
     } else complete(Forbidden, getHeader(403, session))
   }
 
-  def  postWidget(session: SessionClass, postWidgetSeq: Seq[PostWidgetInfo]): Route ={
+  def postWidget(session: SessionClass, postWidgetSeq: Seq[PostWidgetInfo]): Route = {
     if (session.admin) {
-      val widgetSeq = postWidgetSeq.map(post =>Widget(0,post.widgetlib_id,post.bizlogic_id,post.name,post.desc,post.trigger_type,post.trigger_params,post.publish,active = true,null,session.userId,null,session.userId))
+      val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.bizlogic_id, post.name, post.desc, post.trigger_type, post.trigger_params, post.publish, active = true, null, session.userId, null, session.userId))
       onComplete(widgetDal.insert(widgetSeq)) {
         case Success(widgetWithIdSeq) =>
-          val responseWidget = widgetWithIdSeq.map(widget=>PutWidgetInfo(widget.id,widget.widgetlib_id,widget.bizlogic_id,widget.name,widget.desc,widget.trigger_type,widget.trigger_params,widget.publish))
-          complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session),responseWidget))
+          val responseWidget = widgetWithIdSeq.map(widget => PutWidgetInfo(widget.id, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish))
+          complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session), responseWidget))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     } else complete(Forbidden, getHeader(403, session))

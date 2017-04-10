@@ -15,7 +15,7 @@ import scala.util.{Failure, Success}
 
 trait BizlogicRepository extends ConfigurationModuleImpl with PersistenceModuleImpl with Directives {
   def getAllBiz: Future[Seq[QueryBizlogic]] = {
-    db.run(bizlogicQuery.filter(_.active === true).map(r => (r.id, r.name, r.source_id, r.sql_tmpl, r.result_table, r.desc)).result).mapTo[Seq[QueryBizlogic]]
+    db.run(bizlogicQuery.filter(_.active === true).map(r => (r.id, r.source_id, r.name, r.sql_tmpl, r.result_table, r.desc)).result).mapTo[Seq[QueryBizlogic]]
   }
 
   def updateBiz(bizlogicSeq: Seq[PutBizlogicInfo], session: SessionClass): Future[Unit] = {

@@ -60,7 +60,13 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def getDashboardByAllRoute: Route = modules.dashboardRoutes.getByAllRoute("dashboards")
+  def getDashboardByAllRoute: Route = path("dashboards") {
+    get {
+      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        session => getAllDashboard(session)
+      }
+    }
+  }
 
   @ApiOperation(value = "Add new dashboards to the system", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
@@ -118,10 +124,9 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   ))
   def deleteDashboardByIdRoute: Route = modules.dashboardRoutes.deleteByIdRoute("dashboards")
 
-  @Path("/{dashboard_id}/widgets")
+  @Path("/widgets")
   @ApiOperation(value = "add widgets to a dashboard", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "dashboard_id", value = "dashboard id", required = true, dataType = "integer", paramType = "path"),
     new ApiImplicitParam(name = "relDashboardWidget", value = "RelDashboardWidget objects to be added", required = true, dataType = "edp.davinci.rest.PostRelDashboardWidgetSeq", paramType = "body")
   ))
   @ApiResponses(Array(
@@ -130,7 +135,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 404, message = "dashboard not found"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def postWidget2DashboardRoute: Route = path("dashboards" / LongNumber / "widgets") { _ =>
+  def postWidget2DashboardRoute: Route = path("dashboards" / "widgets") {
     post {
       entity(as[PostRelDashboardWidgetSeq]) {
         relDashboardWidgetSeq =>
@@ -141,10 +146,9 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     }
   }
 
-  @Path("/{dashboard_id}/widgets")
-  @ApiOperation(value = "update widgets in the dashboard", notes = "", nickname = "", httpMethod = "POST")
+  @Path("/widgets")
+  @ApiOperation(value = "update widgets in the dashboard", notes = "", nickname = "", httpMethod = "PUT")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "dashboard_id", value = "dashboard id", required = true, dataType = "integer", paramType = "path"),
     new ApiImplicitParam(name = "relDashboardWidget", value = "RelDashboardWidget objects to be added", required = true, dataType = "edp.davinci.rest.PutRelDashboardWidgetSeq", paramType = "body")
   ))
   @ApiResponses(Array(
@@ -153,12 +157,12 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 404, message = "dashboard not found"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def putWidgetInDashboardRoute: Route = path("dashboards" / LongNumber / "widgets") { _ =>
+  def putWidgetInDashboardRoute: Route = path("dashboards" / "widgets") {
     put {
       entity(as[PutRelDashboardWidgetSeq]) {
         relDashboardWidgetSeq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => putWidgetInDashboard(session, relDashboardWidgetSeq.payload)
+            session => updateWidgetInDashboard(session, relDashboardWidgetSeq.payload)
           }
       }
     }
