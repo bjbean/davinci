@@ -12,7 +12,7 @@ import edp.davinci.util.JsonProtocol._
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-trait UserRepository extends ConfigurationModuleImpl with PersistenceModuleImpl {
+trait                                                                                                   UserRepository extends ConfigurationModuleImpl with PersistenceModuleImpl {
   def getAll(session: SessionClass): Future[Seq[QueryUserInfo]] =
     if (session.admin)
       db.run(userQuery.filter(_.active === true).map(r => (r.id, r.email, r.title, r.name, r.admin)).result).mapTo[Seq[QueryUserInfo]]

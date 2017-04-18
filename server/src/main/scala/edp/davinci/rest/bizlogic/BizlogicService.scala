@@ -62,23 +62,21 @@ trait BizlogicService extends BizlogicRepository with Directives {
   }
 
   def putBizlogicComplete(session: SessionClass, bizlogicSeq: Seq[PutBizlogicInfo]): Route = {
-    if (session.admin) {
-      val future = updateBiz(bizlogicSeq, session)
-      onComplete(future) {
-        case Success(_) =>
-          onComplete(deleteByBizId(bizlogicSeq)) {
-            case Success(_) =>
-              val relSeq = for {rel <- bizlogicSeq.head.relBG
-              } yield RelGroupBizlogic(0, rel.group_id, bizlogicSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
-              onComplete(relGroupBizlogicDal.insert(relSeq)) {
-                case Success(_) => complete(OK, getHeader(200, session))
-                case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-              }
-            case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-          }
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    } else complete(Forbidden, getHeader(403, session))
+    val future = updateBiz(bizlogicSeq, session)
+    onComplete(future) {
+      case Success(_) =>
+        onComplete(deleteByBizId(bizlogicSeq)) {
+          case Success(_) =>
+            val relSeq = for {rel <- bizlogicSeq.head.relBG
+            } yield RelGroupBizlogic(0, rel.group_id, bizlogicSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
+            onComplete(relGroupBizlogicDal.insert(relSeq)) {
+              case Success(_) => complete(OK, getHeader(200, session))
+              case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+            }
+          case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+        }
+      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+    }
   }
 
   def postBizlogic(session: SessionClass, bizlogicSeq: Seq[PostBizlogicInfo]): Route = {
