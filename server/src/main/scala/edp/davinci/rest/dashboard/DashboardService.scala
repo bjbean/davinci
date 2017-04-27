@@ -1,5 +1,7 @@
 package edp.davinci.rest.dashboard
 
+import java.io.Serializable
+
 import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, OK}
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{ConfigurationModuleImpl, PersistenceModuleImpl}
@@ -9,16 +11,17 @@ import edp.davinci.util.CommonUtils
 import edp.davinci.util.CommonUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import slick.jdbc.MySQLProfile.api._
+
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 
 trait DashboardRepository extends ConfigurationModuleImpl with PersistenceModuleImpl {
-  def getInsideInfo(session: SessionClass, dashboardId: Long, bizIdSeq: Seq[Long]): Future[Seq[(Long, Long, Int, Int, Int, Int, Long, Long, Long, String, String, String, String, Boolean)]] = {
+  def getInsideInfo(session: SessionClass, dashboardId: Long, bizIdSeq: Seq[Long]) = {
     val query = if (session.admin)
       (relDashboardWidgetQuery.filter(obj => obj.dashboard_id === dashboardId && obj.active === true) join widgetQuery.filter(widget => widget.active === true) on (_.widget_id === _.id)).
         map {
-          case (r, w) => (r.id, r.dashboard_id, r.position_x, r.position_y, r.length, r.width, w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.desc, w.trigger_type, w.trigger_params, w.publish)
+          case (r, w) => (r.id, r.dashboard_id, r.position_x, r.position_y, r.length, r.width, w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql, w.desc, w.trigger_type, w.trigger_params, w.publish)
         }.result
     else {
       val bizIds = relGroupBizlogicQuery.withFilter(rel => {
@@ -29,7 +32,7 @@ trait DashboardRepository extends ConfigurationModuleImpl with PersistenceModule
       (relDashboardWidgetQuery.filter(obj => obj.dashboard_id === dashboardId && obj.active === true) join
         widgetQuery.filter(obj => obj.bizlogic_id in bizIds).filter(obj => obj.active === true && obj.publish === true) on (_.widget_id === _.id)).
         map {
-          case (r, w) => (r.id, r.dashboard_id, r.position_x, r.position_y, r.length, r.width, w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.desc, w.trigger_type, w.trigger_params, w.publish)
+          case (r, w) => (r.id, r.dashboard_id, r.position_x, r.position_y, r.length, r.width, w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql, w.desc, w.trigger_type, w.trigger_params, w.publish)
         }
     }.result
     db.run(query)
@@ -91,7 +94,7 @@ trait DashboardService extends Directives with DashboardRepository {
         onComplete(getInsideInfo(session, dashboardId, bizIds)) {
           case Success(dashboardInfoSeq) =>
             val infoSeq = dashboardInfoSeq.map(r => {
-              val widgetInfo = PutWidgetInfo(r._7, r._8, r._9, r._10, r._11, r._12, r._13, r._14)
+              val widgetInfo = PutWidgetInfo(r._7, r._8, r._9, r._10, r._11.getOrElse(""), r._12, r._13, r._14, r._15)
               DashboardInfo(r._1, r._2, r._3, r._4, r._5, r._6, widgetInfo)
             })
             complete(OK, ResponseSeqJson[DashboardInfo](getHeader(200, session), infoSeq))

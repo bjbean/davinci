@@ -20,8 +20,8 @@ trait BizlogicRepository extends ConfigurationModuleImpl with PersistenceModuleI
 
   def updateBiz(bizlogicSeq: Seq[PutBizlogicInfo], session: SessionClass): Future[Unit] = {
     val query = DBIO.seq(bizlogicSeq.map(r => {
-      bizlogicQuery.filter(obj => obj.id === r.id && obj.active === true).map(bizlogic => (bizlogic.name, bizlogic.source_id, bizlogic.sql_tmpl, bizlogic.result_table, bizlogic.desc, bizlogic.update_by, bizlogic.update_time))
-        .update(r.name, r.source_id, r.sql_tmpl, r.result_table, r.desc, session.userId, CommonUtils.currentTime)
+      bizlogicQuery.filter(obj => obj.id === r.id && obj.active === true).map(bizlogic => (bizlogic.name, bizlogic.source_id, bizlogic.sql_tmpl, bizlogic.desc, bizlogic.update_by, bizlogic.update_time))
+        .update(r.name, r.source_id, r.sql_tmpl, r.desc, session.userId, CommonUtils.currentTime)
     }): _*)
     db.run(query)
   }
@@ -81,7 +81,8 @@ trait BizlogicService extends BizlogicRepository with Directives {
 
   def postBizlogic(session: SessionClass, bizlogicSeq: Seq[PostBizlogicInfo]): Route = {
     if (session.admin) {
-      val bizEntitySeq = bizlogicSeq.map(biz => Bizlogic(0, biz.source_id, biz.name, biz.sql_tmpl, biz.result_table, biz.desc, active = true, null, session.userId, null, session.userId))
+      val uniqueTableName = "table"+java.util.UUID.randomUUID().toString
+      val bizEntitySeq = bizlogicSeq.map(biz => Bizlogic(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, biz.desc, active = true, null, session.userId, null, session.userId))
       onComplete(bizlogicDal.insert(bizEntitySeq)) {
         case Success(bizSeq) =>
           val queryBiz = bizSeq.map(biz => QueryBizlogic(biz.id, biz.source_id, biz.name, biz.sql_tmpl, biz.result_table, biz.desc))

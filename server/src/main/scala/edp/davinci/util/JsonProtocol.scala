@@ -40,9 +40,9 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatPostUserInfoSeq: RootJsonFormat[PostUserInfoSeq] = jsonFormat1(PostUserInfoSeq)
   implicit val formatPutUserInfoSeq: RootJsonFormat[PutUserInfoSeq] = jsonFormat1(PutUserInfoSeq)
 
-  implicit val formatWidget: RootJsonFormat[Widget] = jsonFormat13(Widget)
-  implicit val formatPostWidgetInfo: RootJsonFormat[PostWidgetInfo] = jsonFormat7(PostWidgetInfo)
-  implicit val formatPutWidgetInfo: RootJsonFormat[PutWidgetInfo] = jsonFormat8(PutWidgetInfo)
+  implicit val formatWidget: RootJsonFormat[Widget] = jsonFormat14(Widget)
+  implicit val formatPostWidgetInfo: RootJsonFormat[PostWidgetInfo] = jsonFormat8(PostWidgetInfo)
+  implicit val formatPutWidgetInfo: RootJsonFormat[PutWidgetInfo] = jsonFormat9(PutWidgetInfo)
   implicit val formatPutWidgetSeq: RootJsonFormat[PutWidgetInfoSeq] = jsonFormat1(PutWidgetInfoSeq)
   implicit val formatPostWidgetSeq: RootJsonFormat[PostWidgetInfoSeq] = jsonFormat1(PostWidgetInfoSeq)
 
@@ -74,6 +74,8 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatLibWidgetSeq: RootJsonFormat[LibWidgetSeq] = jsonFormat1(LibWidgetSeq)
   implicit val formatSimpleLibWidget: RootJsonFormat[SimpleLibWidget] = jsonFormat7(SimpleLibWidget)
   implicit val formatLibWidgetClassSeq: RootJsonFormat[SimpleLibWidgetSeq] = jsonFormat1(SimpleLibWidgetSeq)
+
+  implicit val formatSqlInfo: RootJsonFormat[SqlInfo] = jsonFormat1(SqlInfo)
 
   implicit val formatLoginClass: RootJsonFormat[LoginClass] = jsonFormat2(LoginClass)
 

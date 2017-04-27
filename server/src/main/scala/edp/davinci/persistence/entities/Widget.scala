@@ -1,12 +1,15 @@
 package edp.davinci.persistence.entities
 
 import edp.davinci.persistence.base.{BaseEntity, BaseTable, SimpleBaseEntity}
-import slick.jdbc.H2Profile.api._
+import slick.jdbc.MySQLProfile.api._
+import slick.lifted.ProvenShape
+
 
 case class Widget(id: Long,
                   widgetlib_id: Long,
                   bizlogic_id: Long,
                   name: String,
+                  olap_sql:Option[String]=None,
                   desc: String,
                   trigger_type: String,
                   trigger_params: String,
@@ -20,6 +23,7 @@ case class Widget(id: Long,
 case class SimpleWidget(widgetlib_id: Long,
                         bizlogic_id: Long,
                         name: String,
+                        olap_sql:Option[String],
                         desc: String,
                         trigger_type: String,
                         trigger_params: String,
@@ -34,6 +38,7 @@ case class SimpleWidget(widgetlib_id: Long,
 case class PostWidgetInfo(widgetlib_id: Long,
                           bizlogic_id: Long,
                           name: String,
+                          olap_sql:String,
                           desc: String,
                           trigger_type: String,
                           trigger_params: String,
@@ -43,6 +48,7 @@ case class PutWidgetInfo(id: Long,
                          widgetlib_id: Long,
                          bizlogic_id: Long,
                          name: String,
+                         olap_sql:String,
                          desc: String,
                          trigger_type: String,
                          trigger_params: String,
@@ -50,27 +56,27 @@ case class PutWidgetInfo(id: Long,
 
 class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
-  def widgetlib_id = column[Long]("widgetlib_id")
+  def widgetlib_id: Rep[Long] = column[Long]("widgetlib_id")
 
-  def bizlogic_id = column[Long]("bizlogic_id")
+  def bizlogic_id: Rep[Long] = column[Long]("bizlogic_id")
 
-  //  def name = column[String]("name")
+  def olap_sql: Rep[Option[String]] = column[Option[String]]("olap_sql",O.Default(null))
 
-  def desc = column[String]("desc")
+  def desc: Rep[String] = column[String]("desc")
 
-  def trigger_type = column[String]("trigger_type")
+  def trigger_type: Rep[String] = column[String]("trigger_type")
 
-  def trigger_params = column[String]("trigger_params")
+  def trigger_params: Rep[String] = column[String]("trigger_params")
 
-  def publish = column[Boolean]("publish")
+  def publish: Rep[Boolean] = column[Boolean]("publish")
 
-  def create_time = column[String]("create_time")
+  def create_time: Rep[String] = column[String]("create_time")
 
-  def create_by = column[Long]("create_by")
+  def create_by: Rep[Long] = column[Long]("create_by")
 
-  def update_time = column[String]("update_time")
+  def update_time: Rep[String] = column[String]("update_time")
 
-  def update_by = column[Long]("update_by")
+  def update_by: Rep[Long] = column[Long]("update_by")
 
-  def * = (id, widgetlib_id, bizlogic_id, name, desc, trigger_type, trigger_params, publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
+  def * : ProvenShape[Widget] = (id, widgetlib_id, bizlogic_id, name, olap_sql,desc, trigger_type, trigger_params, publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
 }

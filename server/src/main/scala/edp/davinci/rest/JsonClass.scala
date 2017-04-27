@@ -16,6 +16,8 @@ case class ChangeUserPwdClass(id: Long, oldPass: String, newPass: String)
 //case class PaginationClass(pageIndex: Int, size: Int)
 case class BaseInfo(id: Long, name: String)
 
+case class SqlInfo(sqlList:List[String])
+
 case class DashboardInfo(id: Long, dashboard_id: Long, position_x: Int, position_y: Int, length: Int, width: Int, widgets: PutWidgetInfo)
 
 case class PostRelUserGroupSeq(payload: Seq[PostRelUserGroup])

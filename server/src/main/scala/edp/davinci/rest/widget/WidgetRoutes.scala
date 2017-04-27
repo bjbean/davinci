@@ -11,7 +11,7 @@ import io.swagger.annotations._
 @Api(value = "/widgets", consumes = "application/json", produces = "application/json")
 @Path("/widgets")
 class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives with WidgetService {
-  val routes = getAllWidgetsRoute ~ postWidgetRoute ~ deleteWidgetByIdRoute ~ putWidgetRoute
+  val routes = getAllWidgetsRoute ~ postWidgetRoute ~ deleteWidgetByIdRoute ~ putWidgetRoute ~ getWholeSqlByWidgetIdRoute
 
 
   @ApiOperation(value = "list all widgets", notes = "", nickname = "", httpMethod = "GET")
@@ -77,7 +77,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       entity(as[PostWidgetInfoSeq]) {
         widgetSeq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => postWidget(session,widgetSeq.payload)
+            session => postWidget(session, widgetSeq.payload)
           }
       }
     }
@@ -106,7 +106,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     }
   }
 
-  @Path("/{id}")
+  @Path("/{widgetId}")
   @ApiOperation(value = "delete widget by id", notes = "", nickname = "", httpMethod = "DELETE")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "widgetId", value = "widget id", required = true, dataType = "integer", paramType = "path")
@@ -119,4 +119,22 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   ))
   def deleteWidgetByIdRoute: Route = modules.widgetRoutes.deleteByIdRoute("widgets")
 
+  @Path("/{widgetId}/sqls")
+  @ApiOperation(value = "get whole sql by widget id", notes = "", nickname = "", httpMethod = "GET")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "widgetId", value = "widget id", required = true, dataType = "integer", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "OK"),
+    new ApiResponse(code = 401, message = "authorization error"),
+    new ApiResponse(code = 500, message = "internal server error")
+  ))
+  def getWholeSqlByWidgetIdRoute: Route = path("widgets" / LongNumber / "sqls") { widgetId =>
+    get {
+      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        session => getWholeSql(session, widgetId)
+      }
+    }
+
+  }
 }
