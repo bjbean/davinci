@@ -2,14 +2,17 @@ package edp.davinci.persistence.base
 
 import edp.davinci.module.DbModule
 import edp.davinci.rest.BaseInfo
-import slick.jdbc.JdbcProfile
+import slick.jdbc.{JdbcBackend, JdbcProfile}
 import slick.jdbc.MySQLProfile.api._
 import slick.lifted.CanBeQueryCondition
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-trait BaseDal[T, A] {
+trait BaseDal[T<: BaseTable[A], A<: BaseEntity] {
+  def getDB: JdbcBackend#DatabaseDef
+
+  def getTableQuery: TableQuery[T]
 
   def insert(row: A): Future[A]
 
@@ -42,6 +45,10 @@ class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(imp
 
   import profile.api._
 
+  override def getDB: JdbcBackend#DatabaseDef = db
+
+  override def getTableQuery: TableQuery[T] = tableQ
+
   override def insert(row: A): Future[A] = insert(Seq(row)).map(_.head)
 
   override def insert(rows: Seq[A]): Future[Seq[A]] = {
@@ -69,7 +76,7 @@ class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(imp
 
   override def deleteById(ids: Seq[Long]): Future[Int] = db.run(tableQ.filter(_.id.inSet(ids)).map(x => x.active).update(false))
 
-  override def deleteByFilter[C: CanBeQueryCondition](f: (T) => C) = db.run(tableQ.withFilter(f).map(x => x.active).update(false))
+  override def deleteByFilter[C: CanBeQueryCondition](f: (T) => C): Future[Int] = db.run(tableQ.withFilter(f).map(x => x.active).update(false))
 
   override def createTable(): Future[Unit] = db.run(DBIO.seq(tableQ.schema.create))
 

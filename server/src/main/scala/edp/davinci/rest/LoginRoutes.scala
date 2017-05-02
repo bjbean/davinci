@@ -3,7 +3,7 @@ package edp.davinci.rest
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.Directives
+import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule}
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
@@ -16,7 +16,7 @@ import scala.util.{Failure, Success}
 @Path("/login")
 class LoginRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule) extends Directives {
 
-  val routes = accessTokenRoute
+  val routes: Route = accessTokenRoute
 
   @ApiOperation(value = "Login into the server and return token", notes = "", nickname = "login", httpMethod = "POST")
   @ApiImplicitParams(Array(
@@ -28,7 +28,7 @@ class LoginRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 404, message = "user not found"),
     new ApiResponse(code = 500, message = "internal server error")
   ))
-  def accessTokenRoute = path("login") {
+  def accessTokenRoute: Route = path("login") {
     post {
       entity(as[LoginClass]) { login =>
         onComplete(AuthorizationProvider.createSessionClass(login)) {
@@ -44,7 +44,7 @@ class LoginRoutes(modules: ConfigurationModule with PersistenceModule with Busin
             )
           case Failure(ex) =>
             println("failure")
-            complete(InternalServerError, getHeader(500, null))
+            complete(InternalServerError, getHeader(500,ex.getMessage, null))
         }
       }
     }

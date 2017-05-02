@@ -12,15 +12,6 @@ trait DbModule {
 }
 
 trait PersistenceModule {
-  // davinci
-
-  // use an alternative database configuration ex:
-   private val dbConfig : DatabaseConfig[JdbcProfile]  = DatabaseConfig.forConfig("mysqldb")
-//  private val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("h2db")
-
-  implicit val profile: JdbcProfile = dbConfig.profile
-  implicit val db: JdbcProfile#Backend#Database = dbConfig.db
-
   val groupDal: BaseDal[GroupTable, UserGroup]
   val sqlLogDal: BaseDal[SqlLogTable, SqlLog]
   val sourceDal: BaseDal[SourceTable, Source]
@@ -32,34 +23,27 @@ trait PersistenceModule {
   val libWidgetDal: BaseDal[LibWidgetTable, LibWidget]
   val bizlogicDal: BaseDal[BizlogicTable, Bizlogic]
   val relGroupBizlogicDal: BaseDal[RelGroupBizlogicTable, RelGroupBizlogic]
-
-  val groupQuery: TableQuery[GroupTable] = TableQuery[GroupTable]
-  val sqlLogQuery = TableQuery[SqlLogTable]
-  val sourceQuery = TableQuery[SourceTable]
-  val userQuery = TableQuery[UserTable]
-  val relUserGroupQuery = TableQuery[RelUserGroupTable]
-  val dashboardQuery = TableQuery[DashboardTable]
-  val relDashboardWidgetQuery = TableQuery[RelDashboardWidgetTable]
-  val widgetQuery = TableQuery[WidgetTable]
-  val libWidgetQuery = TableQuery[LibWidgetTable]
-  val bizlogicQuery = TableQuery[BizlogicTable]
-  val relGroupBizlogicQuery = TableQuery[RelGroupBizlogicTable]
 }
 
 trait PersistenceModuleImpl extends PersistenceModule with DbModule {
   this: ConfigurationModule =>
 
-  // davinci
-  override val groupDal = new BaseDalImpl[GroupTable, UserGroup](groupQuery)
-  override val sqlLogDal = new BaseDalImpl[SqlLogTable, SqlLog](sqlLogQuery)
-  override val sourceDal = new BaseDalImpl[SourceTable, Source](sourceQuery)
-  override val userDal = new BaseDalImpl[UserTable, User](userQuery)
-  override val relUserGroupDal = new BaseDalImpl[RelUserGroupTable, RelUserGroup](relUserGroupQuery)
-  override val dashboardDal = new BaseDalImpl[DashboardTable, Dashboard](dashboardQuery)
-  override val relDashboardWidgetDal = new BaseDalImpl[RelDashboardWidgetTable, RelDashboardWidget](relDashboardWidgetQuery)
-  override val widgetDal = new BaseDalImpl[WidgetTable, Widget](widgetQuery)
-  override val libWidgetDal = new BaseDalImpl[LibWidgetTable, LibWidget](libWidgetQuery)
-  override val bizlogicDal = new BaseDalImpl[BizlogicTable, Bizlogic](bizlogicQuery)
-  override val relGroupBizlogicDal = new BaseDalImpl[RelGroupBizlogicTable, RelGroupBizlogic](relGroupBizlogicQuery)
+  private val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("mysqldb")
+  println("before~~~~~~~~~~~~~~~~~~~~~~")
+  override implicit val profile: JdbcProfile = dbConfig.profile
+  override implicit val db: JdbcProfile#Backend#Database = dbConfig.db
+  println("after~~~~~~~~~~~~~~~~~~~~~~~")
+
+  override val groupDal = new BaseDalImpl[GroupTable, UserGroup](TableQuery[GroupTable])
+  override val sqlLogDal = new BaseDalImpl[SqlLogTable, SqlLog](TableQuery[SqlLogTable])
+  override val sourceDal = new BaseDalImpl[SourceTable, Source](TableQuery[SourceTable])
+  override val userDal = new BaseDalImpl[UserTable, User](TableQuery[UserTable])
+  override val relUserGroupDal = new BaseDalImpl[RelUserGroupTable, RelUserGroup](TableQuery[RelUserGroupTable])
+  override val dashboardDal = new BaseDalImpl[DashboardTable, Dashboard](TableQuery[DashboardTable])
+  override val relDashboardWidgetDal = new BaseDalImpl[RelDashboardWidgetTable, RelDashboardWidget](TableQuery[RelDashboardWidgetTable])
+  override val widgetDal = new BaseDalImpl[WidgetTable, Widget](TableQuery[WidgetTable])
+  override val libWidgetDal = new BaseDalImpl[LibWidgetTable, LibWidget](TableQuery[LibWidgetTable])
+  override val bizlogicDal = new BaseDalImpl[BizlogicTable, Bizlogic](TableQuery[BizlogicTable])
+  override val relGroupBizlogicDal = new BaseDalImpl[RelGroupBizlogicTable, RelGroupBizlogic](TableQuery[RelGroupBizlogicTable])
 
 }

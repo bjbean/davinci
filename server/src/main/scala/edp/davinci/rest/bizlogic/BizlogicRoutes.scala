@@ -2,51 +2,24 @@ package edp.davinci.rest.bizlogic
 
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, NotFound, OK}
 import akka.http.scaladsl.server.{Directives, Route}
-import edp.davinci.module._
-import edp.davinci.persistence.entities.{Bizlogic, PostBizlogicInfo, PostRelGroupBizlogic}
+import edp.davinci.module.{ConfigurationModule, PersistenceModule, _}
+import edp.davinci.persistence.entities._
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
-import slick.jdbc.MySQLProfile.api._
-
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 @Api(value = "/bizlogics", consumes = "application/json", produces = "application/json")
 @Path("/bizlogics")
-class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives with BizlogicService {
+class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = postBizlogicRoute ~ putBizlogicRoute ~ getBizlogicByAllRoute ~ deleteBizlogicByIdRoute ~ getGroupsByBizIdRoute
+  private lazy val bizlogicService = new BizlogicService(modules)
 
-  //  @Path("/{id}")
-  //  @ApiOperation(value = "get one bizlogic from system by id", notes = "", nickname = "", httpMethod = "GET")
-  //  @ApiImplicitParams(Array(
-  //    new ApiImplicitParam(name = "id", value = "bizlogic id", required = true, dataType = "integer", paramType = "path")
-  //  ))
-  //  @ApiResponses(Array(
-  //    new ApiResponse(code = 200, message = "OK"),
-  //    new ApiResponse(code = 401, message = "authorization error"),
-  //    new ApiResponse(code = 404, message = "bizlogic not found"),
-  //    new ApiResponse(code = 500, message = "internal server error")
-  //  ))
-  //  def getBizlogicByIdRoute: Route = modules.bizlogicRoutes.getByIdRoute("bizlogics")
-  //
-  //
-  //  @Path("/{name}")
-  //  @ApiOperation(value = "get one bizlogic from system by name", notes = "", nickname = "", httpMethod = "GET")
-  //  @ApiImplicitParams(Array(
-  //    new ApiImplicitParam(name = "name", value = "bizlogic name", required = true, dataType = "String", paramType = "path")
-  //  ))
-  //  @ApiResponses(Array(
-  //    new ApiResponse(code = 200, message = "OK"),
-  //    new ApiResponse(code = 401, message = "authorization error"),
-  //    new ApiResponse(code = 404, message = "bizlogic not found"),
-  //    new ApiResponse(code = 500, message = "internal server error")
-  //  ))
-  //  def getBizlogicByNameRoute: Route = modules.bizlogicRoutes.getByNameRoute("bizlogics")
 
   @ApiOperation(value = "get all bizlogics", notes = "", nickname = "", httpMethod = "GET")
   @ApiResponses(Array(
@@ -58,7 +31,15 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   def getBizlogicByAllRoute: Route = path("bizlogics") {
     get {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session => getAllBizlogicsComplete(session)
+        session =>
+          if (session.admin) {
+            onComplete(bizlogicService.getAllBiz) {
+              case Success(bizlogicSeq) =>
+                if (bizlogicSeq.nonEmpty) complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), bizlogicSeq))
+                else complete(NotFound, getHeader(404, session))
+              case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+            }
+          } else complete(Forbidden, getHeader(403, session))
       }
     }
   }
@@ -85,6 +66,25 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     }
   }
 
+  private def postBizlogic(session: SessionClass, bizlogicSeq: Seq[PostBizlogicInfo]): Route = {
+    if (session.admin) {
+      val uniqueTableName = "table" + java.util.UUID.randomUUID().toString
+      val bizEntitySeq = bizlogicSeq.map(biz => Bizlogic(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, biz.desc, active = true, null, session.userId, null, session.userId))
+      onComplete(modules.bizlogicDal.insert(bizEntitySeq)) {
+        case Success(bizSeq) =>
+          val queryBiz = bizSeq.map(biz => QueryBizlogic(biz.id, biz.source_id, biz.name, biz.sql_tmpl, biz.result_table, biz.desc))
+          val relSeq = for {biz <- bizSeq
+                            rel <- bizlogicSeq.head.relBG
+          } yield RelGroupBizlogic(0, rel.group_id, biz.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
+          onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
+            case Success(_) => complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), queryBiz))
+            case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+          }
+        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+      }
+    } else complete(Forbidden, getHeader(403, session))
+  }
+
 
   @ApiOperation(value = "update bizlogics in the system", notes = "", nickname = "", httpMethod = "PUT")
   @ApiImplicitParams(Array(
@@ -107,6 +107,25 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
       }
     }
   }
+
+  private def putBizlogicComplete(session: SessionClass, bizlogicSeq: Seq[PutBizlogicInfo]): Route = {
+    val future = bizlogicService.updateBiz(bizlogicSeq, session)
+    onComplete(future) {
+      case Success(_) =>
+        onComplete(bizlogicService.deleteByBizId(bizlogicSeq)) {
+          case Success(_) =>
+            val relSeq = for {rel <- bizlogicSeq.head.relBG
+            } yield RelGroupBizlogic(0, rel.group_id, bizlogicSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
+            onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
+              case Success(_) => complete(OK, getHeader(200, session))
+              case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+            }
+          case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+        }
+      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+    }
+  }
+
 
   @Path("/{id}")
   @ApiOperation(value = "delete bizlogic by id", notes = "", nickname = "", httpMethod = "DELETE")
@@ -135,7 +154,14 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   def getGroupsByBizIdRoute: Route = path("bizlogics" / LongNumber / "groups") { bizId =>
     get {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session => getGroupsByBizId(session, bizId)
+        session =>
+          val future = bizlogicService.getGroups(bizId)
+          onComplete(future) {
+            case Success(relSeq) =>
+              if (relSeq.nonEmpty) complete(OK, ResponseSeqJson[PutRelGroupBizlogic](getHeader(200, session), relSeq))
+              else complete(NotFound, getHeader(404, session))
+            case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+          }
       }
     }
   }

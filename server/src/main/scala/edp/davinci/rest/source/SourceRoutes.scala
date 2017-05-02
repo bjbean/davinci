@@ -1,46 +1,26 @@
 package edp.davinci.rest.source
 
 import javax.ws.rs.Path
+
+import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, NotFound, OK}
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
-import edp.davinci.rest.{PostSourceInfoSeq, PutSourceInfoSeq, SessionClass}
+import edp.davinci.persistence.entities.{PostSourceInfo, PutSourceInfo, Source}
+import edp.davinci.rest.{PostSourceInfoSeq, PutSourceInfoSeq, ResponseSeqJson, SessionClass}
 import edp.davinci.util.AuthorizationProvider
+import edp.davinci.util.CommonUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
+
+import scala.util.{Failure, Success}
 
 
 @Api(value = "/sources", consumes = "application/json", produces = "application/json")
 @Path("/sources")
-class SourceRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives with SourceService {
+class SourceRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = getSourceByAllRoute ~ postSourceRoute ~ putSourceRoute ~ deleteSourceByIdRoute
-
-//  @Path("/{id}")
-//  @ApiOperation(value = "get one source from system by id", notes = "", nickname = "", httpMethod = "GET")
-//  @ApiImplicitParams(Array(
-//    new ApiImplicitParam(name = "id", value = "source id", required = true, dataType = "integer", paramType = "path")
-//  ))
-//  @ApiResponses(Array(
-//    new ApiResponse(code = 200, message = "OK"),
-//    new ApiResponse(code = 401, message = "authorization error"),
-//    new ApiResponse(code = 404, message = "source not found"),
-//    new ApiResponse(code = 500, message = "internal server error")
-//  ))
-//  def getSourceByIdRoute: Route = modules.sourceRoutes.getByIdRoute("sources")
-//
-//  @Path("/{name}")
-//  @ApiOperation(value = "get one source from system by name", notes = "", nickname = "", httpMethod = "GET")
-//  @ApiImplicitParams(Array(
-//    new ApiImplicitParam(name = "name", value = "source name", required = true, dataType = "string", paramType = "path")
-//  ))
-//  @ApiResponses(Array(
-//    new ApiResponse(code = 200, message = "OK"),
-//    new ApiResponse(code = 401, message = "authorization error"),
-//    new ApiResponse(code = 404, message = "source not found"),
-//    new ApiResponse(code = 500, message = "internal server error")
-//  ))
-//  def getSourceByNameRoute: Route = modules.sourceRoutes.getByNameRoute("sources")
-
+  private lazy val sourceService = new SourceService(modules)
 
   @ApiOperation(value = "get all source with the same domain", notes = "", nickname = "", httpMethod = "GET")
   @ApiResponses(Array(
@@ -86,7 +66,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       entity(as[PostSourceInfoSeq]) {
         sourceSeq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => postSource(session,sourceSeq.payload)
+            session => postSource(session, sourceSeq.payload)
           }
       }
     }
@@ -109,7 +89,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       entity(as[PutSourceInfoSeq]) {
         sourceSeq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => putSourceComplete(session,sourceSeq.payload)
+            session => putSourceComplete(session, sourceSeq.payload)
           }
       }
     }
@@ -129,5 +109,36 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   ))
   def deleteSourceByIdRoute: Route = modules.sourceRoutes.deleteByIdRoute("sources")
 
+  private def getAllSourcesComplete(session: SessionClass): Route = {
+    if (session.admin) {
+      onComplete(sourceService.getAll) {
+        case Success(sourceSeq) =>
+          if (sourceSeq.nonEmpty) complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), sourceSeq))
+          else complete(NotFound, getHeader(404, session))
+        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+      }
+    } else complete(Forbidden, getHeader(403, session))
+  }
 
+  private def putSourceComplete(session: SessionClass, sourceSeq: Seq[PutSourceInfo]): Route = {
+    if (session.admin) {
+      val future = sourceService.update(sourceSeq, session)
+      onComplete(future) {
+        case Success(_) => complete(OK, getHeader(200, session))
+        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+      }
+    } else complete(Forbidden, getHeader(403, session))
+  }
+
+  private def postSource(session: SessionClass, postSourceSeq: Seq[PostSourceInfo]): Route = {
+    if (session.admin) {
+      val sourceSeq = postSourceSeq.map(post => Source(0, post.name, post.connection_url, post.desc, post.`type`, post.config, active = true, null, session.userId, null, session.userId))
+      onComplete(modules.sourceDal.insert(sourceSeq)) {
+        case Success(sourceWithIdSeq) =>
+          val responseSourceSeq = sourceWithIdSeq.map(source => PutSourceInfo(source.id, source.name, source.connection_url, source.desc, source.`type`, source.config))
+          complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), responseSourceSeq))
+        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+      }
+    } else complete(Forbidden, getHeader(403, session))
+  }
 }

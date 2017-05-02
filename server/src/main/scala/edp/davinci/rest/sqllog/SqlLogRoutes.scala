@@ -2,18 +2,25 @@ package edp.davinci.rest.sqllog
 
 import javax.ws.rs.Path
 
+import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, NotFound, OK}
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
-import edp.davinci.rest.{SessionClass, SimpleSqlLogSeq, SqlLogSeq}
+import edp.davinci.persistence.entities.SqlLog
+import edp.davinci.rest.{ResponseSeqJson, SessionClass, SimpleSqlLogSeq, SqlLogSeq}
 import edp.davinci.util.AuthorizationProvider
+import edp.davinci.util.CommonUtils.getHeader
 import io.swagger.annotations._
 import edp.davinci.util.JsonProtocol._
 
+import scala.util.{Failure, Success}
+
 @Api(value = "/sqlLogs", consumes = "application/json", produces = "application/json")
 @Path("/sqlLogs")
-class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives with SqlLogService {
+class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = getSqlByAllRoute ~ postSqlLogRoute ~ putSqlLogRoute
+  private lazy val sqlLogService = new SqlLogService(modules)
+
 
   @ApiOperation(value = "get all sqlLogs", notes = "", nickname = "", httpMethod = "GET")
   @ApiResponses(Array(
@@ -73,6 +80,27 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
           }
       }
     }
+  }
+
+  private def getAllLogsComplete(session: SessionClass): Route = {
+    if (session.admin) {
+      onComplete(sqlLogService.getAll(session)) {
+        case Success(logSeq) =>
+          if (logSeq.nonEmpty) complete(OK, ResponseSeqJson[SqlLog](getHeader(200, session), logSeq))
+          else complete(NotFound, getHeader(404, session))
+        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+      }
+    } else complete(Forbidden, getHeader(403, session))
+  }
+
+  private def putSqlLogComplete(session: SessionClass, sqlLogSeq: Seq[SqlLog]): Route = {
+    if (session.admin) {
+      val future = sqlLogService.update(sqlLogSeq, session)
+      onComplete(future) {
+        case Success(_) => complete(OK, getHeader(200, session))
+        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+      }
+    } else complete(Forbidden, getHeader(403, session))
   }
 
 }
