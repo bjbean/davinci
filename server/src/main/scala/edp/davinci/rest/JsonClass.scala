@@ -68,6 +68,8 @@ case class PutUserInfoSeq(payload: Seq[PutUserInfo])
 
 case class PutWidgetInfoSeq(payload: Seq[PutWidgetInfo])
 
+case class BizlogicResult(widgetInfo:PutWidgetInfo,result:List[Seq[String]])
+
 case class RequestJson[A](payload: A)
 
 case class RequestSeqJson[A](payload: Seq[A])

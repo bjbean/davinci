@@ -8,11 +8,14 @@ import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModul
 import edp.davinci.persistence.entities.{PostWidgetInfo, PutWidgetInfo, Widget}
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.util.CommonUtils.getHeader
+import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
 import edp.endurance.db.DbConnection
 import io.swagger.annotations._
-
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 @Api(value = "/widgets", consumes = "application/json", produces = "application/json")
@@ -56,7 +59,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       entity(as[PostWidgetInfoSeq]) {
         widgetSeq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => postWidget(session, widgetSeq.payload)
+            session => postWidgetComplete(session, widgetSeq.payload)
           }
       }
     }
@@ -111,7 +114,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   def getWholeSqlByWidgetIdRoute: Route = path("widgets" / LongNumber / "sqls") { widgetId =>
     get {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session => getWholeSql(session, widgetId)
+        session => getWholeSqlComplete(session, widgetId)
       }
     }
 
@@ -122,11 +125,8 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       onComplete(widgetService.getAll(session)) {
         case Success(widgetSeq) =>
           val responseSeq: Seq[PutWidgetInfo] = widgetSeq.map(r => PutWidgetInfo(r._1, r._2, r._3, r._4, r._5.getOrElse(""), r._6, r._7, r._8, r._9))
-          println("response " + responseSeq.size)
-          if (widgetSeq.nonEmpty) {
-            println("in if")
+          if (widgetSeq.nonEmpty)
             complete(OK, ResponseJson[Seq[PutWidgetInfo]](getHeader(200, session), responseSeq))
-          }
           else complete(NotFound, getHeader(404, session))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
@@ -143,48 +143,79 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     } else complete(Forbidden, getHeader(403, session))
   }
 
-  private def postWidget(session: SessionClass, postWidgetSeq: Seq[PostWidgetInfo]): Route = {
+  //  private def postWidget(session: SessionClass, postWidgetSeq: Seq[PostWidgetInfo]): Route = {
+  //    if (session.admin) {
+  //      val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.bizlogic_id, post.name, Some(post.olap_sql), post.desc, post.trigger_type, post.trigger_params, post.publish, active = true, null, session.userId, null, session.userId))
+  //      onComplete(modules.widgetDal.insert(widgetSeq)) {
+  //        case Success(widgetWithIdSeq) =>
+  //          val responseWidget: Seq[PutWidgetInfo] = widgetWithIdSeq
+  //            .map(widget =>
+  //
+  //              PutWidgetInfo(widget.id, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.olap_sql.orNull, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish))
+  //          complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session), responseWidget))
+  //        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+  //      }
+  //    } else complete(Forbidden, getHeader(403, session))
+  //  }
+
+  private def postWidgetComplete(session: SessionClass, postWidgetSeq: Seq[PostWidgetInfo]): Route = {
     if (session.admin) {
       val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.bizlogic_id, post.name, Some(post.olap_sql), post.desc, post.trigger_type, post.trigger_params, post.publish, active = true, null, session.userId, null, session.userId))
-      onComplete(modules.widgetDal.insert(widgetSeq)) {
-        case Success(widgetWithIdSeq) =>
-          val responseWidget: Seq[PutWidgetInfo] = widgetWithIdSeq.map(widget => PutWidgetInfo(widget.id, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.olap_sql.orNull, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish))
-          complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session), responseWidget))
+      val widget = Await.result(modules.widgetDal.insert(widgetSeq), Duration.Inf).head
+      val responseWidget = PutWidgetInfo(widget.id, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.olap_sql.orNull, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish)
+      val operation = for {
+        a <- widgetService.getSourceInfo(widget.bizlogic_id)
+        b <- widgetService.getSql(widget.id)
+      } yield (a, b)
+      onComplete(operation) {
+        case Success(info) =>
+          val (connectionUrl, _) = info._1.head
+          val resultSql = formatSql(info._2.head)
+          val result = getResult(connectionUrl, resultSql)
+          complete(OK, ResponseJson[BizlogicResult](getHeader(200, session), BizlogicResult(responseWidget, result)))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     } else complete(Forbidden, getHeader(403, session))
   }
 
-  private def getWholeSql(session: SessionClass, widgetId: Long): Route = {
+  private def getWholeSqlComplete(session: SessionClass, widgetId: Long): Route = {
     onComplete(widgetService.getSql(widgetId)) {
       case Success(sqlSeq) =>
-        val (olap_sql, sql_tmpl) = sqlSeq.head
-        val sqlList = SqlInfo((sql_tmpl + s";$olap_sql").split(";").toList)
-        complete(OK, ResponseJson[SqlInfo](getHeader(200, session), sqlList))
+        val resultSql = formatSql(sqlSeq.head)
+        complete(OK, ResponseJson[String](getHeader(200, session), resultSql))
       case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
     }
   }
 
-  private def getResult(bizlogicId: Long, session: SessionClass) = {
-    onComplete(widgetService.getSourceInfo(bizlogicId)) {
-      case Success(sourceInfo) =>
-        val (connectionUrl, _) = sourceInfo.head
-        if (connectionUrl != null) {
-          val connectionInfo = connectionUrl.split("""<:>""")
-          if (connectionInfo.size != 3)
-            null
-          else {
-            val dbConnection = DbConnection.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
-            val statement = dbConnection.createStatement()
-            val resultSet = statement.executeQuery("")
-            null
-          }
-        } else {
-          null
-        }
-      case Failure(_) =>
-        null
+  private def formatSql(sqlInfo: (String, String, String)): String = {
+    val (olapSql, sqlTmpl, result_table) = sqlInfo
+    val sqlParts = olapSql.split("from")
+    sqlParts(0) + s" from ($sqlTmpl as $result_table) " + sqlParts(1)
+  }
+
+  private def getResult(connectionUrl: String, sqls: String): List[Seq[String]] = {
+    val resultList = new ListBuffer[Seq[String]]
+    val columnList = new ListBuffer[String]
+    if (connectionUrl != null) {
+      val connectionInfo = connectionUrl.split("""<:>""")
+      if (connectionInfo.size != 3)
+        null.asInstanceOf[List[Seq[String]]]
+      else {
+        val dbConnection = DbConnection.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
+        val statement = dbConnection.createStatement()
+        val resultSet = statement.executeQuery(sqls)
+        val meta = resultSet.getMetaData
+        for (i <- 1 to meta.getColumnCount)
+          columnList.append(meta.getColumnName(i))
+        resultList.append(columnList)
+        while (resultSet.next())
+          resultList.append(getRow(resultSet))
+        resultList.toList
+      }
+    } else {
+      null.asInstanceOf[List[Seq[String]]]
     }
   }
+
 
 }

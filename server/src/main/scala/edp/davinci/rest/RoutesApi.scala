@@ -32,7 +32,6 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
           corsHandler(changePwd.routes) ~
           corsHandler(source.routes) ~
           corsHandler(bizlogic.routes) ~
-          corsHandler(widget.routes) ~
           corsHandler(dashboard.routes) ~
           corsHandler(widget.routes) ~
           corsHandler(libWidget.routes) ~

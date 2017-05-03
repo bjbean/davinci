@@ -1,6 +1,7 @@
 package edp.davinci.rest
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.github.swagger.akka.{HasActorSystem, SwaggerHttpService}
 import edp.davinci.Boot
@@ -21,9 +22,7 @@ class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
     typeOf[LoginRoutes],
     typeOf[UserRoutes],
     typeOf[ChangePwdRoutes],
-    typeOf[SourceRoutes],
     typeOf[BizlogicRoutes],
-    typeOf[WidgetRoutes],
     typeOf[DashboardRoutes],
     typeOf[WidgetRoutes],
     typeOf[SourceRoutes],
@@ -32,7 +31,7 @@ class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
     typeOf[SqlLogRoutes]
   )
 
-  override val host = Boot.host + ":" + Boot.port
+  override val host: String = Boot.host + ":" + Boot.port
   //the url of your api, not swagger's json endpoint
   override val basePath = "/api/v1"
   //the basePath for the API you are exposing
@@ -41,7 +40,7 @@ class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
   //  override val info = Info("Davinci REST API")
   //  provides license and other description details
 
-  val indexRoute = get {
+  val indexRoute: Route = get {
     pathPrefix("") {
       pathEndOrSingleSlash {
         getFromResource("swagger-ui/index.html")

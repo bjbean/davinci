@@ -30,12 +30,12 @@ class WidgetService(modules: ConfigurationModule with PersistenceModule with Bus
     wDal.getDB.run(query)
   }
 
-  def getSql(widgetId: Long): Future[Seq[(String, String)]] = {
+  def getSql(widgetId: Long): Future[Seq[(String, String, String)]] = {
     val widgetTQ = wDal.getTableQuery
     val bizlogicTQ = bDal.getTableQuery
     val query = (widgetTQ.filter(obj => obj.id === widgetId && obj.active === true) join bizlogicTQ.filter(_.active === true) on (_.bizlogic_id === _.id))
       .map {
-        case (w, b) => (w.olap_sql.getOrElse(null.asInstanceOf[String]), b.sql_tmpl)
+        case (w, b) => (w.olap_sql.getOrElse(""), b.sql_tmpl,b.result_table)
       }.result
     wDal.getDB.run(query)
   }

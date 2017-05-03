@@ -28,10 +28,10 @@ trait PersistenceModule {
 trait PersistenceModuleImpl extends PersistenceModule with DbModule {
   this: ConfigurationModule =>
 
-  private val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("mysqldb")
+  private lazy val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("mysqldb")
   println("before~~~~~~~~~~~~~~~~~~~~~~")
-  override implicit val profile: JdbcProfile = dbConfig.profile
-  override implicit val db: JdbcProfile#Backend#Database = dbConfig.db
+  override implicit lazy val profile: JdbcProfile = dbConfig.profile
+  override implicit lazy val db: JdbcProfile#Backend#Database = dbConfig.db
   println("after~~~~~~~~~~~~~~~~~~~~~~~")
 
   override val groupDal = new BaseDalImpl[GroupTable, UserGroup](TableQuery[GroupTable])
