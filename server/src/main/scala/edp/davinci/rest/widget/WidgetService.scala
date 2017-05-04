@@ -47,6 +47,4 @@ class WidgetService(modules: ConfigurationModule with PersistenceModule with Bus
       .map { case (_, s) => (s.connection_url, s.config) }.result
     bDal.getDB.run(query)
   }
-
-
 }

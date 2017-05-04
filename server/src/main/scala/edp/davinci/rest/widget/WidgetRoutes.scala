@@ -172,6 +172,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
           val (connectionUrl, _) = info._1.head
           val resultSql = formatSql(info._2.head)
           val result = getResult(connectionUrl, resultSql)
+          println("get result~~~~~~~~~~~~~~~~~~~~~~~~~~~")
           complete(OK, ResponseJson[BizlogicResult](getHeader(200, session), BizlogicResult(responseWidget, result)))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
@@ -182,15 +183,25 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     onComplete(widgetService.getSql(widgetId)) {
       case Success(sqlSeq) =>
         val resultSql = formatSql(sqlSeq.head)
-        complete(OK, ResponseJson[String](getHeader(200, session), resultSql))
+        complete(OK, ResponseJson[SqlInfo](getHeader(200, session), SqlInfo(resultSql)))
       case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
     }
   }
 
   private def formatSql(sqlInfo: (String, String, String)): String = {
     val (olapSql, sqlTmpl, result_table) = sqlInfo
-    val sqlParts = olapSql.split("from")
-    sqlParts(0) + s" from ($sqlTmpl as $result_table) " + sqlParts(1)
+    var resultSql: String = ""
+    try {
+      val sqlParts = olapSql.split("table")
+      if (sqlParts.size > 1) {
+        println("~~~~~~~~~~~~~~~~~~~~~~~~" + sqlParts(0) + sqlParts(1))
+        resultSql = sqlParts(0) + s" ($sqlTmpl as $result_table) " + sqlParts(1)
+      }
+      else resultSql = sqlParts(0) + s" ($sqlTmpl as $result_table)"
+    } catch {
+      case e: Throwable => println("get sql error", e)
+    }
+    resultSql
   }
 
   private def getResult(connectionUrl: String, sqls: String): List[Seq[String]] = {
