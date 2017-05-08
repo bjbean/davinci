@@ -40,9 +40,9 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatPostUserInfoSeq: RootJsonFormat[PostUserInfoSeq] = jsonFormat1(PostUserInfoSeq)
   implicit val formatPutUserInfoSeq: RootJsonFormat[PutUserInfoSeq] = jsonFormat1(PutUserInfoSeq)
 
-  implicit val formatWidget: RootJsonFormat[Widget] = jsonFormat14(Widget)
-  implicit val formatPostWidgetInfo: RootJsonFormat[PostWidgetInfo] = jsonFormat8(PostWidgetInfo)
-  implicit val formatPutWidgetInfo: RootJsonFormat[PutWidgetInfo] = jsonFormat9(PutWidgetInfo)
+  implicit val formatWidget: RootJsonFormat[Widget] = jsonFormat15(Widget)
+  implicit val formatPostWidgetInfo: RootJsonFormat[PostWidgetInfo] = jsonFormat9(PostWidgetInfo)
+  implicit val formatPutWidgetInfo: RootJsonFormat[PutWidgetInfo] = jsonFormat10(PutWidgetInfo)
   implicit val formatPutWidgetSeq: RootJsonFormat[PutWidgetInfoSeq] = jsonFormat1(PutWidgetInfoSeq)
   implicit val formatPostWidgetSeq: RootJsonFormat[PostWidgetInfoSeq] = jsonFormat1(PostWidgetInfoSeq)
 
@@ -64,8 +64,8 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatPutRelGroupBizlogicSeq: RootJsonFormat[PutRelGroupBizlogicSeq] = jsonFormat1(PutRelGroupBizlogicSeq)
 
   implicit val formatBizlogic: RootJsonFormat[Bizlogic] = jsonFormat11(Bizlogic)
-  implicit val formatPostBizlogicInfo: RootJsonFormat[PostBizlogicInfo] = jsonFormat6(PostBizlogicInfo)
-  implicit val formatPutBizlogicInfo: RootJsonFormat[PutBizlogicInfo] = jsonFormat7(PutBizlogicInfo)
+  implicit val formatPostBizlogicInfo: RootJsonFormat[PostBizlogicInfo] = jsonFormat5(PostBizlogicInfo)
+  implicit val formatPutBizlogicInfo: RootJsonFormat[PutBizlogicInfo] = jsonFormat6(PutBizlogicInfo)
   implicit val formatQUeryBizlogic: RootJsonFormat[QueryBizlogic] = jsonFormat6(QueryBizlogic)
   implicit val formatPostBizlogicInfoSeq: RootJsonFormat[PostBizlogicInfoSeq] = jsonFormat1(PostBizlogicInfoSeq)
   implicit val formatPutBizlogicInfoSeq: RootJsonFormat[PutBizlogicInfoSeq] = jsonFormat1(PutBizlogicInfoSeq)

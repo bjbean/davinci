@@ -21,7 +21,7 @@ import scala.util.{Failure, Success}
 @Path("/bizlogics")
 class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
-  val routes: Route = postBizlogicRoute ~ putBizlogicRoute ~ getBizlogicByAllRoute ~ deleteBizlogicByIdRoute ~ getGroupsByBizIdRoute~ getCalculationResRoute
+  val routes: Route = postBizlogicRoute ~ putBizlogicRoute ~ getBizlogicByAllRoute ~ deleteBizlogicByIdRoute ~ getGroupsByBizIdRoute ~ getCalculationResRoute ~ deleteRelGBById
   private lazy val bizlogicService = new BizlogicService(modules)
   private lazy val widgetService = new WidgetService(modules)
 
@@ -121,7 +121,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
             val relSeq = for {rel <- bizlogicSeq.head.relBG
             } yield RelGroupBizlogic(0, rel.group_id, bizlogicSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
             onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
-              case Success(_) => complete(OK, ResponseSeqJson[PutBizlogicInfo](getHeader(200, session),bizlogicSeq))
+              case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
               case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
             }
           case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
@@ -143,6 +143,25 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 500, message = "internal server error")
   ))
   def deleteBizlogicByIdRoute: Route = modules.bizlogicRoutes.deleteByIdRoute("bizlogics")
+
+  @Path("/groups/{rel_id}")
+  @ApiOperation(value = "delete bizlogic from group by rel id", notes = "", nickname = "", httpMethod = "DELETE")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "rel_id", value = "rel_id", required = true, dataType = "integer", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "delete success"),
+    new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 401, message = "authorization error"),
+    new ApiResponse(code = 500, message = "internal server error")
+  ))
+  def deleteRelGBById: Route = path("bizlogics" / "groups" / LongNumber) { relId =>
+    delete {
+      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        session => modules.relGroupBizlogicRoutes.deleteByIdComplete(relId, session)
+      }
+    }
+  }
 
   @Path("/{id}/groups")
   @ApiOperation(value = "get groups by biz id", notes = "", nickname = "", httpMethod = "GET")

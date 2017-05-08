@@ -19,11 +19,11 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
   private lazy val widgetTQ = wDal.getTableQuery
   private lazy val dashboardTQ = dDal.getTableQuery
 
-  def getInsideInfo(session: SessionClass, dashboardId: Long): Future[Seq[(Long, Long, Int, Int, Int, Int, Long, Long, Long, String, Option[String], String, String, String, Boolean)]] = {
+  def getInsideInfo(session: SessionClass, dashboardId: Long): Future[Seq[(Long, Long, Int, Int, Int, Int, Long, Long, Long, String, Option[String], String, String, String,Option[String], Boolean)]] = {
     val query = if (session.admin)
       (relDWTQ.filter(obj => obj.dashboard_id === dashboardId && obj.active === true) join widgetTQ.filter(widget => widget.active === true) on (_.widget_id === _.id)).
         map {
-          case (r, w) => (r.id, r.dashboard_id, r.position_x, r.position_y, r.length, r.width, w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql, w.desc, w.trigger_type, w.trigger_params, w.publish)
+          case (r, w) => (r.id, r.dashboard_id, r.position_x, r.position_y, r.length, r.width, w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql, w.desc, w.trigger_type, w.trigger_params, w.chart_params,w.publish)
         }.result
     else {
       val bizIds = relGBTQ.withFilter(rel => {
@@ -34,7 +34,7 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
       (relDWTQ.filter(obj => obj.dashboard_id === dashboardId && obj.active === true) join
         widgetTQ.filter(obj => obj.bizlogic_id in bizIds).filter(obj => obj.active === true && obj.publish === true) on (_.widget_id === _.id)).
         map {
-          case (r, w) => (r.id, r.dashboard_id, r.position_x, r.position_y, r.length, r.width, w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql, w.desc, w.trigger_type, w.trigger_params, w.publish)
+          case (r, w) => (r.id, r.dashboard_id, r.position_x, r.position_y, r.length, r.width, w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql, w.desc, w.trigger_type, w.trigger_params, w.chart_params,w.publish)
         }
     }.result
     dDal.getDB.run(query)

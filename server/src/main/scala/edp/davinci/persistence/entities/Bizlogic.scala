@@ -30,7 +30,6 @@ case class SimpleBizlogic(source_id: Long,
 case class PostBizlogicInfo(source_id: Long,
                             name: String,
                             sql_tmpl: String,
-                            result_table: String,
                             desc: String,
                             relBG: Seq[PostRelGroupBizlogic]) extends SimpleBaseEntity
 
@@ -38,7 +37,6 @@ case class PutBizlogicInfo(id: Long,
                            source_id: Long,
                            name: String,
                            sql_tmpl: String,
-                           result_table: String,
                            desc: String,
                            relBG: Seq[PostRelGroupBizlogic])
 

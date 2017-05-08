@@ -13,6 +13,7 @@ case class Widget(id: Long,
                   desc: String,
                   trigger_type: String,
                   trigger_params: String,
+                  chart_params:Option[String]=None,
                   publish: Boolean,
                   active: Boolean,
                   create_time: String,
@@ -20,19 +21,19 @@ case class Widget(id: Long,
                   update_time: String,
                   update_by: Long) extends BaseEntity
 
-case class SimpleWidget(widgetlib_id: Long,
-                        bizlogic_id: Long,
-                        name: String,
-                        olap_sql:Option[String],
-                        desc: String,
-                        trigger_type: String,
-                        trigger_params: String,
-                        publish: Boolean,
-                        active: Boolean,
-                        create_time: String,
-                        create_by: Long,
-                        update_time: String,
-                        update_by: Long) extends SimpleBaseEntity
+//case class SimpleWidget(widgetlib_id: Long,
+//                        bizlogic_id: Long,
+//                        name: String,
+//                        olap_sql:Option[String]=None,
+//                        desc: String,
+//                        trigger_type: String,
+//                        trigger_params: String,
+//                        publish: Boolean,
+//                        active: Boolean,
+//                        create_time: String,
+//                        create_by: Long,
+//                        update_time: String,
+//                        update_by: Long) extends SimpleBaseEntity
 
 
 case class PostWidgetInfo(widgetlib_id: Long,
@@ -42,6 +43,7 @@ case class PostWidgetInfo(widgetlib_id: Long,
                           desc: String,
                           trigger_type: String,
                           trigger_params: String,
+                          chart_params:String,
                           publish: Boolean) extends SimpleBaseEntity
 
 case class PutWidgetInfo(id: Long,
@@ -52,6 +54,7 @@ case class PutWidgetInfo(id: Long,
                          desc: String,
                          trigger_type: String,
                          trigger_params: String,
+                         chart_params:String,
                          publish: Boolean)
 
 class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
@@ -68,6 +71,8 @@ class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
   def trigger_params: Rep[String] = column[String]("trigger_params")
 
+  def chart_params: Rep[Option[String]] =column[Option[String]]("chart_params",O.Default(null))
+
   def publish: Rep[Boolean] = column[Boolean]("publish")
 
   def create_time: Rep[String] = column[String]("create_time")
@@ -78,5 +83,5 @@ class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
   def update_by: Rep[Long] = column[Long]("update_by")
 
-  def * : ProvenShape[Widget] = (id, widgetlib_id, bizlogic_id, name, olap_sql,desc, trigger_type, trigger_params, publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
+  def * : ProvenShape[Widget] = (id, widgetlib_id, bizlogic_id, name, olap_sql,desc, trigger_type, trigger_params, chart_params,publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
 }

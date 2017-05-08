@@ -42,7 +42,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     onComplete(dashboardService.getInsideInfo(session, dashboardId)) {
       case Success(dashboardInfoSeq) =>
         val infoSeq = dashboardInfoSeq.map(r => {
-          val widgetInfo = PutWidgetInfo(r._7, r._8, r._9, r._10, r._11.getOrElse(""), r._12, r._13, r._14, r._15)
+          val widgetInfo = PutWidgetInfo(r._7, r._8, r._9, r._10, r._11.getOrElse(""), r._12, r._13, r._14, r._15.getOrElse(""),r._16)
           DashboardInfo(r._1, r._2, r._3, r._4, r._5, r._6, widgetInfo)
         })
         complete(OK, ResponseSeqJson[DashboardInfo](getHeader(200, session), infoSeq))
