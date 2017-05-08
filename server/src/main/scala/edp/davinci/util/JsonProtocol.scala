@@ -91,7 +91,9 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatPutLoginUserInfo: RootJsonFormat[LoginUserInfo] = jsonFormat2(LoginUserInfo)
 
-  implicit val formatBizlogicResult:RootJsonFormat[BizlogicResult]=jsonFormat2(BizlogicResult)
+  implicit val formatBizlogicResult: RootJsonFormat[BizlogicResult] = jsonFormat1(BizlogicResult)
+
+  implicit val formatResponsePayload: RootJsonFormat[ResponsePayload] = jsonFormat1(ResponsePayload)
 
   implicit def formatRequestJson[A: JsonFormat]: RootJsonFormat[RequestJson[A]] = jsonFormat1(RequestJson.apply[A])
 

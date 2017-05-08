@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, Not
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities.{PostSourceInfo, PutSourceInfo, Source}
-import edp.davinci.rest.{PostSourceInfoSeq, PutSourceInfoSeq, ResponseSeqJson, SessionClass}
+import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils.getHeader
 import edp.davinci.util.JsonProtocol._
@@ -124,7 +124,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     if (session.admin) {
       val future = sourceService.update(sourceSeq, session)
       onComplete(future) {
-        case Success(_) => complete(OK, getHeader(200, session))
+        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session),""))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     } else complete(Forbidden, getHeader(403, session))

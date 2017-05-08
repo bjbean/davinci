@@ -150,27 +150,27 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     }
   }
 
-  @Path("/groups")
-  @ApiOperation(value = "Add user to a group", notes = "", nickname = "", httpMethod = "POST")
-  @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "relUserGroupRequest", value = "relUserGroupRequest object to be added", required = true, dataType = "edp.davinci.rest.PostRelUserGroupSeq", paramType = "body")
-  ))
-  @ApiResponses(Array(
-    new ApiResponse(code = 200, message = "post success"),
-    new ApiResponse(code = 403, message = "user is not admin"),
-    new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
-  ))
-  def postUser2GroupRoute: Route = pathPrefix("users" / "groups") {
-    post {
-      entity(as[PostRelUserGroupSeq]) {
-        postRelUserGroupSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => modules.relUserGroupRoutes.postComplete(session, postRelUserGroupSeq.payload)
-          }
-      }
-    }
-  }
+//  @Path("/groups")
+//  @ApiOperation(value = "Add user to a group", notes = "", nickname = "", httpMethod = "POST")
+//  @ApiImplicitParams(Array(
+//    new ApiImplicitParam(name = "relUserGroupRequest", value = "relUserGroupRequest object to be added", required = true, dataType = "edp.davinci.rest.PostRelUserGroupSeq", paramType = "body")
+//  ))
+//  @ApiResponses(Array(
+//    new ApiResponse(code = 200, message = "post success"),
+//    new ApiResponse(code = 403, message = "user is not admin"),
+//    new ApiResponse(code = 401, message = "authorization error"),
+//    new ApiResponse(code = 500, message = "internal server error")
+//  ))
+//  def postUser2GroupRoute: Route = pathPrefix("users" / "groups") {
+//    post {
+//      entity(as[PostRelUserGroupSeq]) {
+//        postRelUserGroupSeq =>
+//          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+//            session => modules.relUserGroupRoutes.postComplete(session, postRelUserGroupSeq.payload)
+//          }
+//      }
+//    }
+//  }
 
 
   @Path("/groups/{rel_id}")
@@ -206,12 +206,12 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
       val future = userService.update(userSeq, session)
       onComplete(future) {
         case Success(_) =>
-          onComplete(userService.deleteAllByUserId(userSeq)) {
+          onComplete(userService.deleteAllRelByUserId(userSeq)) {
             case Success(_) =>
               val relSeq = for {rel <- userSeq.head.relUG
               } yield RelUserGroup(0, userSeq.head.id, rel.group_id, active = true, null, session.userId, null, session.userId)
               onComplete(modules.relUserGroupDal.insert(relSeq)) {
-                case Success(_) => complete(OK, getHeader(200, session))
+                case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session),""))
                 case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
               }
             case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
@@ -224,7 +224,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   private def putLoginUserComplete(session: SessionClass, user: LoginUserInfo): Route = {
     val future = userService.updateLoginUser(user, session)
     onComplete(future) {
-      case Success(_) => complete(OK, getHeader(200, session))
+      case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session),""))
       case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
     }
   }

@@ -40,11 +40,5 @@ class WidgetService(modules: ConfigurationModule with PersistenceModule with Bus
     wDal.getDB.run(query)
   }
 
-  def getSourceInfo(bizlogicId: Long): Future[Seq[(String, String)]] = {
-    val bizlogicTQ = bDal.getTableQuery
-    val sourceTQ = modules.sourceDal.getTableQuery
-    val query = (bizlogicTQ.filter(obj => obj.active === true && obj.id === bizlogicId) join sourceTQ.filter(_.active === true) on (_.source_id === _.id))
-      .map { case (_, s) => (s.connection_url, s.config) }.result
-    bDal.getDB.run(query)
-  }
+
 }

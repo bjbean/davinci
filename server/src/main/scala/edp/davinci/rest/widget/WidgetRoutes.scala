@@ -10,12 +10,8 @@ import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
-import edp.endurance.db.DbConnection
 import io.swagger.annotations._
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
+
 import scala.util.{Failure, Success}
 
 @Api(value = "/widgets", consumes = "application/json", produces = "application/json")
@@ -137,7 +133,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     if (session.admin) {
       val future = widgetService.update(putWidgetSeq, session)
       onComplete(future) {
-        case Success(_) => complete(OK, getHeader(200, session))
+        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session),""))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     } else complete(Forbidden, getHeader(403, session))
@@ -161,19 +157,10 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   private def postWidgetComplete(session: SessionClass, postWidgetSeq: Seq[PostWidgetInfo]): Route = {
     if (session.admin) {
       val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.bizlogic_id, post.name, Some(post.olap_sql), post.desc, post.trigger_type, post.trigger_params, post.publish, active = true, null, session.userId, null, session.userId))
-      val widget = Await.result(modules.widgetDal.insert(widgetSeq), Duration.Inf).head
-      val responseWidget = PutWidgetInfo(widget.id, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.olap_sql.orNull, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish)
-      val operation = for {
-        a <- widgetService.getSourceInfo(widget.bizlogic_id)
-        b <- widgetService.getSql(widget.id)
-      } yield (a, b)
-      onComplete(operation) {
-        case Success(info) =>
-          val (connectionUrl, _) = info._1.head
-          val resultSql = formatSql(info._2.head)
-          val result = getResult(connectionUrl, resultSql)
-          println("get result~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-          complete(OK, ResponseJson[BizlogicResult](getHeader(200, session), BizlogicResult(responseWidget, result)))
+      onComplete(modules.widgetDal.insert(widgetSeq)) {
+        case Success(widgets) =>
+          val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql.getOrElse(""), w.desc, w.trigger_type, w.trigger_params, w.publish))
+          complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session), putWidgets))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     } else complete(Forbidden, getHeader(403, session))
@@ -187,46 +174,4 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
     }
   }
-
-  private def formatSql(sqlInfo: (String, String, String)): String = {
-    val (olapSql, sqlTmpl, result_table) = sqlInfo
-    var resultSql: String = ""
-    try {
-      val sqlParts = olapSql.split("table")
-      if (sqlParts.size > 1) {
-        println("~~~~~~~~~~~~~~~~~~~~~~~~" + sqlParts(0) + sqlParts(1))
-        resultSql = sqlParts(0) + s" ($sqlTmpl as $result_table) " + sqlParts(1)
-      }
-      else resultSql = sqlParts(0) + s" ($sqlTmpl as $result_table)"
-    } catch {
-      case e: Throwable => println("get sql error", e)
-    }
-    resultSql
-  }
-
-  private def getResult(connectionUrl: String, sqls: String): List[Seq[String]] = {
-    val resultList = new ListBuffer[Seq[String]]
-    val columnList = new ListBuffer[String]
-    if (connectionUrl != null) {
-      val connectionInfo = connectionUrl.split("""<:>""")
-      if (connectionInfo.size != 3)
-        null.asInstanceOf[List[Seq[String]]]
-      else {
-        val dbConnection = DbConnection.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
-        val statement = dbConnection.createStatement()
-        val resultSet = statement.executeQuery(sqls)
-        val meta = resultSet.getMetaData
-        for (i <- 1 to meta.getColumnCount)
-          columnList.append(meta.getColumnName(i))
-        resultList.append(columnList)
-        while (resultSet.next())
-          resultList.append(getRow(resultSet))
-        resultList.toList
-      }
-    } else {
-      null.asInstanceOf[List[Seq[String]]]
-    }
-  }
-
-
 }

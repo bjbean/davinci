@@ -28,7 +28,7 @@ class BizlogicService(modules: ConfigurationModule with PersistenceModule with B
   def deleteByBizId(bizlogicSeq: Seq[PutBizlogicInfo]): Future[Unit] = {
     val relGBTQ = relGBDal.getTableQuery
     val query = DBIO.seq(bizlogicSeq.map(r => {
-      relGBTQ.filter(_.bizlogic_id === r.id).map(_.active).update(false)
+      relGBTQ.filter(_.bizlogic_id === r.id).delete
     }): _*)
     bDal.getDB.run(query)
   }
@@ -38,4 +38,12 @@ class BizlogicService(modules: ConfigurationModule with PersistenceModule with B
     bDal.getDB.run(relGBTQ.filter(_.bizlogic_id === bizId).map(rel => (rel.id, rel.group_id, rel.sql_params)).result).mapTo[Seq[PutRelGroupBizlogic]]
   }
 
+
+  def getSourceInfo(bizlogicId: Long): Future[Seq[(String, String)]] = {
+    val bizlogicTQ = bDal.getTableQuery
+    val sourceTQ = modules.sourceDal.getTableQuery
+    val query = (bizlogicTQ.filter(obj => obj.active === true && obj.id === bizlogicId) join sourceTQ.filter(_.active === true) on (_.source_id === _.id))
+      .map { case (_, s) => (s.connection_url, s.config) }.result
+    bDal.getDB.run(query)
+  }
 }

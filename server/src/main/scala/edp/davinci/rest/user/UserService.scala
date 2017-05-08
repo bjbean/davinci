@@ -40,10 +40,10 @@ class UserService (modules: ConfigurationModule with PersistenceModule with Busi
   }
 
 
-  def deleteAllByUserId(userSeq: Seq[PutUserInfo]): Future[Unit] = {
+  def deleteAllRelByUserId(userSeq: Seq[PutUserInfo]): Future[Unit] = {
     val relUGTQ = relDal.getTableQuery
     val query = DBIO.seq(userSeq.map(r => {
-      relUGTQ.filter(_.user_id === r.id).map(_.active).update(false)
+      relUGTQ.filter(_.user_id === r.id).delete
     }): _*)
     relDal.getDB.run(query)
   }

@@ -41,7 +41,7 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
                 case Some(user) =>
                   if (user.password == changePwd.oldPass) {
                     onComplete(modules.userDal.update(updatePass(user, changePwd.newPass)).mapTo[Int]) {
-                      case Success(_) => complete(OK, getHeader(200, session))
+                      case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session),r))
                       case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
                     }
                   } else complete(Unauthorized, getHeader(401, "old password is wrong", session))
@@ -75,7 +75,7 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
                 case Some(user) =>
                   if (user.password == changePwd.oldPass) {
                     onComplete(modules.userDal.update(updatePass(user, changePwd.newPass)).mapTo[Int]) {
-                      case Success(_) => complete(OK, getHeader(200, session))
+                      case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session),r))
                       case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
                     }
                   } else complete(Unauthorized, getHeader(401, "old password is wrong", session))

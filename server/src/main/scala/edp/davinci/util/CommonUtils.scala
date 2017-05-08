@@ -55,4 +55,20 @@ object CommonUtils {
     })
   }
 
+  def formatSql(sqlInfo: (String, String, String)): String = {
+    val (olapSql, sqlTmpl, result_table) = sqlInfo
+    var resultSql: String = ""
+    try {
+      val sqlParts = olapSql.split("table")
+      if (sqlParts.size > 1) {
+        println("~~~~~~~~~~~~~~~~~~~~~~~~" + sqlParts(0) + sqlParts(1))
+        resultSql = sqlParts(0) + s" ($sqlTmpl as $result_table) " + sqlParts(1)
+      }
+      else resultSql = sqlParts(0) + s" ($sqlTmpl as $result_table)"
+    } catch {
+      case e: Throwable => println("get sql error", e)
+    }
+    resultSql
+  }
+
 }

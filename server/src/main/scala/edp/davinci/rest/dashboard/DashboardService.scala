@@ -14,11 +14,12 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
   private lazy val relGBDal = modules.relGroupBizlogicDal
   private lazy val wDal = modules.widgetDal
   private lazy val dDal = modules.dashboardDal
+  private lazy val relDWTQ = relDWDal.getTableQuery
+  private lazy val relGBTQ = relGBDal.getTableQuery
+  private lazy val widgetTQ = wDal.getTableQuery
+  private lazy val dashboardTQ = dDal.getTableQuery
 
-  def getInsideInfo(session: SessionClass, dashboardId: Long, bizIdSeq: Seq[Long]): Future[Seq[(Long, Long, Int, Int, Int, Int, Long, Long, Long, String, Option[String], String, String, String, Boolean)]] = {
-    val relDWTQ = relDWDal.getTableQuery
-    val relGBTQ = relGBDal.getTableQuery
-    val widgetTQ = wDal.getTableQuery
+  def getInsideInfo(session: SessionClass, dashboardId: Long): Future[Seq[(Long, Long, Int, Int, Int, Int, Long, Long, Long, String, Option[String], String, String, String, Boolean)]] = {
     val query = if (session.admin)
       (relDWTQ.filter(obj => obj.dashboard_id === dashboardId && obj.active === true) join widgetTQ.filter(widget => widget.active === true) on (_.widget_id === _.id)).
         map {
@@ -39,17 +40,15 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
     dDal.getDB.run(query)
   }
 
-  def getBizIds(session: SessionClass): Future[Seq[Long]] = {
-    val relGBTQ = relGBDal.getTableQuery
-    val query = relGBTQ.withFilter(rel => {
-      rel.group_id inSet session.groupIdList
-      rel.active === true
-    }).map(_.bizlogic_id).result
-    dDal.getDB.run(query).mapTo[Seq[Long]]
-  }
+//  def getBizIds(session: SessionClass): Future[Seq[Long]] = {
+//    val query = relGBTQ.withFilter(rel => {
+//      rel.group_id inSet session.groupIdList
+//      rel.active === true
+//    }).map(_.bizlogic_id).result
+//    relGBDal.getDB.run(query).mapTo[Seq[Long]]
+//  }
 
   def update(session: SessionClass, dashboardSeq: Seq[PutDashboardInfo]): Future[Unit] = {
-    val dashboardTQ = dDal.getTableQuery
     val query = DBIO.seq(dashboardSeq.map(r => {
       dashboardTQ.filter(obj => obj.id === r.id && obj.active === true).map(dashboard => (dashboard.name, dashboard.desc, dashboard.publish, dashboard.update_by, dashboard.update_time)).update(r.name, r.desc, r.publish, session.userId, CommonUtils.currentTime)
     }): _*)
@@ -57,16 +56,14 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
   }
 
   def updateRelDashboardWidget(session: SessionClass, relSeq: Seq[PutRelDashboardWidget]): Future[Unit] = {
-    val relDWTQ = relDWDal.getTableQuery
     val query = DBIO.seq(relSeq.map(r => {
       relDWTQ.filter(obj => obj.id === r.id && obj.active === true).map(rel => (rel.dashboard_id, rel.widget_id, rel.position_x, rel.position_y, rel.width, rel.length, rel.update_by, rel.update_time))
         .update(r.dashboard_id, r.widget_id, r.position_x, r.position_y, r.width, r.length, session.userId, CommonUtils.currentTime)
     }): _*)
-    dDal.getDB.run(query)
+    relDWDal.getDB.run(query)
   }
 
   def getAll(session: SessionClass): Future[Seq[PutDashboardInfo]] = {
-    val dashboardTQ = dDal.getTableQuery
     val query =
       if (session.admin) dashboardTQ.filter(_.active === true).map(obj => (obj.id, obj.name, obj.desc, obj.publish)).result
       else
@@ -74,4 +71,7 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
     dDal.getDB.run(query).mapTo[Seq[PutDashboardInfo]]
   }
 
+  def deleteRelDWById(session: SessionClass, relId: Long): Future[Int] = {
+    relDWDal.getDB.run(relDWTQ.filter(_.id === relId).delete)
+  }
 }

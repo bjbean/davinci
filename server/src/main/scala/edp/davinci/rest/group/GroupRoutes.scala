@@ -121,7 +121,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     if (session.admin) {
       val future = groupService.update(groupSeq, session)
       onComplete(future) {
-        case Success(_) => complete(OK, getHeader(200, session))
+        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session),""))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     } else complete(Forbidden, getHeader(403, session))

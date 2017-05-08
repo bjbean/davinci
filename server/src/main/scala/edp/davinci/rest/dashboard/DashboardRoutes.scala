@@ -39,17 +39,13 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   }
 
   def getDashboardById(dashboardId: Long, session: SessionClass): Route = {
-    onComplete(dashboardService.getBizIds(session)) {
-      case Success(bizIds) =>
-        onComplete(dashboardService.getInsideInfo(session, dashboardId, bizIds)) {
-          case Success(dashboardInfoSeq) =>
-            val infoSeq = dashboardInfoSeq.map(r => {
-              val widgetInfo = PutWidgetInfo(r._7, r._8, r._9, r._10, r._11.getOrElse(""), r._12, r._13, r._14, r._15)
-              DashboardInfo(r._1, r._2, r._3, r._4, r._5, r._6, widgetInfo)
-            })
-            complete(OK, ResponseSeqJson[DashboardInfo](getHeader(200, session), infoSeq))
-          case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-        }
+    onComplete(dashboardService.getInsideInfo(session, dashboardId)) {
+      case Success(dashboardInfoSeq) =>
+        val infoSeq = dashboardInfoSeq.map(r => {
+          val widgetInfo = PutWidgetInfo(r._7, r._8, r._9, r._10, r._11.getOrElse(""), r._12, r._13, r._14, r._15)
+          DashboardInfo(r._1, r._2, r._3, r._4, r._5, r._6, widgetInfo)
+        })
+        complete(OK, ResponseSeqJson[DashboardInfo](getHeader(200, session), infoSeq))
       case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
     }
   }
@@ -188,7 +184,14 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   def deleteWidgetFromDashboardRoute: Route = path("dashboards" / "widgets" / LongNumber) { relId =>
     delete {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session => modules.relDashboardWidgetRoutes.deleteByIdComplete(relId, session)
+        session =>
+          if (session.admin) {
+            onComplete(dashboardService.deleteRelDWById(session, relId)) {
+              case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session), r))
+              case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+            }
+          }
+          else complete(Forbidden, getHeader(403, session))
       }
     }
   }
@@ -196,7 +199,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   def putDashboardComplete(session: SessionClass, dashboardSeq: Seq[PutDashboardInfo]): Route = {
     if (session.admin) {
       onComplete(dashboardService.update(session, dashboardSeq)) {
-        case Success(_) => complete(OK, getHeader(200, session))
+        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     }
@@ -206,7 +209,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   def updateWidgetInDashboard(session: SessionClass, relSeq: Seq[PutRelDashboardWidget]): Route = {
     if (session.admin) {
       onComplete(dashboardService.updateRelDashboardWidget(session, relSeq)) {
-        case Success(_) => complete(OK, getHeader(200, session))
+        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
         case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
       }
     }
