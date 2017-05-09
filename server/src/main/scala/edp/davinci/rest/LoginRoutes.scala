@@ -33,16 +33,10 @@ class LoginRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       entity(as[LoginClass]) { login =>
         onComplete(AuthorizationProvider.createSessionClass(login)) {
           case Success(sessionEither) =>
-            sessionEither.fold(authorizationError => {
-              println(authorizationError)
-              println(authorizationError.statusCode, authorizationError.desc)
-              complete(Unauthorized, getHeader(authorizationError.statusCode, authorizationError.desc, null))
-            },
-              session => complete(OK,ResponseJson[String](getHeader(200, session),""))
+            sessionEither.fold(authorizationError => complete(Unauthorized, ResponseJson[String](getHeader(authorizationError.statusCode, authorizationError.desc, null),"")),
+              session => complete(OK, ResponseJson[String](getHeader(200, session), ""))
             )
-          case Failure(ex) =>
-            println("failure")
-            complete(OK, getHeader(403, ex.getMessage, null))
+          case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, null))
         }
       }
     }

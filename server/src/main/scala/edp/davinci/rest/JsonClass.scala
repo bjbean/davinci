@@ -76,7 +76,7 @@ case class RequestJson[A](payload: A)
 
 case class RequestSeqJson[A](payload: Seq[A])
 
-case class ResponseHeader(code: Int, msg: String, token: String = null)
+case class ResponseHeader(code: Int, msg: String, token: String = "")
 
 case class ResponseJson[A](header: ResponseHeader, payload: A)
 
