@@ -42,7 +42,7 @@ class LoginRoutes(modules: ConfigurationModule with PersistenceModule with Busin
             )
           case Failure(ex) =>
             println("failure")
-            complete(InternalServerError, getHeader(500, ex.getMessage, null))
+            complete(OK, getHeader(403, ex.getMessage, null))
         }
       }
     }
