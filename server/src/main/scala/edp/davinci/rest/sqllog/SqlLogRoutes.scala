@@ -2,7 +2,7 @@ package edp.davinci.rest.sqllog
 
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, NotFound, OK}
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities.SqlLog
@@ -42,7 +42,7 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     if (session.admin) {
       onComplete(sqlLogService.getAll(session)) {
         case Success(logSeq) => complete(OK, ResponseSeqJson[SqlLog](getHeader(200, session), logSeq))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -99,7 +99,7 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       val future = sqlLogService.update(sqlLogSeq, session)
       onComplete(future) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }

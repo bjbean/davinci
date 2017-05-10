@@ -75,9 +75,9 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     onComplete(baseDal.findById(id)) {
       case Success(baseEntityOpt) => baseEntityOpt match {
         case Some(baseEntity) => complete(OK, ResponseJson[BaseEntity](getHeader(200, session), baseEntity))
-        case None => complete(NotFound, ResponseJson[String](getHeader(400, "not found", session), ""))
+        case None => complete(BadRequest, ResponseJson[String](getHeader(400, "not found", session), ""))
       }
-      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+      case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
   }
 
@@ -87,9 +87,9 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
       onComplete(baseDal.findByName(name)) {
         case Success(baseEntityOpt) => baseEntityOpt match {
           case Some(baseEntity) => complete(OK, ResponseJson[BaseEntity](getHeader(200, session), baseEntity))
-          case None => complete(NotFound, getHeader(404, session))
+          case None => complete(BadRequest, getHeader(404, session))
         }
-        case Failure(ex) => complete(InternalServerError, getHeader(402, ex.getMessage, session))
+        case Failure(ex) => complete(BadRequest, getHeader(402, ex.getMessage, session))
       } else complete(Forbidden, getHeader(403, session))
   }
 
@@ -104,7 +104,7 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     if (session.admin || access(route, "all")) {
       onComplete(future) {
         case Success(baseSeq) => complete(OK, ResponseSeqJson[BaseInfo](getHeader(200, session), baseSeq))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -114,7 +114,7 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     if (session.admin) {
       onComplete(insertByPost(session, seq).mapTo[Seq[BaseEntity]]) {
         case Success(baseSeq) => complete(OK, ResponseSeqJson[BaseEntity](getHeader(200, session), baseSeq))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -130,7 +130,7 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     if (session.admin) {
       onComplete(baseDal.update(seq.asInstanceOf[Seq[A]])) {
         case Success(_) => complete(OK, getHeader(200, session))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+        case Failure(ex) => complete(BadRequest, getHeader(500, ex.getMessage, session))
       }
     }
     else complete(Forbidden, getHeader(403, session))
@@ -141,7 +141,7 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     if (session.admin) {
       onComplete(baseDal.deleteById(id).mapTo[Int]) {
         case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session), r))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }

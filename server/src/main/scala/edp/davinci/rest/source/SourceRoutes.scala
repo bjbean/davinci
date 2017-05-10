@@ -2,7 +2,7 @@ package edp.davinci.rest.source
 
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, NotFound, OK}
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities.{PostSourceInfo, PutSourceInfo, Source}
@@ -42,7 +42,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     if (session.admin) {
       onComplete(sourceService.getAll) {
         case Success(sourceSeq) => complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), sourceSeq))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -90,7 +90,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
         case Success(sourceWithIdSeq) =>
           val responseSourceSeq = sourceWithIdSeq.map(source => PutSourceInfo(source.id, source.name, source.connection_url, source.desc, source.`type`, source.config))
           complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), responseSourceSeq))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -123,7 +123,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       val future = sourceService.update(sourceSeq, session)
       onComplete(future) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }

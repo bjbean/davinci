@@ -2,7 +2,7 @@ package edp.davinci.rest.bizlogic
 
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, NotFound, OK}
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{ConfigurationModule, PersistenceModule, _}
 import edp.davinci.persistence.entities._
@@ -43,7 +43,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
           if (session.admin) {
             onComplete(bizlogicService.getAllBiz) {
               case Success(bizlogicSeq) => complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), bizlogicSeq))
-              case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
             }
           } else complete(Forbidden, ResponseJson[String](getHeader(403, "user is not admin", session), ""))
       }
@@ -85,9 +85,9 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
           } yield RelGroupBizlogic(0, rel.group_id, biz.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
           onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
             case Success(_) => complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), queryBiz))
-            case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+            case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -125,10 +125,10 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
       } yield RelGroupBizlogic(0, rel.group_id, bizlogicSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
       onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } catch {
-      case ex: Throwable => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+      case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
   }
 
@@ -184,7 +184,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
           val future = bizlogicService.getGroups(bizId)
           onComplete(future) {
             case Success(relSeq) => complete(OK, ResponseSeqJson[PutRelGroupBizlogic](getHeader(200, session), relSeq))
-            case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+            case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }
       }
     }
@@ -222,7 +222,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
         val result = getResult(connectionUrl, resultSql)
         println("get result~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         complete(OK, ResponseJson[BizlogicResult](getHeader(200, session), BizlogicResult(result)))
-      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+      case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
   }
 

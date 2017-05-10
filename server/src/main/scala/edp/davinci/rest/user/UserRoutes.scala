@@ -2,7 +2,7 @@ package edp.davinci.rest.user
 
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, NotFound, OK}
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module._
 import edp.davinci.persistence.entities._
@@ -11,6 +11,7 @@ import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
@@ -43,7 +44,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     if (session.admin) {
       onComplete(userService.getAll(session)) {
         case Success(userSeq) => complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), userSeq))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
 
@@ -88,7 +89,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
         case Success(users) =>
           val queryUsers = users.map(user => QueryUserInfo(user.id, user.email, user.title, user.name, user.admin))
           complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), queryUsers))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -130,7 +131,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
       } yield (a, b, c)
       onComplete(operation) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     }
     else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
@@ -163,7 +164,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     val future = userService.updateLoginUser(user, session)
     onComplete(future) {
       case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+      case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
   }
 
@@ -220,7 +221,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     val future = userService.getAllGroups(userId)
     onComplete(future) {
       case Success(relSeq) => complete(OK, ResponseSeqJson[PutRelUserGroup](getHeader(200, session), relSeq))
-      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+      case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
   }
 

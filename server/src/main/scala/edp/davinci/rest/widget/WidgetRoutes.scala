@@ -2,7 +2,7 @@ package edp.davinci.rest.widget
 
 import javax.ws.rs.Path
 
-import akka.http.scaladsl.model.StatusCodes.{Forbidden, InternalServerError, NotFound, OK}
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities.{PostWidgetInfo, PutWidgetInfo, Widget}
@@ -45,7 +45,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
         case Success(widgetSeq) =>
           val responseSeq: Seq[PutWidgetInfo] = widgetSeq.map(r => PutWidgetInfo(r._1, r._2, r._3, r._4, r._5.getOrElse(""), r._6, r._7, r._8, r._9.getOrElse(""), r._10))
           complete(OK, ResponseJson[Seq[PutWidgetInfo]](getHeader(200, session), responseSeq))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -79,7 +79,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
         case Success(widgets) =>
           val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql.getOrElse(""), w.desc, w.trigger_type, w.trigger_params, w.chart_params.getOrElse(""), w.publish))
           complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session), putWidgets))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -112,7 +112,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       val future = widgetService.update(putWidgetSeq, session)
       onComplete(future) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }

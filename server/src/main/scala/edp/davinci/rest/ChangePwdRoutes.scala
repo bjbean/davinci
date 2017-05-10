@@ -42,12 +42,12 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
                   if (user.password == changePwd.oldPass) {
                     onComplete(modules.userDal.update(updatePass(user, changePwd.newPass)).mapTo[Int]) {
                       case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session),r))
-                      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session),""))
+                      case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session),""))
                     }
-                  } else complete(Unauthorized, ResponseJson[String](getHeader(400, "old password is wrong", session),""))
-                case None => complete(NotFound, ResponseJson[String](getHeader(400, session),""))
+                  } else complete(BadRequest, ResponseJson[String](getHeader(400, "old password is wrong", session),""))
+                case None => complete(BadRequest, ResponseJson[String](getHeader(400, session),""))
               }
-              case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session),""))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session),""))
             }
         }
       }
@@ -77,12 +77,12 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
                   if (user.password == changePwd.oldPass) {
                     onComplete(modules.userDal.update(updatePass(user, changePwd.newPass)).mapTo[Int]) {
                       case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session),r))
-                      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session),""))
+                      case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session),""))
                     }
-                  } else complete(Unauthorized, ResponseJson[String](getHeader(400, "old password is wrong", session),""))
-                case None => complete(NotFound, ResponseJson[String](getHeader(400, "not found",session),""))
+                  } else complete(BadRequest, ResponseJson[String](getHeader(400, "old password is wrong", session),""))
+                case None => complete(BadRequest, ResponseJson[String](getHeader(400, "not found",session),""))
               }
-              case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session),""))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session),""))
             }
         }
       }

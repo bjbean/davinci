@@ -46,7 +46,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
           DashboardInfo(r._1, r._2, r._3, r._4, r._5, r._6, widgetInfo)
         })
         complete(OK, ResponseSeqJson[DashboardInfo](getHeader(200, session), infoSeq))
-      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+      case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
   }
 
@@ -63,7 +63,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
         session =>
           onComplete(dashboardService.getAll(session)) {
             case Success(dashboardSeq) => complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), dashboardSeq))
-            case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+            case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }
       }
     }
@@ -97,7 +97,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
         case Success(dashWithIdSeq) =>
           val responseDashSeq = dashWithIdSeq.map(dashboard => PutDashboardInfo(dashboard.id, dashboard.name, dashboard.desc, dashboard.publish))
           complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), responseDashSeq))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -129,7 +129,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     if (session.admin) {
       onComplete(dashboardService.update(session, dashboardSeq)) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     }
     else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
@@ -177,7 +177,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
         case Success(relDWWithIdSeq) =>
           val responseRelDWSeq = relDWWithIdSeq.map(rel => PutRelDashboardWidget(rel.id, rel.dashboard_id, rel.widget_id, rel.position_x, rel.position_y, rel.length, rel.width))
           complete(OK, ResponseSeqJson[PutRelDashboardWidget](getHeader(200, session), responseRelDWSeq))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -209,7 +209,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     if (session.admin) {
       onComplete(dashboardService.updateRelDashboardWidget(session, relSeq)) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     }
     else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
@@ -234,7 +234,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
           if (session.admin) {
             onComplete(dashboardService.deleteRelDWById(session, relId)) {
               case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session), r))
-              case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
             }
           }
           else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
