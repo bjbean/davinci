@@ -3,6 +3,7 @@ package edp.davinci.rest.bizlogic
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{ConfigurationModule, PersistenceModule, _}
 import edp.davinci.persistence.entities._
@@ -67,7 +68,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
       entity(as[PostBizlogicInfoSeq]) {
         bizlogicSeq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => postBizlogic(session, bizlogicSeq.payload)
+            session => println("in post ~~~~");postBizlogic(session, bizlogicSeq.payload)
           }
       }
     }
@@ -77,12 +78,13 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     if (session.admin) {
       val uniqueTableName = "table" + java.util.UUID.randomUUID().toString
       val bizEntitySeq = bizlogicSeq.map(biz => Bizlogic(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, biz.desc, active = true, null, session.userId, null, session.userId))
+     println("herer~~~~~~~~~")
       onComplete(modules.bizlogicDal.insert(bizEntitySeq)) {
         case Success(bizSeq) =>
           val queryBiz = bizSeq.map(biz => QueryBizlogic(biz.id, biz.source_id, biz.name, biz.sql_tmpl, biz.result_table, biz.desc))
           val relSeq = for {biz <- bizSeq
                             rel <- bizlogicSeq.head.relBG
-          } yield RelGroupBizlogic(0, rel.group_id, biz.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
+          } yield RelGroupBizlogic(0, rel.group_id, biz.id, paramFormat(rel.sql_params), active = true, null, session.userId, null, session.userId)
           onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
             case Success(_) => complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), queryBiz))
             case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -122,7 +124,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
       val deleteRelFuture = bizlogicService.deleteByBizId(bizlogicSeq)
       Await.result(deleteRelFuture, Duration.Inf)
       val relSeq = for {rel <- bizlogicSeq.head.relBG
-      } yield RelGroupBizlogic(0, rel.group_id, bizlogicSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
+      } yield RelGroupBizlogic(0, rel.group_id, bizlogicSeq.head.id, paramFormat(rel.sql_params), active = true, null, session.userId, null, session.userId)
       onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -130,6 +132,11 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     } catch {
       case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
+  }
+
+  private def paramFormat(params: Seq[Param]): String = {
+    println("parama~~~~~~~~~")
+    params.map(_.param).mkString("&")
   }
 
 
