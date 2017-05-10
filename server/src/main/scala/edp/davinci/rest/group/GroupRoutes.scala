@@ -86,7 +86,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       entity(as[PutGroupInfoSeq]) {
         groupSeq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => putUserComplete(session, groupSeq.payload)
+            session => putGroupComplete(session, groupSeq.payload)
           }
       }
     }
@@ -117,7 +117,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     } else complete(Forbidden, getHeader(403, session))
   }
 
-  private def putUserComplete(session: SessionClass, groupSeq: Seq[PutGroupInfo]): Route = {
+  private def putGroupComplete(session: SessionClass, groupSeq: Seq[PutGroupInfo]): Route = {
     if (session.admin) {
       val future = groupService.update(groupSeq, session)
       onComplete(future) {
