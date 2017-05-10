@@ -22,9 +22,10 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   @ApiOperation(value = "get all group with the same domain", notes = "", nickname = "", httpMethod = "GET")
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
-    new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 404, message = "dashboard not found"),
+    new ApiResponse(code = 405, message = "internal service error")
   ))
   def getGroupByAllRoute: Route = path("groups") {
     get {
@@ -32,6 +33,17 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
         session => getAllGroupsComplete(session)
       }
     }
+  }
+
+  private def getAllGroupsComplete(session: SessionClass): Route = {
+    if (session.admin) {
+      onComplete(groupService.getAll) {
+        case Success(groupSeq) =>
+          if (groupSeq.nonEmpty) complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), groupSeq))
+          else complete(NotFound,ResponseJson[String]( getHeader(404, session),""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      }
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
 
   //  @Path("{page=\\d+&size=\\d+}")
@@ -53,10 +65,11 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiImplicitParam(name = "group", value = "Group object to be added", required = true, dataType = "edp.davinci.rest.PostGroupInfoSeq", paramType = "body")
   ))
   @ApiResponses(Array(
-    new ApiResponse(code = 200, message = "post success"),
-    new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 404, message = "dashboard not found"),
+    new ApiResponse(code = 405, message = "internal service error")
   ))
   def postGroupRoute: Route = path("groups") {
     post {
@@ -69,6 +82,18 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     }
   }
 
+  private def postGroup(session: SessionClass, postGroupSeq: Seq[PostGroupInfo]) = {
+    if (session.admin) {
+      val groupSeq = postGroupSeq.map(post => UserGroup(0, post.name, post.desc, active = true, null, session.userId, null, session.userId))
+      onComplete(modules.groupDal.insert(groupSeq)) {
+        case Success(groupWithIdSeq) =>
+          val responseGroup = groupWithIdSeq.map(group => PutGroupInfo(group.id, group.name, group.desc))
+          complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), responseGroup))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      }
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+
+  }
 
   @ApiOperation(value = "update a group in the system", notes = "", nickname = "", httpMethod = "PUT")
   @ApiImplicitParams(Array(
@@ -79,7 +104,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "group not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal service error")
   ))
   def putGroupRoute: Route = path("groups") {
     put {
@@ -92,6 +117,17 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     }
   }
 
+  private def putGroupComplete(session: SessionClass, groupSeq: Seq[PutGroupInfo]): Route = {
+    if (session.admin) {
+      val future = groupService.update(groupSeq, session)
+      onComplete(future) {
+        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session),""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      }
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+  }
+
+
   @Path("/{id}")
   @ApiOperation(value = "delete group by id", notes = "", nickname = "", httpMethod = "DELETE")
   @ApiImplicitParams(Array(
@@ -101,43 +137,11 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 200, message = "delete success"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal delete error")
   ))
   def deleteGroupByIdRoute: Route = modules.groupRoutes.deleteByIdRoute("groups")
 
 
-  private def getAllGroupsComplete(session: SessionClass): Route = {
-    if (session.admin) {
-      onComplete(groupService.getAll) {
-        case Success(groupSeq) =>
-          if (groupSeq.nonEmpty) complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), groupSeq))
-          else complete(NotFound, getHeader(404, session))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    } else complete(Forbidden, getHeader(403, session))
-  }
 
-  private def putGroupComplete(session: SessionClass, groupSeq: Seq[PutGroupInfo]): Route = {
-    if (session.admin) {
-      val future = groupService.update(groupSeq, session)
-      onComplete(future) {
-        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session),""))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    } else complete(Forbidden, getHeader(403, session))
-  }
-
-  private def postGroup(session: SessionClass, postGroupSeq: Seq[PostGroupInfo]) = {
-    if (session.admin) {
-      val groupSeq = postGroupSeq.map(post => UserGroup(0, post.name, post.desc, active = true, null, session.userId, null, session.userId))
-      onComplete(modules.groupDal.insert(groupSeq)) {
-        case Success(groupWithIdSeq) =>
-          val responseGroup = groupWithIdSeq.map(group => PutGroupInfo(group.id, group.name, group.desc))
-          complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), responseGroup))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    } else complete(Forbidden, getHeader(403, session))
-
-  }
 
 }

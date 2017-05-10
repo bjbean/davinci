@@ -29,7 +29,8 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 400, message = "old password is wrong"),
     new ApiResponse(code = 404, message = "user not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 402, message = "unspecified error"),
+    new ApiResponse(code = 403, message = "internal service error")
   ))
   def changeLoginPwdRoute: Route = path("changepwd" / "login") {
     post {
@@ -42,12 +43,12 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
                   if (user.password == changePwd.oldPass) {
                     onComplete(modules.userDal.update(updatePass(user, changePwd.newPass)).mapTo[Int]) {
                       case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session),r))
-                      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+                      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(403, ex.getMessage, session),""))
                     }
-                  } else complete(Unauthorized, getHeader(401, "old password is wrong", session))
-                case None => complete(NotFound, getHeader(404, session))
+                  } else complete(Unauthorized, ResponseJson[String](getHeader(401, "old password is wrong", session),""))
+                case None => complete(NotFound, ResponseJson[String](getHeader(404, session),""))
               }
-              case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+              case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(402, ex.getMessage, session),""))
             }
         }
       }
@@ -64,7 +65,8 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 400, message = "old password is wrong"),
     new ApiResponse(code = 404, message = "user not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")))
+    new ApiResponse(code = 402, message = "unspecified error"),
+    new ApiResponse(code = 403, message = "internal service error")))
   def changeUserPwdRoute: Route = path("changepwd" / "users") {
     post {
       entity(as[ChangeUserPwdClass]) { changePwd =>
@@ -76,12 +78,12 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
                   if (user.password == changePwd.oldPass) {
                     onComplete(modules.userDal.update(updatePass(user, changePwd.newPass)).mapTo[Int]) {
                       case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session),r))
-                      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+                      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(403, ex.getMessage, session),""))
                     }
-                  } else complete(Unauthorized, getHeader(401, "old password is wrong", session))
-                case None => complete(NotFound, getHeader(404, session))
+                  } else complete(Unauthorized, ResponseJson[String](getHeader(401, "old password is wrong", session),""))
+                case None => complete(NotFound, ResponseJson[String](getHeader(404, session),""))
               }
-              case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+              case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(402, ex.getMessage, session),""))
             }
         }
       }

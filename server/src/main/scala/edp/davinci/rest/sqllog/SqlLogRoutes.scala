@@ -26,8 +26,9 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 404, message = "sources not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal server error")
   ))
   def getSqlByAllRoute: Route = path("sqlLogs") {
     get {
@@ -37,6 +38,18 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     }
   }
 
+  private def getAllLogsComplete(session: SessionClass): Route = {
+    if (session.admin) {
+      onComplete(sqlLogService.getAll(session)) {
+        case Success(logSeq) =>
+          if (logSeq.nonEmpty) complete(OK, ResponseSeqJson[SqlLog](getHeader(200, session), logSeq))
+          else complete(NotFound, ResponseJson[String](getHeader(404, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      }
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+  }
+
+
 
   @ApiOperation(value = "Add sqlLog to the system", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
@@ -45,8 +58,9 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
     new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 404, message = "sources not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal server error")
   ))
   def postSqlLogRoute: Route = path("sqlLogs") {
     post {
@@ -69,7 +83,7 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "sources not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal server error")
   ))
   def putSqlLogRoute: Route = path("sqlLogs") {
     put {
@@ -82,25 +96,15 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     }
   }
 
-  private def getAllLogsComplete(session: SessionClass): Route = {
-    if (session.admin) {
-      onComplete(sqlLogService.getAll(session)) {
-        case Success(logSeq) =>
-          if (logSeq.nonEmpty) complete(OK, ResponseSeqJson[SqlLog](getHeader(200, session), logSeq))
-          else complete(NotFound, getHeader(404, session))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    } else complete(Forbidden, getHeader(403, session))
-  }
 
   private def putSqlLogComplete(session: SessionClass, sqlLogSeq: Seq[SqlLog]): Route = {
     if (session.admin) {
       val future = sqlLogService.update(sqlLogSeq, session)
       onComplete(future) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session),""))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
       }
-    } else complete(Forbidden, getHeader(403, session))
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
 
 }

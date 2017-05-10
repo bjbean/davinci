@@ -13,8 +13,11 @@ import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
 import edp.endurance.db.DbConnection
 import io.swagger.annotations._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 @Api(value = "/bizlogics", consumes = "application/json", produces = "application/json")
@@ -30,7 +33,8 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 402, message = "internal server error"),
+    new ApiResponse(code = 404, message = "not found")
   ))
   def getBizlogicByAllRoute: Route = path("bizlogics") {
     get {
@@ -40,10 +44,10 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
             onComplete(bizlogicService.getAllBiz) {
               case Success(bizlogicSeq) =>
                 if (bizlogicSeq.nonEmpty) complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), bizlogicSeq))
-                else complete(NotFound, getHeader(404, session))
-              case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+                else complete(NotFound, ResponseJson[String](getHeader(404, session), ""))
+              case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(402, ex.getMessage, session), ""))
             }
-          } else complete(Forbidden, getHeader(403, session))
+          } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
       }
     }
   }
@@ -57,7 +61,8 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 200, message = "post success"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 402, message = "internal service error"),
+    new ApiResponse(code = 405, message = "unspecified error")
   ))
   def postBizlogicRoute: Route = path("bizlogics") {
     post {
@@ -82,11 +87,11 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
           } yield RelGroupBizlogic(0, rel.group_id, biz.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
           onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
             case Success(_) => complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), queryBiz))
-            case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+            case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(402, ex.getMessage, session), ""))
           }
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
       }
-    } else complete(Forbidden, getHeader(403, session))
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
 
 
@@ -96,10 +101,10 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "put success"),
-    new ApiResponse(code = 403, message = "user is not admin"),
-    new ApiResponse(code = 404, message = "bizlogics not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 402, message = "internal service error"),
+    new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 405, message = "put bizlogic error")
   ))
   def putBizlogicRoute: Route = path("bizlogics") {
     put {
@@ -113,20 +118,19 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   }
 
   private def putBizlogicComplete(session: SessionClass, bizlogicSeq: Seq[PutBizlogicInfo]): Route = {
-    val future = bizlogicService.updateBiz(bizlogicSeq, session)
-    onComplete(future) {
-      case Success(_) =>
-        onComplete(bizlogicService.deleteByBizId(bizlogicSeq)) {
-          case Success(_) =>
-            val relSeq = for {rel <- bizlogicSeq.head.relBG
-            } yield RelGroupBizlogic(0, rel.group_id, bizlogicSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
-            onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
-              case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-              case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-            }
-          case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-        }
-      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+    try {
+      val updateBizFuture = bizlogicService.updateBiz(bizlogicSeq, session)
+      Await.result(updateBizFuture, Duration.Inf)
+      val deleteRelFuture = bizlogicService.deleteByBizId(bizlogicSeq)
+      Await.result(deleteRelFuture, Duration.Inf)
+      val relSeq = for {rel <- bizlogicSeq.head.relBG
+      } yield RelGroupBizlogic(0, rel.group_id, bizlogicSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
+      onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
+        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(402, ex.getMessage, session), ""))
+      }
+    } catch {
+      case ex: Throwable => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
     }
   }
 
@@ -140,7 +144,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 200, message = "delete success"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal delete error")
   ))
   def deleteBizlogicByIdRoute: Route = modules.bizlogicRoutes.deleteByIdRoute("bizlogics")
 
@@ -153,7 +157,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 200, message = "delete success"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal delete error")
   ))
   def deleteRelGBById: Route = path("bizlogics" / "groups" / LongNumber) { relId =>
     delete {
@@ -172,7 +176,8 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 200, message = "ok"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal get error"),
+    new ApiResponse(code = 404, message = "not found")
   ))
   def getGroupsByBizIdRoute: Route = path("bizlogics" / LongNumber / "groups") { bizId =>
     get {
@@ -182,8 +187,8 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
           onComplete(future) {
             case Success(relSeq) =>
               if (relSeq.nonEmpty) complete(OK, ResponseSeqJson[PutRelGroupBizlogic](getHeader(200, session), relSeq))
-              else complete(NotFound, getHeader(404, session))
-            case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+              else complete(NotFound, ResponseJson[String](getHeader(404, session), ""))
+            case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
           }
       }
     }
@@ -199,7 +204,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 200, message = "ok"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal get result error")
   ))
   def getCalculationResRoute: Route = path("bizlogics" / LongNumber / "resultset") { bizId =>
     get {
@@ -221,12 +226,12 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
         val result = getResult(connectionUrl, resultSql)
         println("get result~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         complete(OK, ResponseJson[BizlogicResult](getHeader(200, session), BizlogicResult(result)))
-      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
     }
   }
 
 
-  private def getResult(connectionUrl: String, sqls: String): List[Seq[String]] = {
+  private def getResult(connectionUrl: String, sqls: Array[String]): List[Seq[String]] = {
     val resultList = new ListBuffer[Seq[String]]
     val columnList = new ListBuffer[String]
     if (connectionUrl != null) {
@@ -236,7 +241,8 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
       else {
         val dbConnection = DbConnection.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
         val statement = dbConnection.createStatement()
-        val resultSet = statement.executeQuery(sqls)
+        sqls.dropRight(1).foreach(statement.execute)
+        val resultSet = statement.executeQuery(sqls.last)
         val meta = resultSet.getMetaData
         for (i <- 1 to meta.getColumnCount)
           columnList.append(meta.getColumnName(i))

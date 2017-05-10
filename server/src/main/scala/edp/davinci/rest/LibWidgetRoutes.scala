@@ -20,16 +20,17 @@ class LibWidgetRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 404, message = "libWidget not found"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 403, message = "internal service error")
   ))
   def getLibWidgetByIdRoute: Route = modules.libWidgetRoutes.getByIdRoute("libWidgets")
 
   @ApiOperation(value = "get all libWidget with the same domain", notes = "", nickname = "", httpMethod = "GET")
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
-    new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 404, message = "libWidget not found"),
+    new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 402, message = "internal service error")
   ))
   def getLibWidgetByAllRoute: Route = modules.libWidgetRoutes.getByAllRoute("libWidgets")
 }

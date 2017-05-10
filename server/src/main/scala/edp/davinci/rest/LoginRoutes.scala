@@ -24,19 +24,19 @@ class LoginRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
+    new ApiResponse(code = 401, message = "unspecified error"),
     new ApiResponse(code = 400, message = "password is wrong"),
-    new ApiResponse(code = 404, message = "user not found"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 404, message = "user not found")
   ))
   def accessTokenRoute: Route = path("login") {
     post {
       entity(as[LoginClass]) { login =>
         onComplete(AuthorizationProvider.createSessionClass(login)) {
           case Success(sessionEither) =>
-            sessionEither.fold(authorizationError => complete(Unauthorized, ResponseJson[String](getHeader(authorizationError.statusCode, authorizationError.desc, null),"")),
+            sessionEither.fold(authorizationError => complete(Unauthorized, ResponseJson[String](getHeader(authorizationError.statusCode, authorizationError.desc, null), "")),
               session => complete(OK, ResponseJson[String](getHeader(200, session), ""))
             )
-          case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, null))
+          case Failure(ex) => complete(Unauthorized, ResponseJson[String](getHeader(401, ex.getMessage, null), ""))
         }
       }
     }

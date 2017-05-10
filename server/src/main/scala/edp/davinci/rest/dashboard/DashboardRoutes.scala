@@ -28,7 +28,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 404, message = "dashboard not found"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal service error")
   ))
   def getWidgetByDashboardIdRoute: Route = path("dashboards" / LongNumber) { dashboard_id =>
     get {
@@ -41,12 +41,16 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   def getDashboardById(dashboardId: Long, session: SessionClass): Route = {
     onComplete(dashboardService.getInsideInfo(session, dashboardId)) {
       case Success(dashboardInfoSeq) =>
-        val infoSeq = dashboardInfoSeq.map(r => {
-          val widgetInfo = PutWidgetInfo(r._7, r._8, r._9, r._10, r._11.getOrElse(""), r._12, r._13, r._14, r._15.getOrElse(""),r._16)
-          DashboardInfo(r._1, r._2, r._3, r._4, r._5, r._6, widgetInfo)
-        })
-        complete(OK, ResponseSeqJson[DashboardInfo](getHeader(200, session), infoSeq))
-      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+        if (dashboardInfoSeq.nonEmpty) {
+          val infoSeq = dashboardInfoSeq.map(r => {
+            val widgetInfo = PutWidgetInfo(r._7, r._8, r._9, r._10, r._11.getOrElse(""), r._12, r._13, r._14, r._15.getOrElse(""), r._16)
+            DashboardInfo(r._1, r._2, r._3, r._4, r._5, r._6, widgetInfo)
+          })
+          complete(OK, ResponseSeqJson[DashboardInfo](getHeader(200, session), infoSeq))
+        }
+        else
+          complete(NotFound, ResponseJson[String](getHeader(404, session), ""))
+      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
     }
   }
 
@@ -55,7 +59,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 403, message = "dashboard is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal service error")
   ))
   def getDashboardByAllRoute: Route = path("dashboards") {
     get {
@@ -63,7 +67,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
         session =>
           onComplete(dashboardService.getAll(session)) {
             case Success(dashboardSeq) => complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), dashboardSeq))
-            case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+            case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
           }
       }
     }
@@ -77,7 +81,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 200, message = "post success"),
     new ApiResponse(code = 403, message = "dashboard is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal service error")
   ))
   def postDashboardRoute: Route = path("dashboards") {
     post {
@@ -90,6 +94,19 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     }
   }
 
+  def postDashBoard(session: SessionClass, postDashboardSeq: Seq[PostDashboardInfo]): Route = {
+    if (session.admin) {
+      val dashboardSeq = postDashboardSeq.map(post => Dashboard(0, post.name, post.desc, post.publish, active = true, null, session.userId, null, session.userId))
+      onComplete(modules.dashboardDal.insert(dashboardSeq)) {
+        case Success(dashWithIdSeq) =>
+          val responseDashSeq = dashWithIdSeq.map(dashboard => PutDashboardInfo(dashboard.id, dashboard.name, dashboard.desc, dashboard.publish))
+          complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), responseDashSeq))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      }
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+  }
+
+
   @ApiOperation(value = "update dashboards in the system", notes = "", nickname = "", httpMethod = "PUT")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "dashboard", value = "Dashboard objects to be updated", required = true, dataType = "edp.davinci.rest.PutDashboardSeq", paramType = "body")
@@ -99,7 +116,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 403, message = "dashboard is not admin"),
     new ApiResponse(code = 404, message = "dashboards not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal service error")
   ))
   def putDashboardRoute: Route = path("dashboards") {
     put {
@@ -112,6 +129,16 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     }
   }
 
+  def putDashboardComplete(session: SessionClass, dashboardSeq: Seq[PutDashboardInfo]): Route = {
+    if (session.admin) {
+      onComplete(dashboardService.update(session, dashboardSeq)) {
+        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      }
+    }
+    else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+  }
+
   @Path("/{id}")
   @ApiOperation(value = "delete dashboard by id", notes = "", nickname = "", httpMethod = "DELETE")
   @ApiImplicitParams(Array(
@@ -119,9 +146,9 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "delete success"),
-    new ApiResponse(code = 403, message = "dashboard is not admin"),
+    new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal delete error")
   ))
   def deleteDashboardByIdRoute: Route = modules.dashboardRoutes.deleteByIdRoute("dashboards")
 
@@ -132,9 +159,9 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
+    new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 404, message = "dashboard not found"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal post error")
   ))
   def postWidget2DashboardRoute: Route = path("dashboards" / "widgets") {
     post {
@@ -147,16 +174,29 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     }
   }
 
+  def postWidget2Dashboard(session: SessionClass, postRelDWSeq: Seq[PostRelDashboardWidget]): Route = {
+    if (session.admin) {
+      val relDWSeq = postRelDWSeq.map(post => RelDashboardWidget(0, post.dashboard_id, post.widget_id, post.position_x, post.position_y, post.length, post.width, active = true, null, session.userId, null, session.userId))
+      onComplete(modules.relDashboardWidgetDal.insert(relDWSeq)) {
+        case Success(relDWWithIdSeq) =>
+          val responseRelDWSeq = relDWWithIdSeq.map(rel => PutRelDashboardWidget(rel.id, rel.dashboard_id, rel.widget_id, rel.position_x, rel.position_y, rel.length, rel.width))
+          complete(OK, ResponseSeqJson[PutRelDashboardWidget](getHeader(200, session), responseRelDWSeq))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      }
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+  }
+
+
   @Path("/widgets")
   @ApiOperation(value = "update widgets in the dashboard", notes = "", nickname = "", httpMethod = "PUT")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "relDashboardWidget", value = "RelDashboardWidget objects to be added", required = true, dataType = "edp.davinci.rest.PutRelDashboardWidgetSeq", paramType = "body")
   ))
   @ApiResponses(Array(
-    new ApiResponse(code = 200, message = "OK"),
+    new ApiResponse(code = 200, message = "update success"),
+    new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 404, message = "dashboard not found"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal put error")
   ))
   def putWidgetInDashboardRoute: Route = path("dashboards" / "widgets") {
     put {
@@ -167,6 +207,16 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
           }
       }
     }
+  }
+
+  def updateWidgetInDashboard(session: SessionClass, relSeq: Seq[PutRelDashboardWidget]): Route = {
+    if (session.admin) {
+      onComplete(dashboardService.updateRelDashboardWidget(session, relSeq)) {
+        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      }
+    }
+    else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
 
 
@@ -188,57 +238,13 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
           if (session.admin) {
             onComplete(dashboardService.deleteRelDWById(session, relId)) {
               case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session), r))
-              case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+              case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
             }
           }
-          else complete(Forbidden, getHeader(403, session))
+          else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
       }
     }
   }
 
-  def putDashboardComplete(session: SessionClass, dashboardSeq: Seq[PutDashboardInfo]): Route = {
-    if (session.admin) {
-      onComplete(dashboardService.update(session, dashboardSeq)) {
-        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    }
-    else complete(Forbidden, getHeader(403, session))
-  }
-
-  def updateWidgetInDashboard(session: SessionClass, relSeq: Seq[PutRelDashboardWidget]): Route = {
-    if (session.admin) {
-      onComplete(dashboardService.updateRelDashboardWidget(session, relSeq)) {
-        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    }
-    else complete(Forbidden, getHeader(403, session))
-  }
-
-  def postDashBoard(session: SessionClass, postDashboardSeq: Seq[PostDashboardInfo]): Route = {
-    if (session.admin) {
-      val dashboardSeq = postDashboardSeq.map(post => Dashboard(0, post.name, post.desc, post.publish, active = true, null, session.userId, null, session.userId))
-      onComplete(modules.dashboardDal.insert(dashboardSeq)) {
-        case Success(dashWithIdSeq) =>
-          val responseDashSeq = dashWithIdSeq.map(dashboard => PutDashboardInfo(dashboard.id, dashboard.name, dashboard.desc, dashboard.publish))
-          complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), responseDashSeq))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    } else complete(Forbidden, getHeader(403, session))
-  }
-
-
-  def postWidget2Dashboard(session: SessionClass, postRelDWSeq: Seq[PostRelDashboardWidget]): Route = {
-    if (session.admin) {
-      val relDWSeq = postRelDWSeq.map(post => RelDashboardWidget(0, post.dashboard_id, post.widget_id, post.position_x, post.position_y, post.length, post.width, active = true, null, session.userId, null, session.userId))
-      onComplete(modules.relDashboardWidgetDal.insert(relDWSeq)) {
-        case Success(relDWWithIdSeq) =>
-          val responseRelDWSeq = relDWWithIdSeq.map(rel => PutRelDashboardWidget(rel.id, rel.dashboard_id, rel.widget_id, rel.position_x, rel.position_y, rel.length, rel.width))
-          complete(OK, ResponseSeqJson[PutRelDashboardWidget](getHeader(200, session), responseRelDWSeq))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    } else complete(Forbidden, getHeader(403, session))
-  }
 
 }

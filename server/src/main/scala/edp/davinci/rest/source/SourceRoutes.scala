@@ -26,8 +26,9 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 404, message = "sources not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal server error")
   ))
   def getSourceByAllRoute: Route = path("sources") {
     get {
@@ -35,6 +36,17 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
         session => getAllSourcesComplete(session)
       }
     }
+  }
+
+  private def getAllSourcesComplete(session: SessionClass): Route = {
+    if (session.admin) {
+      onComplete(sourceService.getAll) {
+        case Success(sourceSeq) =>
+          if (sourceSeq.nonEmpty) complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), sourceSeq))
+          else complete(NotFound, ResponseJson[String](getHeader(404, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      }
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
 
   //  @Path("{page=\\d+&size=\\d+}")
@@ -59,7 +71,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 200, message = "post success"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal server error")
   ))
   def postSourceRoute: Route = path("sources") {
     post {
@@ -73,6 +85,19 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   }
 
 
+  private def postSource(session: SessionClass, postSourceSeq: Seq[PostSourceInfo]): Route = {
+    if (session.admin) {
+      val sourceSeq = postSourceSeq.map(post => Source(0, post.name, post.connection_url, post.desc, post.`type`, post.config, active = true, null, session.userId, null, session.userId))
+      onComplete(modules.sourceDal.insert(sourceSeq)) {
+        case Success(sourceWithIdSeq) =>
+          val responseSourceSeq = sourceWithIdSeq.map(source => PutSourceInfo(source.id, source.name, source.connection_url, source.desc, source.`type`, source.config))
+          complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), responseSourceSeq))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      }
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+  }
+
+
   @ApiOperation(value = "update sources in the system", notes = "", nickname = "", httpMethod = "PUT")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "sources", value = "Source objects to be updated", required = true, dataType = "edp.davinci.rest.PutSourceInfoSeq", paramType = "body")
@@ -82,7 +107,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "sources not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 405, message = "internal server error")
   ))
   def putSourceRoute: Route = path("sources") {
     put {
@@ -93,6 +118,16 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
           }
       }
     }
+  }
+
+  private def putSourceComplete(session: SessionClass, sourceSeq: Seq[PutSourceInfo]): Route = {
+    if (session.admin) {
+      val future = sourceService.update(sourceSeq, session)
+      onComplete(future) {
+        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      }
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
 
 
@@ -109,36 +144,4 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   ))
   def deleteSourceByIdRoute: Route = modules.sourceRoutes.deleteByIdRoute("sources")
 
-  private def getAllSourcesComplete(session: SessionClass): Route = {
-    if (session.admin) {
-      onComplete(sourceService.getAll) {
-        case Success(sourceSeq) =>
-          if (sourceSeq.nonEmpty) complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), sourceSeq))
-          else complete(NotFound, getHeader(404, session))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    } else complete(Forbidden, getHeader(403, session))
-  }
-
-  private def putSourceComplete(session: SessionClass, sourceSeq: Seq[PutSourceInfo]): Route = {
-    if (session.admin) {
-      val future = sourceService.update(sourceSeq, session)
-      onComplete(future) {
-        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session),""))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    } else complete(Forbidden, getHeader(403, session))
-  }
-
-  private def postSource(session: SessionClass, postSourceSeq: Seq[PostSourceInfo]): Route = {
-    if (session.admin) {
-      val sourceSeq = postSourceSeq.map(post => Source(0, post.name, post.connection_url, post.desc, post.`type`, post.config, active = true, null, session.userId, null, session.userId))
-      onComplete(modules.sourceDal.insert(sourceSeq)) {
-        case Success(sourceWithIdSeq) =>
-          val responseSourceSeq = sourceWithIdSeq.map(source => PutSourceInfo(source.id, source.name, source.connection_url, source.desc, source.`type`, source.config))
-          complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), responseSourceSeq))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-      }
-    } else complete(Forbidden, getHeader(403, session))
-  }
 }

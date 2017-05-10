@@ -75,9 +75,9 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     onComplete(baseDal.findById(id)) {
       case Success(baseEntityOpt) => baseEntityOpt match {
         case Some(baseEntity) => complete(OK, ResponseJson[BaseEntity](getHeader(200, session), baseEntity))
-        case None => complete(NotFound, getHeader(404, session))
+        case None => complete(NotFound, ResponseJson[String](getHeader(404, session),""))
       }
-      case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(402, ex.getMessage, session),""))
     }
   }
 
@@ -89,7 +89,7 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
           case Some(baseEntity) => complete(OK, ResponseJson[BaseEntity](getHeader(200, session), baseEntity))
           case None => complete(NotFound, getHeader(404, session))
         }
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+        case Failure(ex) => complete(InternalServerError, getHeader(402, ex.getMessage, session))
       } else complete(Forbidden, getHeader(403, session))
   }
 
@@ -105,10 +105,10 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
       onComplete(future) {
         case Success(baseSeq) =>
           if (baseSeq.nonEmpty) complete(OK, ResponseSeqJson[BaseInfo](getHeader(200, session), baseSeq))
-          else complete(NotFound, getHeader(404, session))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+          else complete(NotFound, ResponseJson[String](getHeader(404, session),""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(500, ex.getMessage, session),""))
       }
-    } else complete(Forbidden, getHeader(403, session))
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session),""))
   }
 
 
@@ -116,9 +116,9 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     if (session.admin) {
       onComplete(insertByPost(session, seq).mapTo[Seq[BaseEntity]]) {
         case Success(baseSeq) => complete(OK, ResponseSeqJson[BaseEntity](getHeader(200, session), baseSeq))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.toString, session))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
       }
-    } else complete(Forbidden, getHeader(403, session))
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
 
 
@@ -143,9 +143,9 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
     if (session.admin) {
       onComplete(baseDal.deleteById(id).mapTo[Int]) {
         case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session), r))
-        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session),""))
       }
-    } else complete(Forbidden, getHeader(403, session))
+    } else complete(Forbidden, ResponseJson[String](getHeader(403, session),""))
   }
 
   //  override def deleteByBatchRoute(route: String): Route = path(route) {

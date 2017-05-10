@@ -16,7 +16,7 @@ object CommonUtils {
     respondWithHeader(RawHeader("token", JwtSupport.generateToken(session)))
   }
 
-  def currentTime = yyyyMMddHHmmssToString(currentyyyyMMddHHmmss, DtFormat.TS_DASH_SEC)
+  def currentTime: String = yyyyMMddHHmmssToString(currentyyyyMMddHHmmss, DtFormat.TS_DASH_SEC)
 
   val msgmap = Map(200 -> "Success", 404 -> "Not found", 401 -> "Unauthorized", 403 -> "User not admin", 500 -> "Internal server error")
 
@@ -55,20 +55,8 @@ object CommonUtils {
     })
   }
 
-  def formatSql(sqlInfo: (String, String, String)): String = {
-    val (olapSql, sqlTmpl, result_table) = sqlInfo
-    var resultSql: String = ""
-    try {
-      val sqlParts = olapSql.split("table")
-      if (sqlParts.size > 1) {
-        println("~~~~~~~~~~~~~~~~~~~~~~~~" + sqlParts(0) + sqlParts(1))
-        resultSql = sqlParts(0) + s" ($sqlTmpl) as $result_table " + sqlParts(1)
-      }
-      else resultSql = sqlParts(0) + s" ($sqlTmpl) as $result_table"
-    } catch {
-      case e: Throwable => println("get sql error", e)
-    }
-    resultSql
+  def formatSql(sqlInfo: (String, String, String)): Array[String] = {
+    val (olapSql, sqlTmpl, _) = sqlInfo
+    (sqlTmpl + ";" + olapSql).split(";")
   }
-
 }
