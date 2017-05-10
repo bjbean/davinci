@@ -68,7 +68,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
       entity(as[PostBizlogicInfoSeq]) {
         bizlogicSeq =>
           authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-            session => println("in post ~~~~");postBizlogic(session, bizlogicSeq.payload)
+            session => postBizlogic(session, bizlogicSeq.payload)
           }
       }
     }
@@ -78,7 +78,6 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     if (session.admin) {
       val uniqueTableName = "table" + java.util.UUID.randomUUID().toString
       val bizEntitySeq = bizlogicSeq.map(biz => Bizlogic(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, biz.desc, active = true, null, session.userId, null, session.userId))
-     println("herer~~~~~~~~~")
       onComplete(modules.bizlogicDal.insert(bizEntitySeq)) {
         case Success(bizSeq) =>
           val queryBiz = bizSeq.map(biz => QueryBizlogic(biz.id, biz.source_id, biz.name, biz.sql_tmpl, biz.result_table, biz.desc))
@@ -135,7 +134,6 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   }
 
   private def paramFormat(params: Seq[Param]): String = {
-    println("parama~~~~~~~~~")
     params.map(_.param).mkString("&")
   }
 
