@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `davinci`.`dashboard` (
     `update_by` BIGINT NOT NULL,
     PRIMARY KEY (`id`),
     UNIQUE INDEX `name_UNIQUE` (`name` ASC))
-ENGINE = InnoDB;
+ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `davinci`.`rel_dashboard_widget` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -30,26 +30,29 @@ CREATE TABLE IF NOT EXISTS `davinci`.`rel_dashboard_widget` (
     `update_time` TIMESTAMP(6) NOT NULL,
     `update_by` BIGINT NOT NULL,
     PRIMARY KEY (`id`))
-ENGINE = InnoDB;
+ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 
-CREATE TABLE IF NOT EXISTS `davinci`.`widget` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT,
-    `widgetlib_id` BIGINT NOT NULL,
-    `bizlogic_id` BIGINT NULL,
-    `name` VARCHAR(200) NOT NULL,
-    `desc` VARCHAR(1000) NOT NULL,
-    `trigger_type` VARCHAR(45) NOT NULL,
-    `trigger_params` VARCHAR(1000) NOT NULL,
-    `publish` TINYINT(1) NOT NULL,
-    `active` TINYINT(1) NOT NULL,
-    `create_time` TIMESTAMP(6) NOT NULL,
-    `create_by` BIGINT NOT NULL,
-    `update_time` TIMESTAMP(6) NOT NULL,
-    `update_by` BIGINT NOT NULL,
-    PRIMARY KEY (`id`),
-    UNIQUE INDEX `name_UNIQUE` (`name` ASC))
-ENGINE = InnoDB;
+CREATE TABLE `widget` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `widgetlib_id` bigint(20) NOT NULL,
+  `bizlogic_id` bigint(20) NOT NULL,
+  `name` varchar(200) COLLATE utf8_unicode_ci NOT NULL,
+  `olap_sql` varchar(2000) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `desc` varchar(1000) COLLATE utf8_unicode_ci NOT NULL,
+  `trigger_type` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  `trigger_params` varchar(1000) COLLATE utf8_unicode_ci NOT NULL,
+  `chart_params` varchar(1000) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `publish` tinyint(1) NOT NULL,
+  `active` tinyint(1) NOT NULL,
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `create_by` bigint(20) NOT NULL,
+  `update_time` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `update_by` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name_UNIQUE` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
 
 
 CREATE TABLE IF NOT EXISTS `davinci`.`widgetlib` (
@@ -61,54 +64,43 @@ CREATE TABLE IF NOT EXISTS `davinci`.`widgetlib` (
     `update_time` TIMESTAMP(6) NOT NULL,
     `update_by` BIGINT NOT NULL,
     PRIMARY KEY (`id`))
-ENGINE = InnoDB;
+ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 
-CREATE TABLE IF NOT EXISTS `davinci`.`source` (
- `id` BIGINT NOT NULL AUTO_INCREMENT,
-   `name` VARCHAR(200) NOT NULL,
-   `desc` VARCHAR(1000) NOT NULL,
-   `type` VARCHAR(45) NOT NULL,
-   `config` VARCHAR(5000) NOT NULL,
-   `active` TINYINT(1) NOT NULL,
-   `create_time` TIMESTAMP(6) NOT NULL,
-   `create_by` BIGINT NOT NULL,
-   `update_time` TIMESTAMP(6) NOT NULL,
-   `update_by` BIGINT NOT NULL,
-   PRIMARY KEY (`id`))
-ENGINE = InnoDB;
+CREATE TABLE `source` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `name` varchar(200) COLLATE utf8_unicode_ci NOT NULL,
+  `connection_url` varchar(400) COLLATE utf8_unicode_ci NOT NULL,
+  `desc` varchar(1000) COLLATE utf8_unicode_ci NOT NULL,
+  `type` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  `config` varchar(5000) COLLATE utf8_unicode_ci NOT NULL,
+  `active` tinyint(1) NOT NULL,
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `create_by` bigint(20) NOT NULL,
+  `update_time` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `update_by` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name_UNIQUE` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 
-CREATE TABLE IF NOT EXISTS `davinci`.`bizlogic` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT,
-    `source_id` BIGINT NOT NULL,
-    `name` VARCHAR(200) NOT NULL,
-    `desc` VARCHAR(1000) NOT NULL,
-    `active` TINYINT(1) NOT NULL,
-    `create_time` TIMESTAMP(6) NOT NULL,
-    `create_by` BIGINT NOT NULL,
-    `update_time` TIMESTAMP(6) NOT NULL,
-    `update_by` BIGINT NOT NULL,
-    PRIMARY KEY (`id`))
-ENGINE = InnoDB;
+CREATE TABLE `bizlogic` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `source_id` bigint(20) NOT NULL,
+  `name` varchar(200) COLLATE utf8_unicode_ci NOT NULL,
+  `sql_tmpl` varchar(2000) COLLATE utf8_unicode_ci NOT NULL,
+  `result_table` varchar(200) COLLATE utf8_unicode_ci NOT NULL,
+  `desc` varchar(1000) COLLATE utf8_unicode_ci NOT NULL,
+  `active` tinyint(1) NOT NULL,
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `create_by` bigint(20) NOT NULL,
+  `update_time` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `update_by` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 
-CREATE TABLE IF NOT EXISTS `davinci`.`sql` (
- `id` BIGINT NOT NULL AUTO_INCREMENT,
-   `bizlogic_id` BIGINT NOT NULL,
-   `name` VARCHAR(200) NOT NULL,
-   `sql_type` VARCHAR(45) NOT NULL,
-   `sql_tmpl` VARCHAR(2000) NOT NULL,
-   `sql_order` INT NOT NULL,
-   `desc` VARCHAR(1000) NOT NULL,
-   `active` TINYINT(1) NOT NULL,
-   `create_time` TIMESTAMP(6) NOT NULL,
-   `create_by` BIGINT NOT NULL,
-   `update_time` TIMESTAMP(6) NOT NULL,
-   `update_by` BIGINT NOT NULL,
-   PRIMARY KEY (`id`),
-   UNIQUE INDEX `name_UNIQUE` (`name` ASC))
-ENGINE = InnoDB;
+
 
 
 CREATE TABLE IF NOT EXISTS `davinci`.`user` (
@@ -125,7 +117,7 @@ CREATE TABLE IF NOT EXISTS `davinci`.`user` (
    `update_by` BIGINT NOT NULL,
    PRIMARY KEY (`id`),
    UNIQUE INDEX `email_UNIQUE` (`email` ASC))
-ENGINE = InnoDB;
+ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 
 CREATE TABLE IF NOT EXISTS `davinci`.`rel_user_group` (
@@ -138,21 +130,20 @@ CREATE TABLE IF NOT EXISTS `davinci`.`rel_user_group` (
     `update_time` TIMESTAMP(6) NOT NULL,
     `update_by` BIGINT NOT NULL,
     PRIMARY KEY (`id`))
-ENGINE = InnoDB;
+ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-
-CREATE TABLE IF NOT EXISTS `davinci`.`group` (
- `id` BIGINT NOT NULL AUTO_INCREMENT,
-   `name` VARCHAR(200) NOT NULL,
-   `desc` VARCHAR(1000) NOT NULL,
-   `active` TINYINT(1) NOT NULL,
-   `create_time` TIMESTAMP(6) NOT NULL,
-   `create_by` BIGINT NOT NULL,
-   `update_time` TIMESTAMP(6) NOT NULL,
-   `update_by` BIGINT NOT NULL,
-   PRIMARY KEY (`id`),
-   UNIQUE INDEX `name_UNIQUE` (`name` ASC))
-ENGINE = InnoDB;
+CREATE TABLE `user_group` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `name` varchar(200) NOT NULL,
+  `desc` varchar(1000) DEFAULT NULL,
+  `active` tinyint(1) NOT NULL,
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `create_by` bigint(20) NOT NULL,
+  `update_time` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `update_by` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name_UNIQUE` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
 
 
 CREATE TABLE IF NOT EXISTS `davinci`.`rel_bizlogic_group` (
@@ -166,7 +157,7 @@ CREATE TABLE IF NOT EXISTS `davinci`.`rel_bizlogic_group` (
    `update_time` TIMESTAMP(6) NOT NULL,
    `update_by` BIGINT NOT NULL,
    PRIMARY KEY (`id`))
-ENGINE = InnoDB;
+ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 
 CREATE TABLE IF NOT EXISTS `davinci`.`log_sql` (
@@ -178,5 +169,5 @@ CREATE TABLE IF NOT EXISTS `davinci`.`log_sql` (
     `success` TINYINT(1) NULL,
     `error` VARCHAR(2000) NULL,
     PRIMARY KEY (`id`))
-ENGINE = InnoDB;
+ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
