@@ -25,7 +25,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "dashboard not found"),
-    new ApiResponse(code = 405, message = "internal service error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def getGroupByAllRoute: Route = path("groups") {
     get {
@@ -38,10 +38,8 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   private def getAllGroupsComplete(session: SessionClass): Route = {
     if (session.admin) {
       onComplete(groupService.getAll) {
-        case Success(groupSeq) =>
-          if (groupSeq.nonEmpty) complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), groupSeq))
-          else complete(NotFound,ResponseJson[String]( getHeader(404, session),""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+        case Success(groupSeq) => complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), groupSeq))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -69,7 +67,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "dashboard not found"),
-    new ApiResponse(code = 405, message = "internal service error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def postGroupRoute: Route = path("groups") {
     post {
@@ -89,7 +87,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
         case Success(groupWithIdSeq) =>
           val responseGroup = groupWithIdSeq.map(group => PutGroupInfo(group.id, group.name, group.desc))
           complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), responseGroup))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
 
@@ -104,7 +102,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "group not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal service error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def putGroupRoute: Route = path("groups") {
     put {
@@ -121,8 +119,8 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     if (session.admin) {
       val future = groupService.update(groupSeq, session)
       onComplete(future) {
-        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session),""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -137,11 +135,9 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 200, message = "delete success"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal delete error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def deleteGroupByIdRoute: Route = modules.groupRoutes.deleteByIdRoute("groups")
-
-
 
 
 }

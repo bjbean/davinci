@@ -29,7 +29,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "sources not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal server error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def getUserByAllRoute: Route = path("users") {
     get {
@@ -42,10 +42,8 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   private def getAllUsersComplete(session: SessionClass): Route = {
     if (session.admin) {
       onComplete(userService.getAll(session)) {
-        case Success(userSeq) =>
-          if (userSeq.nonEmpty) complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), userSeq))
-          else complete(NotFound, ResponseJson[String](getHeader(404, session), ""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+        case Success(userSeq) => complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), userSeq))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
 
@@ -60,7 +58,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "sources not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal server error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def postUserRoute: Route = path("users") {
     post {
@@ -90,7 +88,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
         case Success(users) =>
           val queryUsers = users.map(user => QueryUserInfo(user.id, user.email, user.title, user.name, user.admin))
           complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), queryUsers))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -105,7 +103,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "sources not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal server error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def putUserRoute: Route = path("users") {
     put {
@@ -132,7 +130,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
       } yield (a, b, c)
       onComplete(operation) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     }
     else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
@@ -148,7 +146,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "users not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal server error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def putLoginUserRoute: Route = path("users" / "profile") {
     put {
@@ -165,7 +163,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     val future = userService.updateLoginUser(user, session)
     onComplete(future) {
       case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
   }
 
@@ -180,7 +178,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "users not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal server error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def deleteUserByIdRoute: Route = modules.userRoutes.deleteByIdRoute("users")
 
@@ -207,7 +205,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "users not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal server error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def getGroupsByUserIdRoute: Route = path("users" / LongNumber / "groups") { userId =>
     get {
@@ -221,10 +219,8 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   private def getGroupsByUserIdComplete(session: SessionClass, userId: Long): Route = {
     val future = userService.getAllGroups(userId)
     onComplete(future) {
-      case Success(relSeq) =>
-        if (relSeq.nonEmpty) complete(OK, ResponseSeqJson[PutRelUserGroup](getHeader(200, session), relSeq))
-        else complete(NotFound, ResponseJson[String](getHeader(404, session), ""))
-      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      case Success(relSeq) => complete(OK, ResponseSeqJson[PutRelUserGroup](getHeader(200, session), relSeq))
+      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
   }
 
@@ -238,7 +234,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "users not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal server error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def deleteUserFromGroupRoute: Route = path("users" / "groups" / LongNumber) { relId =>
     delete {

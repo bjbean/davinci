@@ -33,7 +33,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 402, message = "internal server error"),
+    new ApiResponse(code = 400, message = "bad request"),
     new ApiResponse(code = 404, message = "not found")
   ))
   def getBizlogicByAllRoute: Route = path("bizlogics") {
@@ -42,12 +42,10 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
         session =>
           if (session.admin) {
             onComplete(bizlogicService.getAllBiz) {
-              case Success(bizlogicSeq) =>
-                if (bizlogicSeq.nonEmpty) complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), bizlogicSeq))
-                else complete(NotFound, ResponseJson[String](getHeader(404, session), ""))
-              case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(402, ex.getMessage, session), ""))
+              case Success(bizlogicSeq) => complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), bizlogicSeq))
+              case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
             }
-          } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+          } else complete(Forbidden, ResponseJson[String](getHeader(403, "user is not admin", session), ""))
       }
     }
   }
@@ -61,7 +59,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 200, message = "post success"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 402, message = "internal service error"),
+    new ApiResponse(code = 400, message = "bad request"),
     new ApiResponse(code = 405, message = "unspecified error")
   ))
   def postBizlogicRoute: Route = path("bizlogics") {
@@ -87,9 +85,9 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
           } yield RelGroupBizlogic(0, rel.group_id, biz.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
           onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
             case Success(_) => complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), queryBiz))
-            case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(402, ex.getMessage, session), ""))
+            case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -102,7 +100,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "put success"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 402, message = "internal service error"),
+    new ApiResponse(code = 400, message = "bad request"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 405, message = "put bizlogic error")
   ))
@@ -127,10 +125,10 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
       } yield RelGroupBizlogic(0, rel.group_id, bizlogicSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
       onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(402, ex.getMessage, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } catch {
-      case ex: Throwable => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      case ex: Throwable => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
   }
 
@@ -144,7 +142,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 200, message = "delete success"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal delete error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def deleteBizlogicByIdRoute: Route = modules.bizlogicRoutes.deleteByIdRoute("bizlogics")
 
@@ -157,7 +155,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 200, message = "delete success"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal delete error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def deleteRelGBById: Route = path("bizlogics" / "groups" / LongNumber) { relId =>
     delete {
@@ -177,7 +175,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 405, message = "internal get error"),
-    new ApiResponse(code = 404, message = "not found")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def getGroupsByBizIdRoute: Route = path("bizlogics" / LongNumber / "groups") { bizId =>
     get {
@@ -185,10 +183,8 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
         session =>
           val future = bizlogicService.getGroups(bizId)
           onComplete(future) {
-            case Success(relSeq) =>
-              if (relSeq.nonEmpty) complete(OK, ResponseSeqJson[PutRelGroupBizlogic](getHeader(200, session), relSeq))
-              else complete(NotFound, ResponseJson[String](getHeader(404, session), ""))
-            case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+            case Success(relSeq) => complete(OK, ResponseSeqJson[PutRelGroupBizlogic](getHeader(200, session), relSeq))
+            case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }
       }
     }
@@ -204,7 +200,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 200, message = "ok"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal get result error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def getCalculationResRoute: Route = path("bizlogics" / LongNumber / "resultset") { bizId =>
     get {
@@ -226,7 +222,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
         val result = getResult(connectionUrl, resultSql)
         println("get result~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         complete(OK, ResponseJson[BizlogicResult](getHeader(200, session), BizlogicResult(result)))
-      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+      case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
   }
 

@@ -28,7 +28,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "sources not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal server error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def getSourceByAllRoute: Route = path("sources") {
     get {
@@ -41,10 +41,8 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   private def getAllSourcesComplete(session: SessionClass): Route = {
     if (session.admin) {
       onComplete(sourceService.getAll) {
-        case Success(sourceSeq) =>
-          if (sourceSeq.nonEmpty) complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), sourceSeq))
-          else complete(NotFound, ResponseJson[String](getHeader(404, session), ""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+        case Success(sourceSeq) => complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), sourceSeq))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -71,7 +69,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 200, message = "post success"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal server error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def postSourceRoute: Route = path("sources") {
     post {
@@ -92,7 +90,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
         case Success(sourceWithIdSeq) =>
           val responseSourceSeq = sourceWithIdSeq.map(source => PutSourceInfo(source.id, source.name, source.connection_url, source.desc, source.`type`, source.config))
           complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), responseSourceSeq))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -107,7 +105,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 404, message = "sources not found"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 405, message = "internal server error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def putSourceRoute: Route = path("sources") {
     put {
@@ -125,7 +123,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       val future = sourceService.update(sourceSeq, session)
       onComplete(future) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(405, ex.getMessage, session), ""))
+        case Failure(ex) => complete(InternalServerError, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
@@ -140,7 +138,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 200, message = "delete success"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
-    new ApiResponse(code = 500, message = "internal server error")
+    new ApiResponse(code = 400, message = "bad request")
   ))
   def deleteSourceByIdRoute: Route = modules.sourceRoutes.deleteByIdRoute("sources")
 
