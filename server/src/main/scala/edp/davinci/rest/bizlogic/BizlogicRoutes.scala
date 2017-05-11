@@ -1,5 +1,6 @@
 package edp.davinci.rest.bizlogic
 
+import java.sql.{Connection, Statement}
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes._
@@ -236,21 +237,32 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   private def getResult(connectionUrl: String, sql: String): List[Seq[String]] = {
     val resultList = new ListBuffer[Seq[String]]
     val columnList = new ListBuffer[String]
+    var dbConnection: Connection = null
+    var statement: Statement = null
     if (connectionUrl != null) {
       val connectionInfo = connectionUrl.split("""<:>""")
       if (connectionInfo.size != 3)
         List(Seq(""))
       else {
-        val dbConnection = DbConnection.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
-        val statement = dbConnection.createStatement()
-        val resultSet = statement.executeQuery(sql)
-
-        val meta = resultSet.getMetaData
-        for (i <- 1 to meta.getColumnCount)
-          columnList.append(meta.getColumnName(i))
-        resultList.append(columnList)
-        while (resultSet.next())
-          resultList.append(getRow(resultSet))
+        try {
+          dbConnection = DbConnection.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
+          statement = dbConnection.createStatement()
+          val resultSet = statement.executeQuery(sql)
+          val meta = resultSet.getMetaData
+          for (i <- 1 to meta.getColumnCount)
+            columnList.append(meta.getColumnName(i))
+          resultList.append(columnList)
+          while (resultSet.next())
+            resultList.append(getRow(resultSet))
+          resultList.toList
+        } catch {
+          case e: Throwable => logger.error("get reuslt exception", e)
+        } finally {
+          if (statement != null)
+            statement.close()
+          if (dbConnection != null)
+            dbConnection.close()
+        }
         resultList.toList
       }
     } else {
