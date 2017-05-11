@@ -9,23 +9,12 @@ case class Bizlogic(id: Long,
                     name: String,
                     sql_tmpl: String,
                     result_table: String,
-                    desc: String,
+                    desc: Option[String] = None,
                     active: Boolean,
                     create_time: String,
                     create_by: Long,
                     update_time: String,
                     update_by: Long) extends BaseEntity
-
-case class SimpleBizlogic(source_id: Long,
-                          name: String,
-                          sql_tmpl: String,
-                          result_table: String,
-                          desc: String,
-                          active: Boolean,
-                          create_time: String,
-                          create_by: Long,
-                          update_time: String,
-                          update_by: Long) extends SimpleBaseEntity
 
 case class PostBizlogicInfo(source_id: Long,
                             name: String,
@@ -56,7 +45,7 @@ class BizlogicTable(tag: Tag) extends BaseTable[Bizlogic](tag, "bizlogic") {
 
   def source_id: Rep[Long] = column[Long]("source_id")
 
-  def desc: Rep[String] = column[String]("desc")
+  def desc: Rep[Option[String]] = column[Option[String]]("desc")
 
   def create_time: Rep[String] = column[String]("create_time")
 

@@ -5,20 +5,12 @@ import slick.jdbc.H2Profile.api._
 
 case class UserGroup(id: Long,
                      name: String,
-                     desc: String,
+                     desc: Option[String] = None,
                      active: Boolean,
                      create_time: String,
                      create_by: Long,
                      update_time: String,
                      update_by: Long) extends BaseEntity
-
-case class SimpleGroup(name: String,
-                       desc: String,
-                       active: Boolean,
-                       create_time: String,
-                       create_by: Long,
-                       update_time: String,
-                       update_by: Long) extends SimpleBaseEntity
 
 
 case class PostGroupInfo(name: String,
@@ -32,7 +24,7 @@ class GroupTable(tag: Tag) extends BaseTable[UserGroup](tag, "user_group") {
 
   //  def name = column[String]("name")
 
-  def desc = column[String]("desc")
+  def desc = column[Option[String]]("desc")
 
   def create_time = column[String]("create_time")
 

@@ -63,12 +63,12 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
     relDWDal.getDB.run(query)
   }
 
-  def getAll(session: SessionClass): Future[Seq[PutDashboardInfo]] = {
+  def getAll(session: SessionClass): Future[Seq[(Long, String, Option[String], String, Boolean)]] = {
     val query =
       if (session.admin) dashboardTQ.filter(_.active === true).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish)).result
       else
         dashboardTQ.filter(obj => obj.active === true && obj.publish === true).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish)).result
-    dDal.getDB.run(query).mapTo[Seq[PutDashboardInfo]]
+    dDal.getDB.run(query)
   }
 
 
