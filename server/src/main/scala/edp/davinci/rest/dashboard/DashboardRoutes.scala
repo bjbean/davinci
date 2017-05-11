@@ -62,7 +62,9 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
         session =>
           onComplete(dashboardService.getAll(session)) {
-            case Success(dashboardSeq) => complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), dashboardSeq))
+            case Success(dashboardSeq) =>
+              val dashboards = dashboardSeq.map(d => PutDashboardInfo(d._1, d._2, d._3.getOrElse(""), d._4, d._5))
+              complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), dashboards))
             case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }
       }
@@ -92,10 +94,10 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   def postDashBoard(session: SessionClass, postDashboardSeq: Seq[PostDashboardInfo]): Route = {
     if (session.admin) {
-      val dashboardSeq = postDashboardSeq.map(post => Dashboard(0, post.name,post.pic, post.desc, post.publish, active = true, null, session.userId, null, session.userId))
+      val dashboardSeq = postDashboardSeq.map(post => Dashboard(0, post.name, Some(post.pic), post.desc, post.publish, active = true, null, session.userId, null, session.userId))
       onComplete(modules.dashboardDal.insert(dashboardSeq)) {
         case Success(dashWithIdSeq) =>
-          val responseDashSeq = dashWithIdSeq.map(dashboard => PutDashboardInfo(dashboard.id, dashboard.name,dashboard.pic, dashboard.desc, dashboard.publish))
+          val responseDashSeq = dashWithIdSeq.map(dashboard => PutDashboardInfo(dashboard.id, dashboard.name, dashboard.pic.getOrElse(""), dashboard.desc, dashboard.publish))
           complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), responseDashSeq))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }

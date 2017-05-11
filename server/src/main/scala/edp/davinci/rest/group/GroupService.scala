@@ -11,15 +11,15 @@ import scala.concurrent.Future
 class GroupService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
  private lazy val gDal = modules.groupDal
 
-  def getAll: Future[Seq[PutGroupInfo]] = {
+  def getAll: Future[Seq[(Long, String, Option[String])]] = {
     val groupTQ = gDal.getTableQuery
-    gDal.getDB.run(groupTQ.filter(_.active === true).map(r => (r.id, r.name, r.desc)).result).mapTo[Seq[PutGroupInfo]]
+    gDal.getDB.run(groupTQ.filter(_.active === true).map(r => (r.id, r.name, r.desc)).result)
   }
 
   def update(groupSeq: Seq[PutGroupInfo], session: SessionClass): Future[Unit] = {
     val groupTQ = gDal.getTableQuery
     val query = DBIO.seq(groupSeq.map(r => {
-      groupTQ.filter(_.id === r.id).map(group => (group.name, group.desc, group.update_by, group.update_time)).update(r.name, r.desc, session.userId, CommonUtils.currentTime)
+      groupTQ.filter(_.id === r.id).map(group => (group.name, group.desc, group.update_by, group.update_time)).update(r.name, Some(r.desc), session.userId, CommonUtils.currentTime)
     }): _*)
     gDal.getDB.run(query)
   }

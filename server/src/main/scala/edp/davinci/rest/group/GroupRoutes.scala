@@ -40,7 +40,9 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   private def getAllGroupsComplete(session: SessionClass): Route = {
     if (session.admin) {
       onComplete(groupService.getAll) {
-        case Success(groupSeq) => complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), groupSeq))
+        case Success(groupSeq) =>
+          val purGroups = groupSeq.map(g => PutGroupInfo(g._1, g._2, g._3.getOrElse("")))
+          complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), purGroups))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
@@ -84,10 +86,10 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
 
   private def postGroup(session: SessionClass, postGroupSeq: Seq[PostGroupInfo]) = {
     if (session.admin) {
-      val groupSeq = postGroupSeq.map(post => UserGroup(0, post.name, post.desc, active = true, null, session.userId, null, session.userId))
+      val groupSeq = postGroupSeq.map(post => UserGroup(0, post.name, Some(post.desc), active = true, null, session.userId, null, session.userId))
       onComplete(modules.groupDal.insert(groupSeq)) {
         case Success(groupWithIdSeq) =>
-          val responseGroup = groupWithIdSeq.map(group => PutGroupInfo(group.id, group.name, group.desc))
+          val responseGroup = groupWithIdSeq.map(group => PutGroupInfo(group.id, group.name, group.desc.getOrElse("")))
           complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), responseGroup))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
