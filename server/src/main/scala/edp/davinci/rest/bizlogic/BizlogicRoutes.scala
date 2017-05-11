@@ -3,7 +3,6 @@ package edp.davinci.rest.bizlogic
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{ConfigurationModule, PersistenceModule, _}
 import edp.davinci.persistence.entities._
@@ -14,10 +13,11 @@ import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
 import edp.endurance.db.DbConnection
 import io.swagger.annotations._
+import org.slf4j.LoggerFactory
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
@@ -28,6 +28,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   val routes: Route = postBizlogicRoute ~ putBizlogicRoute ~ getBizlogicByAllRoute ~ deleteBizlogicByIdRoute ~ getGroupsByBizIdRoute ~ getCalculationResRoute ~ deleteRelGBById
   private lazy val bizlogicService = new BizlogicService(modules)
   private lazy val widgetService = new WidgetService(modules)
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   @ApiOperation(value = "get all bizlogics", notes = "", nickname = "", httpMethod = "GET")
   @ApiResponses(Array(
@@ -83,7 +84,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
           val queryBiz = bizSeq.map(biz => QueryBizlogic(biz.id, biz.source_id, biz.name, biz.sql_tmpl, biz.result_table, biz.desc))
           val relSeq = for {biz <- bizSeq
                             rel <- bizlogicSeq.head.relBG
-          } yield RelGroupBizlogic(0, rel.group_id, biz.id, paramFormat(rel.sql_params), active = true, null, session.userId, null, session.userId)
+          } yield RelGroupBizlogic(0, rel.group_id, biz.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
           onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
             case Success(_) => complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), queryBiz))
             case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -123,7 +124,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
       val deleteRelFuture = bizlogicService.deleteByBizId(bizlogicSeq)
       Await.result(deleteRelFuture, Duration.Inf)
       val relSeq = for {rel <- bizlogicSeq.head.relBG
-      } yield RelGroupBizlogic(0, rel.group_id, bizlogicSeq.head.id, paramFormat(rel.sql_params), active = true, null, session.userId, null, session.userId)
+      } yield RelGroupBizlogic(0, rel.group_id, bizlogicSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
       onComplete(modules.relGroupBizlogicDal.insert(relSeq)) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -131,10 +132,6 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     } catch {
       case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
-  }
-
-  private def paramFormat(params: Seq[Param]): String = {
-    params.map(_.param).mkString("&")
   }
 
 

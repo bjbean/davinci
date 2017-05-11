@@ -12,8 +12,6 @@ case class RelGroupBizlogic(id: Long,
                             create_by: Long,
                             update_time: String,
                             update_by: Long) extends BaseEntity
-case class Param(param:String)
-
 
 case class SimpleRelGroupBizlogic(group_id: Long,
                                   bizlogic_id: Long,
@@ -25,11 +23,11 @@ case class SimpleRelGroupBizlogic(group_id: Long,
                                   update_by: Long) extends SimpleBaseEntity
 
 case class PostRelGroupBizlogic(group_id: Long,
-                                sql_params: Seq[Param]) extends SimpleBaseEntity
+                                sql_params: String) extends SimpleBaseEntity
 
 case class PutRelGroupBizlogic(id: Long,
                                group_id: Long,
-                               sql_params: Seq[Param])
+                               sql_params: String)
 
 class RelGroupBizlogicTable(tag: Tag) extends BaseTable[RelGroupBizlogic](tag, "rel_group_bizlogic") {
   def group_id = column[Long]("group_id")
