@@ -213,14 +213,18 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   }
 
   private def getResultSetComplete(session: SessionClass, bizId: Long) = {
+    println("in gfet!!!!!!!!!!!!!!!!!!!!!!!")
     val operation = for {
       a <- bizlogicService.getSourceInfo(bizId)
-      b <- widgetService.getSql(bizId)
-    } yield (a, b)
+      b <- bizlogicService.getSqlTmpl(bizId)
+      c <- bizlogicService.getSqlParam(bizId, session)
+    } yield (a, b, c)
     onComplete(operation) {
       case Success(info) =>
         val (connectionUrl, _) = info._1.head
-        val resultSql = formatSql(info._2.head)
+        val sqlTmpl = info._2.getOrElse("")
+        val sqlParam = info._3.getOrElse("")
+        val resultSql = fullfilSql(sqlTmpl, sqlParam)
         val result = getResult(connectionUrl, resultSql)
         println("get result~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         complete(OK, ResponseJson[BizlogicResult](getHeader(200, session), BizlogicResult(result)))
@@ -229,7 +233,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   }
 
 
-  private def getResult(connectionUrl: String, sqls: Array[String]): List[Seq[String]] = {
+  private def getResult(connectionUrl: String, sql: String): List[Seq[String]] = {
     val resultList = new ListBuffer[Seq[String]]
     val columnList = new ListBuffer[String]
     if (connectionUrl != null) {
@@ -239,8 +243,8 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
       else {
         val dbConnection = DbConnection.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
         val statement = dbConnection.createStatement()
-        sqls.dropRight(1).foreach(statement.execute)
-        val resultSet = statement.executeQuery(sqls.last)
+        val resultSet = statement.executeQuery(sql)
+
         val meta = resultSet.getMetaData
         for (i <- 1 to meta.getColumnCount)
           columnList.append(meta.getColumnName(i))
@@ -254,6 +258,16 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     }
   }
 
+  private def fullfilSql(sqlTmpl: String, param: String) = {
+    println("in fullfil~~~~~~~~~~~~~~~~")
+    var sqlTmp = sqlTmpl
+    println(sqlTmpl)
+    val paramArr = param.split("\\?")
+    paramArr.foreach(p => sqlTmp = sqlTmp.replaceFirst("\\?", p))
+
+    println(sqlTmp)
+    sqlTmp
+  }
 
 }
 

@@ -45,9 +45,13 @@ class BizlogicService(modules: ConfigurationModule with PersistenceModule with B
     db.run(query)
   }
 
-  def getFullSql(bizlogicId: Long, session: SessionClass): Future[Option[(String, String)]] = {
-    val query = (bizlogicTQ.filter(obj => obj.active === true && obj.id === bizlogicId) join relGBTQ.filter(_.group_id inSet session.groupIdList) on (_.id === _.bizlogic_id))
-      .map { case (b, rel) => (b.sql_tmpl, rel.sql_params) }.result.headOption
+  def getSqlTmpl(bizlogicId: Long): Future[Option[String]] = {
+    val query = bizlogicTQ.filter(obj => obj.active === true && obj.id === bizlogicId).map(_.sql_tmpl).result.headOption
+    db.run(query)
+  }
+
+  def getSqlParam(bizlogicId: Long, session: SessionClass): Future[Option[String]] ={
+    val query = relGBTQ.filter(_.group_id inSet session.groupIdList).map(_.sql_params).result.headOption
     db.run(query)
   }
 }

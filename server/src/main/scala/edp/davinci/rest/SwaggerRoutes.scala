@@ -8,6 +8,7 @@ import edp.davinci.Boot
 import edp.davinci.rest.bizlogic.BizlogicRoutes
 import edp.davinci.rest.dashboard.DashboardRoutes
 import edp.davinci.rest.group.GroupRoutes
+import edp.davinci.rest.libwidget.LibWidgetRoutes
 import edp.davinci.rest.source.SourceRoutes
 import edp.davinci.rest.sqllog.SqlLogRoutes
 import edp.davinci.rest.user.UserRoutes

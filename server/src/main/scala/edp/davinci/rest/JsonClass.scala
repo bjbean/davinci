@@ -58,7 +58,7 @@ case class PutDashboardSeq(payload: Seq[PutDashboardInfo])
 
 case class PutGroupInfoSeq(payload: Seq[PutGroupInfo])
 
-case class LibWidgetSeq(payload: Seq[LibWidget])
+case class QueryLibWidgetSeq(payload: Seq[QueryLibWidget])
 
 case class PutSourceInfoSeq(payload: Seq[PutSourceInfo])
 
