@@ -45,8 +45,8 @@ class BizlogicService(modules: ConfigurationModule with PersistenceModule with B
     db.run(query)
   }
 
-  def getSqlTmpl(bizlogicId: Long): Future[Option[String]] = {
-    val query = bizlogicTQ.filter(obj => obj.active === true && obj.id === bizlogicId).map(_.sql_tmpl).result.headOption
+  def getSqlTmpl(bizlogicId: Long): Future[Option[(String, String)]] = {
+    val query = bizlogicTQ.filter(obj => obj.active === true && obj.id === bizlogicId).map(b =>(b.sql_tmpl,b.result_table)).result.headOption
     db.run(query)
   }
 

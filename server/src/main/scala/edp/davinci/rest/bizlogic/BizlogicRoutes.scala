@@ -4,11 +4,11 @@ import java.sql.{Connection, Statement}
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.{Directives, Route}
+import akka.http.scaladsl.server.{Directive1, Directives, Route}
+import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
 import edp.davinci.module.{ConfigurationModule, PersistenceModule, _}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
-import edp.davinci.rest.widget.WidgetService
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
@@ -195,10 +195,11 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   }
 
 
-  @Path("/{id}/resultset")
+  @Path("/{id}/resultset/{olap_sql}")
   @ApiOperation(value = "get calculation results by biz id", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "id", value = "bizlogic id", required = true, dataType = "integer", paramType = "path")
+    new ApiImplicitParam(name = "id", value = "bizlogic id", required = true, dataType = "integer", paramType = "path"),
+    new ApiImplicitParam(name = "olap_sql", value = "olap_sql", required = true, dataType = "string", paramType = "path")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "ok"),
@@ -206,81 +207,86 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getCalculationResRoute: Route = path("bizlogics" / LongNumber / "resultset") { bizId =>
+  def getCalculationResRoute: Route = path("bizlogics" / LongNumber / "resultset" / Segment) { (bizId, olapSql) =>
     get {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session => getResultSetComplete(session, bizId)
+        session => getResultSetComplete(session, bizId, olapSql)
       }
     }
   }
 
-  private def getResultSetComplete(session: SessionClass, bizId: Long) = {
-    println("in gfet!!!!!!!!!!!!!!!!!!!!!!!")
-    val operation = for {
-      a <- bizlogicService.getSourceInfo(bizId)
-      b <- bizlogicService.getSqlTmpl(bizId)
-      c <- bizlogicService.getSqlParam(bizId, session)
-    } yield (a, b, c)
-    onComplete(operation) {
-      case Success(info) =>
-        val (connectionUrl, _) = info._1.head
-        val sqlTmpl = info._2.getOrElse("")
-        val sqlParam = info._3.getOrElse("")
-        val resultSql = fullfilSql(sqlTmpl, sqlParam)
-        val result = getResult(connectionUrl, resultSql)
-        println("get result~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        complete(OK, ResponseJson[BizlogicResult](getHeader(200, session), BizlogicResult(result)))
-      case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
-    }
-  }
 
 
-  private def getResult(connectionUrl: String, sql: String): List[Seq[String]] = {
-    val resultList = new ListBuffer[Seq[String]]
-    val columnList = new ListBuffer[String]
-    var dbConnection: Connection = null
-    var statement: Statement = null
-    if (connectionUrl != null) {
-      val connectionInfo = connectionUrl.split("""<:>""")
-      if (connectionInfo.size != 3)
-        List(Seq(""))
-      else {
-        try {
-          dbConnection = DbConnection.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
-          statement = dbConnection.createStatement()
-          val resultSet = statement.executeQuery(sql)
-          val meta = resultSet.getMetaData
-          for (i <- 1 to meta.getColumnCount)
-            columnList.append(meta.getColumnName(i))
-          resultList.append(columnList)
-          while (resultSet.next())
-            resultList.append(getRow(resultSet))
-          resultList.toList
-        } catch {
-          case e: Throwable => logger.error("get reuslt exception", e)
-        } finally {
-          if (statement != null)
-            statement.close()
-          if (dbConnection != null)
-            dbConnection.close()
-        }
-        resultList.toList
-      }
-    } else {
-      List(Seq(""))
-    }
-  }
 
-  private def fullfilSql(sqlTmpl: String, param: String) = {
-    println("in fullfil~~~~~~~~~~~~~~~~")
-    var sqlTmp = sqlTmpl
-    println(sqlTmpl)
-    val paramArr = param.split("\\?")
-    paramArr.foreach(p => sqlTmp = sqlTmp.replaceFirst("\\?", p))
+  private def getResultSetComplete (session: SessionClass, bizId: Long, olapSql: String = null): Route = {
+  val operation = for {
+  a <- bizlogicService.getSourceInfo (bizId)
+  b <- bizlogicService.getSqlTmpl (bizId)
+  c <- bizlogicService.getSqlParam (bizId, session)
+} yield (a, b, c)
+  onComplete (operation) {
+  case Success (info) =>
+  val (connectionUrl, _) = info._1.head
+  val (sqlTmpl, tableName) = info._2.getOrElse (("", "") )
+  val sqlParam = info._3.getOrElse ("")
+  val resultSql = fullfilSql (sqlTmpl, sqlParam, tableName, olapSql)
+  val result = getResult (connectionUrl, resultSql)
+  println ("get result~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+  complete (OK, ResponseJson[BizlogicResult] (getHeader (200, session), BizlogicResult (result) ) )
+  case Failure (ex) => complete (BadRequest, ResponseJson[String] (getHeader (400, ex.getMessage, session), "") )
+}
+}
 
-    println(sqlTmp)
-    sqlTmp
-  }
+
+  private def getResult (connectionUrl: String, sql: String): List[Seq[String]] = {
+  val resultList = new ListBuffer[Seq[String]]
+  val columnList = new ListBuffer[String]
+  var dbConnection: Connection = null
+  var statement: Statement = null
+  if (connectionUrl != null) {
+  val connectionInfo = connectionUrl.split ("""<:>""")
+  if (connectionInfo.size != 3)
+  List (Seq ("") )
+  else {
+  try {
+  dbConnection = DbConnection.getConnection (connectionInfo (0), connectionInfo (1), connectionInfo (2) )
+  statement = dbConnection.createStatement ()
+  val resultSet = statement.executeQuery (sql)
+  val meta = resultSet.getMetaData
+  for (i <- 1 to meta.getColumnCount)
+  columnList.append (meta.getColumnName (i) )
+  resultList.append (columnList)
+  while (resultSet.next () )
+  resultList.append (getRow (resultSet) )
+  resultList.toList
+} catch {
+  case e: Throwable => logger.error ("get reuslt exception", e)
+} finally {
+  if (statement != null)
+  statement.close ()
+  if (dbConnection != null)
+  dbConnection.close ()
+}
+  resultList.toList
+}
+} else {
+  List (Seq ("") )
+}
+}
+
+  private def fullfilSql (sqlTmpl: String, param: String, tableName: String, olap_sql: String = null) = {
+  var sqlTmp = sqlTmpl
+  println (sqlTmpl)
+  val paramArr = param.split ("\\?")
+  paramArr.foreach (p => sqlTmp = sqlTmp.replaceFirst ("\\?", p) )
+  println (sqlTmp)
+  sqlTmp = if (olap_sql != "") {
+  val sqlArr = olap_sql.split ("from")
+  sqlArr (0) + s" from ($sqlTmp) as a"
+} else sqlTmp
+  println (sqlTmp)
+  sqlTmp
+}
 
 }
 

@@ -18,7 +18,9 @@ case class BaseInfo(id: Long, name: String)
 
 case class SqlInfo(sqls: Array[String])
 
-case class DashboardInfo(id: Long, dashboard_id: Long, position_x: Int, position_y: Int, length: Int, width: Int, widgets: PutWidgetInfo)
+case class OlapSql(payload:String)
+
+case class DashboardInfo(id: Long, dashboard_id: Long, position_x: Int, position_y: Int, length: Int, width: Int, widgets: PutWidgetInfo,dashboard:PutDashboardInfo)
 
 case class PostRelUserGroupSeq(payload: Seq[PostRelUserGroup])
 

@@ -11,6 +11,7 @@ import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
 import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @Api(value = "/dashboards", consumes = "application/json", produces = "application/json")
 @Path("/dashboards")
@@ -39,11 +40,21 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   }
 
   def getDashboardById(dashboardId: Long, session: SessionClass): Route = {
-    onComplete(dashboardService.getInsideInfo(session, dashboardId)) {
-      case Success(dashboardInfoSeq) =>
-        val infoSeq = dashboardInfoSeq.map(r => {
+    val operation = for {
+      inside <- dashboardService.getInsideInfo(session, dashboardId)
+      dashboard <- dashboardService.getDashBoard(dashboardId)
+    } yield (inside, dashboard)
+
+    onComplete(operation) {
+      case Success(info) =>
+        val (insideInfo, dashboards) = info
+        val dashboard = dashboards.head
+        println("before put")
+        val putDashboard = PutDashboardInfo(dashboard._1, dashboard._2, dashboard._3.getOrElse(""), dashboard._4, dashboard._5)
+        println("after put")
+        val infoSeq = insideInfo.map(r => {
           val widgetInfo = PutWidgetInfo(r._7, r._8, r._9, r._10, r._11.getOrElse(""), r._12, r._13, r._14, r._15.getOrElse(""), r._16)
-          DashboardInfo(r._1, r._2, r._3, r._4, r._5, r._6, widgetInfo)
+          DashboardInfo(r._1, r._2, r._3, r._4, r._5, r._6, widgetInfo, putDashboard)
         })
         complete(OK, ResponseSeqJson[DashboardInfo](getHeader(200, session), infoSeq))
       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
