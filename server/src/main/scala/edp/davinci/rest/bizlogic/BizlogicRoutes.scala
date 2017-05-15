@@ -198,7 +198,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   @Path("/{id}/resultset")
   @ApiOperation(value = "get calculation results by biz id", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "id", value = "bizlogic id", required = true, dataType = "integer", paramType = "query"),
+    new ApiImplicitParam(name = "id", value = "bizlogic id", required = true, dataType = "integer", paramType = "path"),
     new ApiImplicitParam(name = "olap_sql", value = "olap_sql", required = false, dataType = "string", paramType = "query")
   ))
   @ApiResponses(Array(
@@ -228,7 +228,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     onComplete(operation) {
       case Success(info) =>
         if (info._1.nonEmpty) {
-          println("here!!!!!!")
+          println("here!!!!!! ")
           val (connectionUrl, _) = info._1.head
           println("get head")
           val (sqlTmpl, tableName) = info._2.getOrElse(("", ""))
