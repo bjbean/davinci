@@ -238,7 +238,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
           println("get result~~~~~~~~~~~~~~~~~~~~~~~~~~~")
           complete(OK, ResponseJson[BizlogicResult](getHeader(200, session), BizlogicResult(result)))
         } else
-          complete(BadRequest, ResponseJson[String](getHeader(400, "source info is empty", session), ""))
+          complete(OK, ResponseJson[String](getHeader(200, "source info is empty", session), ""))
       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
   }
