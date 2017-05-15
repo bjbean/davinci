@@ -18,9 +18,11 @@ case class BaseInfo(id: Long, name: String)
 
 case class SqlInfo(sqls: Array[String])
 
-case class OlapSql(payload:String)
+case class OlapSql(payload: String)
 
-case class DashboardInfo(id: Long, dashboard_id: Long, position_x: Int, position_y: Int, length: Int, width: Int, widgets: PutWidgetInfo,dashboard:PutDashboardInfo)
+case class WidgetInfo(widget_id: Long, bizlogicId: Long, position_x: Int, position_y: Int, width: Int, length: Int)
+
+case class DashboardInfo(id: Long, name: String, pic: String, desc: String, publish: Boolean, widgets: Seq[WidgetInfo])
 
 case class PostRelUserGroupSeq(payload: Seq[PostRelUserGroup])
 
@@ -72,7 +74,7 @@ case class PutWidgetInfoSeq(payload: Seq[PutWidgetInfo])
 
 case class BizlogicResult(result: List[Seq[String]] = null)
 
-case class ResponsePayload(response:String)
+case class ResponsePayload(response: String)
 
 case class RequestJson[A](payload: A)
 

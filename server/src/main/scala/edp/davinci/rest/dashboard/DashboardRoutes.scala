@@ -49,14 +49,9 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
       case Success(info) =>
         val (insideInfo, dashboards) = info
         val dashboard = dashboards.head
-        println("before put")
-        val putDashboard = PutDashboardInfo(dashboard._1, dashboard._2, dashboard._3.getOrElse(""), dashboard._4, dashboard._5)
-        println("after put")
-        val infoSeq = insideInfo.map(r => {
-          val widgetInfo = PutWidgetInfo(r._7, r._8, r._9, r._10, r._11.getOrElse(""), r._12, r._13, r._14, r._15.getOrElse(""), r._16)
-          DashboardInfo(r._1, r._2, r._3, r._4, r._5, r._6, widgetInfo, putDashboard)
-        })
-        complete(OK, ResponseSeqJson[DashboardInfo](getHeader(200, session), infoSeq))
+        val infoSeq: Seq[WidgetInfo] = insideInfo.map(r => WidgetInfo(r._1, r._2, r._3, r._4, r._5, r._6))
+        val dashboardInfo = DashboardInfo(dashboard._1, dashboard._2, dashboard._3.getOrElse(""), dashboard._4, dashboard._5, infoSeq)
+        complete(OK, ResponseJson[DashboardInfo](getHeader(200, session), dashboardInfo))
       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
   }
