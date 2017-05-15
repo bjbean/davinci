@@ -11,6 +11,7 @@ import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
+import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success}
 
@@ -19,6 +20,7 @@ import scala.util.{Failure, Success}
 class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
   val routes: Route = getAllWidgetsRoute ~ postWidgetRoute ~ deleteWidgetByIdRoute ~ putWidgetRoute ~ getWholeSqlByWidgetIdRoute
   private lazy val widgetService = new WidgetService(modules)
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   @ApiOperation(value = "list all widgets", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(

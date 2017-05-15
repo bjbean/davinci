@@ -4,6 +4,7 @@ import akka.http.scaladsl.server.directives.Credentials
 import edp.davinci.module.{ConfigurationModuleImpl, PersistenceModuleImpl}
 import edp.davinci.persistence.entities.User
 import edp.davinci.rest.{LoginClass, SessionClass}
+import org.slf4j.LoggerFactory
 import slick.jdbc.MySQLProfile.api._
 
 import scala.collection.mutable.ListBuffer
@@ -19,6 +20,7 @@ class UserNotFoundError(statusCode: Int = 404, desc: String = "user not found") 
 class PassWordError(statusCode: Int = 400, desc: String = "password is wrong") extends AuthorizationError(statusCode, desc)
 
 object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceModuleImpl {
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   def createSessionClass(login: LoginClass): Future[Either[AuthorizationError, SessionClass]] = {
     try {
@@ -34,12 +36,12 @@ object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceMod
           }
       }.map(Right(_)).recover {
         case e: AuthorizationError =>
-          println(e)
+          logger.error("createSessionClass error", e)
           Left(e)
       }
     } catch {
       case e: AuthorizationError =>
-        println(e)
+        logger.error("createSessionClass error", e)
         Future.successful(Left(e))
     }
 
@@ -63,6 +65,7 @@ object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceMod
             else throw new PassWordError()
           case None =>
             println("not found")
+            logger.info("user not found")
             throw new UserNotFoundError()
         }
     }
@@ -73,7 +76,9 @@ object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceMod
       val session = JwtSupport.decodeToken(token)
       Future.successful(Some(session))
     } catch {
-      case ex: Exception => Future.successful(None)
+      case e: Exception =>
+        logger.error("validateToken error", e)
+        Future.successful(None)
     }
   }
 

@@ -52,7 +52,7 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatPostRelDashboardWidgetSeq: RootJsonFormat[PostRelDashboardWidgetSeq] = jsonFormat1(PostRelDashboardWidgetSeq)
   implicit val formatPutRelDashboardWidgetSeq: RootJsonFormat[PutRelDashboardWidgetSeq] = jsonFormat1(PutRelDashboardWidgetSeq)
 
-  implicit val formatWidgetInfo: RootJsonFormat[WidgetInfo] = jsonFormat6(WidgetInfo)
+  implicit val formatWidgetInfo: RootJsonFormat[WidgetInfo] = jsonFormat7(WidgetInfo)
   implicit val formatDashboard: RootJsonFormat[Dashboard] = jsonFormat10(Dashboard)
   implicit val formatPostDashboardInfo: RootJsonFormat[PostDashboardInfo] = jsonFormat4(PostDashboardInfo)
   implicit val formatPutDashboardInfo: RootJsonFormat[PutDashboardInfo] = jsonFormat5(PutDashboardInfo)

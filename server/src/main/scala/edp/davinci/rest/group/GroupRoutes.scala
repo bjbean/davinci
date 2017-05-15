@@ -11,6 +11,7 @@ import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
+import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success}
 
@@ -20,6 +21,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
 
   val routes: Route = getGroupByAllRoute ~ postGroupRoute ~ putGroupRoute ~ deleteGroupByIdRoute
   private lazy val groupService = new GroupService(modules)
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   @ApiOperation(value = "get all group with the same domain", notes = "", nickname = "", httpMethod = "GET")
   @ApiResponses(Array(

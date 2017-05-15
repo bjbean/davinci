@@ -1,5 +1,6 @@
 package edp.davinci.rest.bizlogic
 
+import java.io.Serializable
 import java.sql.{Connection, Statement}
 import javax.ws.rs.Path
 
@@ -219,7 +220,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   }
 
 
-  private def getResultSetComplete(session: SessionClass, bizId: Long, olapSql: String = null): Route = {
+  private def getResultSetComplete(session: SessionClass, bizId: Long, olapSql: String): Route = {
     val operation = for {
       a <- bizlogicService.getSourceInfo(bizId)
       b <- bizlogicService.getSqlTmpl(bizId)
@@ -228,14 +229,11 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     onComplete(operation) {
       case Success(info) =>
         if (info._1.nonEmpty) {
-          println("here!!!!!! ")
           val (connectionUrl, _) = info._1.head
-          println("get head")
           val (sqlTmpl, tableName) = info._2.getOrElse(("", ""))
           val sqlParam = info._3.getOrElse("")
           val resultSql = fullfilSql(sqlTmpl, sqlParam, tableName, olapSql)
           val result = getResult(connectionUrl, resultSql)
-          println("get result~~~~~~~~~~~~~~~~~~~~~~~~~~~")
           complete(OK, ResponseJson[BizlogicResult](getHeader(200, session), BizlogicResult(result)))
         } else
           complete(OK, ResponseJson[String](getHeader(200, "source info is empty", session), ""))
@@ -244,20 +242,23 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   }
 
 
-  private def getResult(connectionUrl: String, sql: String): List[Seq[String]] = {
+  private def getResult(connectionUrl: String, sql: Array[String]): List[Seq[String]] = {
     val resultList = new ListBuffer[Seq[String]]
     val columnList = new ListBuffer[String]
     var dbConnection: Connection = null
     var statement: Statement = null
     if (connectionUrl != null) {
       val connectionInfo = connectionUrl.split("""<:>""")
-      if (connectionInfo.size != 3)
+      if (connectionInfo.size != 3) {
+        logger.info("connection is not in right format")
         List(Seq(""))
+      }
       else {
         try {
           dbConnection = DbConnection.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
           statement = dbConnection.createStatement()
-          val resultSet = statement.executeQuery(sql)
+          for (elem <- sql.dropRight(1)) statement.execute(elem)
+          val resultSet = statement.executeQuery(sql.last)
           val meta = resultSet.getMetaData
           for (i <- 1 to meta.getColumnCount)
             columnList.append(meta.getColumnName(i))
@@ -276,22 +277,56 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
         resultList.toList
       }
     } else {
+      logger.info("connection is not given or is null")
       List(Seq(""))
     }
   }
 
-  private def fullfilSql(sqlTmpl: String, param: String, tableName: String, olap_sql: String = null) = {
-    var sqlTmp = sqlTmpl
-    println(sqlTmpl)
-    val paramArr = param.split("\\?")
-    paramArr.foreach(p => sqlTmp = sqlTmp.replaceFirst("\\?", p))
-    println(sqlTmp)
-    sqlTmp = if (olap_sql != "") {
-      val sqlArr = olap_sql.split("from")
-      sqlArr(0) + s" from ($sqlTmp) as a"
-    } else sqlTmp
-    println(sqlTmp)
-    sqlTmp
+  private def fullfilSql(sqlTmpl: String, param: String, tableName: String, olap_sql: String): Array[String] = {
+    if (sqlTmpl != "") {
+      var sql = sqlTmpl.trim
+      logger.info("~~the initial sql template:" + sqlTmpl + "~~")
+      val paramArr = param.split("\\?")
+      paramArr.foreach(p => sql = sql.replaceFirst("\\?", p))
+      logger.info("~~sql template after the replacement:" + sql + "~~")
+      val semicoIndex = sql.lastIndexOf(";")
+      val subSql: String =
+        if (semicoIndex < 0) sql
+        else {
+          if (semicoIndex == sql.length - 1) {
+            if (sql.substring(0, semicoIndex).lastIndexOf(";") < 0) {
+              logger.info("only the last char is semicolon")
+              sql.substring(0, semicoIndex)
+            }
+            else {
+              val lastIndex = sql.substring(0, semicoIndex).lastIndexOf(";")
+              logger.info("has the second last semicolon")
+              sql.substring(lastIndex, semicoIndex)
+            }
+          } else sql.substring(semicoIndex)
+        }
+      val lastResultSql = if (olap_sql != "") {
+        try {
+          val sqlArr = olap_sql.split("from")
+          sqlArr(0) + s" from ($subSql) as `$tableName`"
+        } catch {
+          case e: Throwable => logger.error("olap sql is not in right format", e)
+            subSql
+        }
+      } else {
+        logger.info("olap sql is empty")
+        subSql
+      }
+      logger.info("~~the lastResult sql:" + lastResultSql + "~~")
+      val resultSqlArr: Array[String] =
+        if (sql.lastIndexOf(";") < 0) lastResultSql.split(";")
+        else
+          (sql.substring(0, sql.lastIndexOf(";")) + ";" + lastResultSql).split(";")
+      resultSqlArr
+    } else {
+      logger.info("there is no sql_tmpl")
+      null.asInstanceOf[Array[String]]
+    }
   }
 
 }

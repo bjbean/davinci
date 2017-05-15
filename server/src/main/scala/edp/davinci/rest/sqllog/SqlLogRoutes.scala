@@ -11,6 +11,7 @@ import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils.getHeader
 import io.swagger.annotations._
 import edp.davinci.util.JsonProtocol._
+import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success}
 
@@ -20,6 +21,7 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   val routes: Route = getSqlByAllRoute ~ postSqlLogRoute ~ putSqlLogRoute
   private lazy val sqlLogService = new SqlLogService(modules)
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
 
   @ApiOperation(value = "get all sqlLogs", notes = "", nickname = "", httpMethod = "GET")

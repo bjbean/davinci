@@ -1,6 +1,7 @@
 package edp.davinci.rest.dashboard
 
 import javax.ws.rs.Path
+
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module._
@@ -10,6 +11,8 @@ import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
+import org.slf4j.LoggerFactory
+
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -19,6 +22,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   val routes: Route = getWidgetByDashboardIdRoute ~ postDashboardRoute ~ putDashboardRoute ~ postWidget2DashboardRoute ~ getDashboardByAllRoute ~ deleteDashboardByIdRoute ~ deleteWidgetFromDashboardRoute ~ postWidget2DashboardRoute ~ putWidgetInDashboardRoute
   private lazy val dashboardService = new DashboardService(modules)
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   @Path("/{dashboard_id}")
   @ApiOperation(value = "get one dashboard from system by id", notes = "", nickname = "", httpMethod = "GET")
@@ -49,7 +53,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
       case Success(info) =>
         val (insideInfo, dashboards) = info
         val dashboard = dashboards.head
-        val infoSeq: Seq[WidgetInfo] = insideInfo.map(r => WidgetInfo(r._1, r._2, r._3, r._4, r._5, r._6))
+        val infoSeq: Seq[WidgetInfo] = insideInfo.map(r => WidgetInfo(r._1,r._2,r._3,r._4,r._5,r._6,r._7))
         val dashboardInfo = DashboardInfo(dashboard._1, dashboard._2, dashboard._3.getOrElse(""), dashboard._4, dashboard._5, infoSeq)
         complete(OK, ResponseJson[DashboardInfo](getHeader(200, session), dashboardInfo))
       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))

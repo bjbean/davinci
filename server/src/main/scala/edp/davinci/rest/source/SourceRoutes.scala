@@ -11,6 +11,7 @@ import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
+import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success}
 
@@ -21,6 +22,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   val routes: Route = getSourceByAllRoute ~ postSourceRoute ~ putSourceRoute ~ deleteSourceByIdRoute
   private lazy val sourceService = new SourceService(modules)
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   @ApiOperation(value = "get all source with the same domain", notes = "", nickname = "", httpMethod = "GET")
   @ApiResponses(Array(

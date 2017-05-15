@@ -20,7 +20,7 @@ case class SqlInfo(sqls: Array[String])
 
 case class OlapSql(payload: String)
 
-case class WidgetInfo(widget_id: Long, bizlogicId: Long, position_x: Int, position_y: Int, width: Int, length: Int)
+case class WidgetInfo(id:Long,widget_id: Long, bizlogicId: Long, position_x: Int, position_y: Int, width: Int, length: Int)
 
 case class DashboardInfo(id: Long, name: String, pic: String, desc: String, publish: Boolean, widgets: Seq[WidgetInfo])
 

@@ -4,6 +4,7 @@ import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes._
 import edp.davinci.util.JsonProtocol._
+
 import scala.util.{Failure, Success}
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module._
@@ -12,6 +13,7 @@ import edp.davinci.rest.{ResponseJson, ResponseSeqJson, SessionClass}
 import edp.davinci.util.AuthorizationProvider
 import io.swagger.annotations._
 import edp.davinci.util.CommonUtils._
+import org.slf4j.LoggerFactory
 
 @Api(value = "/libWidgets", consumes = "application/json", produces = "application/json")
 @Path("/libWidgets")
@@ -19,6 +21,7 @@ class LibWidgetRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   val routes: Route = getLibWidgetByAllRoute
   private lazy val libWidgetService = new LibWidgetService(modules)
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   //  @Path("/{id}")
   //  @ApiOperation(value = "get one libWidget from system by id", notes = "", nickname = "", httpMethod = "GET")
