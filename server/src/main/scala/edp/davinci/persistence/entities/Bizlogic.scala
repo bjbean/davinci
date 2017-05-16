@@ -10,6 +10,9 @@ case class Bizlogic(id: Long,
                     sql_tmpl: String,
                     result_table: String,
                     desc: Option[String] = None,
+                    trigger_type: String,
+                    frequency: String,
+                    `catch`: String,
                     active: Boolean,
                     create_time: String,
                     create_by: Long,
@@ -20,6 +23,9 @@ case class PostBizlogicInfo(source_id: Long,
                             name: String,
                             sql_tmpl: String,
                             desc: String,
+                            trigger_type: String,
+                            frequency: String,
+                            `catch`: String,
                             relBG: Seq[PostRelGroupBizlogic]) extends SimpleBaseEntity
 
 case class PutBizlogicInfo(id: Long,
@@ -27,6 +33,9 @@ case class PutBizlogicInfo(id: Long,
                            name: String,
                            sql_tmpl: String,
                            desc: String,
+                           trigger_type: String,
+                           frequency: String,
+                           `catch`: String,
                            relBG: Seq[PostRelGroupBizlogic])
 
 
@@ -35,7 +44,10 @@ case class QueryBizlogic(id: Long,
                          name: String,
                          sql_tmpl: String,
                          result_table: String,
-                         desc: String)
+                         desc: String,
+                         trigger_type: String,
+                         frequency: String,
+                         `catch`: String)
 
 class BizlogicTable(tag: Tag) extends BaseTable[Bizlogic](tag, "bizlogic") {
 
@@ -47,6 +59,12 @@ class BizlogicTable(tag: Tag) extends BaseTable[Bizlogic](tag, "bizlogic") {
 
   def desc: Rep[Option[String]] = column[Option[String]]("desc")
 
+  def trigger_type: Rep[String] = column[String]("trigger_type")
+
+  def frequency: Rep[String] = column[String]("frequency")
+
+  def `catch`: Rep[String] = column[String]("catch")
+
   def create_time: Rep[String] = column[String]("create_time")
 
   def create_by: Rep[Long] = column[Long]("create_by")
@@ -55,5 +73,5 @@ class BizlogicTable(tag: Tag) extends BaseTable[Bizlogic](tag, "bizlogic") {
 
   def update_by: Rep[Long] = column[Long]("update_by")
 
-  def * : ProvenShape[Bizlogic] = (id, source_id, name, sql_tmpl, result_table, desc, active, create_time, create_by, update_time, update_by) <> (Bizlogic.tupled, Bizlogic.unapply)
+  def * : ProvenShape[Bizlogic] = (id, source_id, name, sql_tmpl, result_table, desc, trigger_type, frequency, `catch`, active, create_time, create_by, update_time, update_by) <> (Bizlogic.tupled, Bizlogic.unapply)
 }

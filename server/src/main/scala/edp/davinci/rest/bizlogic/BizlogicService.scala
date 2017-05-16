@@ -15,14 +15,14 @@ class BizlogicService(modules: ConfigurationModule with PersistenceModule with B
   private lazy val sourceTQ = modules.sourceDal.getTableQuery
   private lazy val db = bDal.getDB
 
-  def getAllBiz: Future[Seq[(Long, Long, String, String, String, Option[String])]] = {
-    db.run(bizlogicTQ.filter(_.active === true).map(r => (r.id, r.source_id, r.name, r.sql_tmpl, r.result_table, r.desc)).result)
+  def getAllBiz: Future[Seq[(Long, Long, String, String, String, Option[String], String, String, String)]] = {
+    db.run(bizlogicTQ.filter(_.active === true).map(r => (r.id, r.source_id, r.name, r.sql_tmpl, r.result_table, r.desc,r.trigger_type,r.frequency,r.`catch`)).result)
   }
 
   def updateBiz(bizlogicSeq: Seq[PutBizlogicInfo], session: SessionClass): Future[Unit] = {
     val query = DBIO.seq(bizlogicSeq.map(r => {
-      bizlogicTQ.filter(obj => obj.id === r.id && obj.active === true).map(bizlogic => (bizlogic.name, bizlogic.source_id, bizlogic.sql_tmpl, bizlogic.desc, bizlogic.update_by, bizlogic.update_time))
-        .update(r.name, r.source_id, r.sql_tmpl, Some(r.desc), session.userId, CommonUtils.currentTime)
+      bizlogicTQ.filter(obj => obj.id === r.id && obj.active === true).map(bizlogic => (bizlogic.name, bizlogic.source_id, bizlogic.sql_tmpl, bizlogic.desc,bizlogic.trigger_type,bizlogic.frequency,bizlogic.`catch`, bizlogic.update_by, bizlogic.update_time))
+        .update(r.name, r.source_id, r.sql_tmpl, Some(r.desc),r.trigger_type,r.frequency,r.`catch`, session.userId, CommonUtils.currentTime)
     }): _*)
     db.run(query)
   }

@@ -46,7 +46,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
           if (session.admin) {
             onComplete(bizlogicService.getAllBiz) {
               case Success(bizlogicSeq) =>
-                val queryResult = bizlogicSeq.map(biz => QueryBizlogic(biz._1, biz._2, biz._3, biz._4, biz._5, biz._6.getOrElse("")))
+                val queryResult = bizlogicSeq.map(biz => QueryBizlogic(biz._1, biz._2, biz._3, biz._4, biz._5, biz._6.getOrElse(""),biz._7,biz._8,biz._9))
                 complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), queryResult))
               case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
             }
@@ -81,10 +81,10 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   private def postBizlogic(session: SessionClass, bizlogicSeq: Seq[PostBizlogicInfo]): Route = {
     if (session.admin) {
       val uniqueTableName = "table" + java.util.UUID.randomUUID().toString
-      val bizEntitySeq = bizlogicSeq.map(biz => Bizlogic(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, Some(biz.desc), active = true, null, session.userId, null, session.userId))
+      val bizEntitySeq = bizlogicSeq.map(biz => Bizlogic(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, Some(biz.desc),biz.trigger_type,biz.frequency,biz.`catch`, active = true, null, session.userId, null, session.userId))
       onComplete(modules.bizlogicDal.insert(bizEntitySeq)) {
         case Success(bizSeq) =>
-          val queryBiz = bizSeq.map(biz => QueryBizlogic(biz.id, biz.source_id, biz.name, biz.sql_tmpl, biz.result_table, biz.desc.getOrElse("")))
+          val queryBiz = bizSeq.map(biz => QueryBizlogic(biz.id, biz.source_id, biz.name, biz.sql_tmpl, biz.result_table, biz.desc.getOrElse(""),biz.trigger_type,biz.frequency,biz.`catch`))
           val relSeq = for {biz <- bizSeq
                             rel <- bizlogicSeq.head.relBG
           } yield RelGroupBizlogic(0, rel.group_id, biz.id, rel.sql_params, active = true, null, session.userId, null, session.userId)

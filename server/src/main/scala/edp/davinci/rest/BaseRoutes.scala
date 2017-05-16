@@ -200,10 +200,9 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
 
   def generateEntity(simple: SimpleBaseEntity, session: SessionClass): BaseEntity = {
     simple match {
-      //      case bizLogic: PostBizlogicInfo => Bizlogic(0, bizLogic.source_id, bizLogic.name, bizLogic.sql_tmpl, bizLogic.result_table, bizLogic.desc, active = true, null, session.userId, null, session.userId)
-      case dashboard: PostDashboardInfo => Dashboard(0, dashboard.name,Some(dashboard.pic), dashboard.desc, dashboard.publish, active = true, null, session.userId, null, session.userId)
+      case dashboard: PostDashboardInfo => Dashboard(0, dashboard.name, Some(dashboard.pic), dashboard.desc, dashboard.publish, active = true, null, session.userId, null, session.userId)
       case group: PostGroupInfo => UserGroup(0, group.name, Some(group.desc), active = true, null, session.userId, null, session.userId)
-      case libWidget: SimpleLibWidget => LibWidget(0, libWidget.name,libWidget.params, libWidget.`type`, libWidget.active, libWidget.create_time, libWidget.create_by, libWidget.update_time, libWidget.update_by)
+      case libWidget: SimpleLibWidget => LibWidget(0, libWidget.name, libWidget.params, libWidget.`type`, libWidget.active, libWidget.create_time, libWidget.create_by, libWidget.update_time, libWidget.update_by)
       case source: PostSourceInfo => Source(0, source.name, source.connection_url, source.desc, source.`type`, source.config, active = true, null, session.userId, null, session.userId)
       case sqlLog: SimpleSqlLog => SqlLog(0, sqlLog.user_id, sqlLog.user_email, sqlLog.sql, sqlLog.start_time, sqlLog.end_time, sqlLog.success, sqlLog.error)
       case user: PostUserInfo => User(0, user.email, user.password, user.title, user.name, user.admin, active = true, null, session.userId, null, session.userId)
