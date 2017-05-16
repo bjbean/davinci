@@ -206,9 +206,9 @@ class BaseRoutesImpl[T <: BaseTable[A], A <: BaseEntity](baseDal: BaseDal[T, A])
       case source: PostSourceInfo => Source(0, source.name, source.connection_url, source.desc, source.`type`, source.config, active = true, null, session.userId, null, session.userId)
       case sqlLog: SimpleSqlLog => SqlLog(0, sqlLog.user_id, sqlLog.user_email, sqlLog.sql, sqlLog.start_time, sqlLog.end_time, sqlLog.success, sqlLog.error)
       case user: PostUserInfo => User(0, user.email, user.password, user.title, user.name, user.admin, active = true, null, session.userId, null, session.userId)
-      case widget: PostWidgetInfo => Widget(0, widget.widgetlib_id, widget.bizlogic_id, widget.name, Some(widget.olap_sql), widget.desc, widget.trigger_type, widget.trigger_params, Some(widget.chart_params), widget.publish, active = true, null, session.userId, null, session.userId)
-      case relDashboardWidget: PostRelDashboardWidget => RelDashboardWidget(0, relDashboardWidget.dashboard_id, relDashboardWidget.widget_id, relDashboardWidget.position_x, relDashboardWidget.position_y, relDashboardWidget.length, relDashboardWidget.width,
-        active = true, null, session.userId, null, session.userId)
+//      case widget: PostWidgetInfo => Widget(0, widget.widgetlib_id, widget.bizlogic_id, widget.name, Some(widget.olap_sql), widget.desc, widget.trigger_type, widget.trigger_params, Some(widget.chart_params), widget.publish, active = true, null, session.userId, null, session.userId)
+//      case relDashboardWidget: PostRelDashboardWidget => RelDashboardWidget(0, relDashboardWidget.dashboard_id, relDashboardWidget.widget_id, relDashboardWidget.position_x, relDashboardWidget.position_y, relDashboardWidget.length, relDashboardWidget.width,
+//        active = true, null, session.userId, null, session.userId)
     }
   }
 

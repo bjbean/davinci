@@ -13,19 +13,19 @@ class WidgetService(modules: ConfigurationModule with PersistenceModule with Bus
   private lazy val widgetTQ = wDal.getTableQuery
   private lazy val db = wDal.getDB
 
-  def getAll(session: SessionClass): Future[Seq[(Long, Long, Long, String, Option[String], String, String, String, Option[String], Boolean)]] = {
+  def getAll(session: SessionClass): Future[Seq[(Long, Long, Long, String, Option[String], String, Option[String], Boolean)]] = {
     if (session.admin)
       db.run(widgetTQ.filter(_.active === true)
-        .map(r => (r.id, r.widgetlib_id, r.bizlogic_id, r.name, r.olap_sql, r.desc, r.trigger_type, r.trigger_params, r.chart_params, r.publish)).result)
+        .map(r => (r.id, r.widgetlib_id, r.bizlogic_id, r.name, r.olap_sql, r.desc, r.chart_params, r.publish)).result)
     else
       db.run(widgetTQ.filter(obj => obj.active === true && obj.publish === true)
-        .map(r => (r.id, r.widgetlib_id, r.bizlogic_id, r.name, r.olap_sql, r.desc, r.trigger_type, r.trigger_params, r.chart_params, r.publish)).result)
+        .map(r => (r.id, r.widgetlib_id, r.bizlogic_id, r.name, r.olap_sql, r.desc, r.chart_params, r.publish)).result)
   }
 
   def update(widgetSeq: Seq[PutWidgetInfo], session: SessionClass): Future[Unit] = {
     val query = DBIO.seq(widgetSeq.map(r => {
-      widgetTQ.filter(_.id === r.id).map(widget => (widget.bizlogic_id, widget.widgetlib_id, widget.name, widget.olap_sql, widget.desc, widget.trigger_type, widget.trigger_params, widget.chart_params, widget.publish, widget.update_by, widget.update_time))
-        .update(r.bizlogic_id, r.widgetlib_id, r.name, Some(r.olap_sql), r.desc, r.trigger_type, r.trigger_params, Some(r.chart_params), r.publish, session.userId, CommonUtils.currentTime)
+      widgetTQ.filter(_.id === r.id).map(widget => (widget.bizlogic_id, widget.widgetlib_id, widget.name, widget.olap_sql, widget.desc, widget.chart_params, widget.publish, widget.update_by, widget.update_time))
+        .update(r.bizlogic_id, r.widgetlib_id, r.name, Some(r.olap_sql), r.desc, Some(r.chart_params), r.publish, session.userId, CommonUtils.currentTime)
     }): _*)
     db.run(query)
   }

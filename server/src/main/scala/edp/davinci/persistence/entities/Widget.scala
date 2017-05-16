@@ -11,8 +11,6 @@ case class Widget(id: Long,
                   name: String,
                   olap_sql: Option[String] = None,
                   desc: String,
-                  trigger_type: String,
-                  trigger_params: String,
                   chart_params: Option[String] = None,
                   publish: Boolean,
                   active: Boolean,
@@ -27,8 +25,6 @@ case class PostWidgetInfo(widgetlib_id: Long,
                           name: String,
                           olap_sql: String,
                           desc: String,
-                          trigger_type: String,
-                          trigger_params: String,
                           chart_params: String,
                           publish: Boolean) extends SimpleBaseEntity
 
@@ -38,8 +34,6 @@ case class PutWidgetInfo(id: Long,
                          name: String,
                          olap_sql: String,
                          desc: String,
-                         trigger_type: String,
-                         trigger_params: String,
                          chart_params: String,
                          publish: Boolean)
 
@@ -53,10 +47,6 @@ class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
   def desc: Rep[String] = column[String]("desc")
 
-  def trigger_type: Rep[String] = column[String]("trigger_type")
-
-  def trigger_params: Rep[String] = column[String]("trigger_params")
-
   def chart_params: Rep[Option[String]] = column[Option[String]]("chart_params", O.Default(null))
 
   def publish: Rep[Boolean] = column[Boolean]("publish")
@@ -69,5 +59,5 @@ class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
   def update_by: Rep[Long] = column[Long]("update_by")
 
-  def * : ProvenShape[Widget] = (id, widgetlib_id, bizlogic_id, name, olap_sql, desc, trigger_type, trigger_params, chart_params, publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
+  def * : ProvenShape[Widget] = (id, widgetlib_id, bizlogic_id, name, olap_sql, desc, chart_params, publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
 }

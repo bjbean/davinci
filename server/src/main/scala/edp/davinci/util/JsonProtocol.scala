@@ -40,19 +40,19 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatPostUserInfoSeq: RootJsonFormat[PostUserInfoSeq] = jsonFormat1(PostUserInfoSeq)
   implicit val formatPutUserInfoSeq: RootJsonFormat[PutUserInfoSeq] = jsonFormat1(PutUserInfoSeq)
 
-  implicit val formatWidget: RootJsonFormat[Widget] = jsonFormat15(Widget)
-  implicit val formatPostWidgetInfo: RootJsonFormat[PostWidgetInfo] = jsonFormat9(PostWidgetInfo)
-  implicit val formatPutWidgetInfo: RootJsonFormat[PutWidgetInfo] = jsonFormat10(PutWidgetInfo)
+  implicit val formatWidget: RootJsonFormat[Widget] = jsonFormat13(Widget)
+  implicit val formatPostWidgetInfo: RootJsonFormat[PostWidgetInfo] = jsonFormat7(PostWidgetInfo)
+  implicit val formatPutWidgetInfo: RootJsonFormat[PutWidgetInfo] = jsonFormat8(PutWidgetInfo)
   implicit val formatPutWidgetSeq: RootJsonFormat[PutWidgetInfoSeq] = jsonFormat1(PutWidgetInfoSeq)
   implicit val formatPostWidgetSeq: RootJsonFormat[PostWidgetInfoSeq] = jsonFormat1(PostWidgetInfoSeq)
 
 
-  implicit val formatPostRelDashboardWidget: RootJsonFormat[PostRelDashboardWidget] = jsonFormat6(PostRelDashboardWidget)
-  implicit val formatPutRelDashboardWidget: RootJsonFormat[PutRelDashboardWidget] = jsonFormat7(PutRelDashboardWidget)
+  implicit val formatPostRelDashboardWidget: RootJsonFormat[PostRelDashboardWidget] = jsonFormat8(PostRelDashboardWidget)
+  implicit val formatPutRelDashboardWidget: RootJsonFormat[PutRelDashboardWidget] = jsonFormat9(PutRelDashboardWidget)
   implicit val formatPostRelDashboardWidgetSeq: RootJsonFormat[PostRelDashboardWidgetSeq] = jsonFormat1(PostRelDashboardWidgetSeq)
   implicit val formatPutRelDashboardWidgetSeq: RootJsonFormat[PutRelDashboardWidgetSeq] = jsonFormat1(PutRelDashboardWidgetSeq)
 
-  implicit val formatWidgetInfo: RootJsonFormat[WidgetInfo] = jsonFormat7(WidgetInfo)
+  implicit val formatWidgetInfo: RootJsonFormat[WidgetInfo] = jsonFormat9(WidgetInfo)
   implicit val formatDashboard: RootJsonFormat[Dashboard] = jsonFormat10(Dashboard)
   implicit val formatPostDashboardInfo: RootJsonFormat[PostDashboardInfo] = jsonFormat4(PostDashboardInfo)
   implicit val formatPutDashboardInfo: RootJsonFormat[PutDashboardInfo] = jsonFormat5(PutDashboardInfo)

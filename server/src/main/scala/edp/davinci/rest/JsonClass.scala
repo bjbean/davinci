@@ -20,7 +20,7 @@ case class SqlInfo(sqls: Array[String])
 
 case class OlapSql(payload: String)
 
-case class WidgetInfo(id:Long,widget_id: Long, bizlogicId: Long, position_x: Int, position_y: Int, width: Int, length: Int)
+case class WidgetInfo(id: Long, widget_id: Long, bizlogicId: Long, position_x: Int, position_y: Int, width: Int, length: Int,trigger_type:String,trigger_params:String)
 
 case class DashboardInfo(id: Long, name: String, pic: String, desc: String, publish: Boolean, widgets: Seq[WidgetInfo])
 
@@ -53,8 +53,6 @@ case class SimpleSqlLogSeq(payload: Seq[SimpleSqlLog])
 case class PostWidgetInfoSeq(payload: Seq[PostWidgetInfo])
 
 case class SimpleRelUserGroupSeq(payload: Seq[SimpleRelUserGroup])
-
-case class SimpleRelDashboardWidgetSeq(payload: Seq[SimpleRelDashboardWidget])
 
 case class PutBizlogicInfoSeq(payload: Seq[PutBizlogicInfo])
 

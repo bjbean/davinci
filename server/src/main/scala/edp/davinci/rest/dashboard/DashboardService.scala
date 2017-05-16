@@ -20,11 +20,11 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
   private lazy val dashboardTQ = dDal.getTableQuery
   private lazy val db = dDal.getDB
 
-  def getInsideInfo(session: SessionClass, dashboardId: Long): Future[Seq[(Long, Long, Long, Int, Int, Int, Int)]] = {
+  def getInsideInfo(session: SessionClass, dashboardId: Long): Future[Seq[(Long, Long, Long, Int, Int, Int, Int, String, String)]] = {
     val query = if (session.admin)
       (relDWTQ.filter(obj => obj.dashboard_id === dashboardId && obj.active === true) join widgetTQ.filter(widget => widget.active === true) on (_.widget_id === _.id)).
         map {
-          case (r, w) => (r.id, w.id, w.bizlogic_id, r.position_x, r.position_y, r.width, r.length)
+          case (r, w) => (r.id, w.id, w.bizlogic_id, r.position_x, r.position_y, r.width, r.length, r.trigger_type, r.trigger_params)
         }.result
     else {
       val bizIds = relGBTQ.withFilter(rel => {
@@ -35,7 +35,7 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
       (relDWTQ.filter(obj => obj.dashboard_id === dashboardId && obj.active === true) join
         widgetTQ.filter(obj => obj.bizlogic_id in bizIds).filter(obj => obj.active === true && obj.publish === true) on (_.widget_id === _.id)).
         map {
-          case (r, w) => (r.id, w.id, w.bizlogic_id, r.position_x, r.position_y, r.width, r.length)
+          case (r, w) => (r.id, w.id, w.bizlogic_id, r.position_x, r.position_y, r.width, r.length, r.trigger_type, r.trigger_params)
         }
     }.result
     db.run(query)
@@ -55,8 +55,8 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
 
   def updateRelDashboardWidget(session: SessionClass, relSeq: Seq[PutRelDashboardWidget]): Future[Unit] = {
     val query = DBIO.seq(relSeq.map(r => {
-      relDWTQ.filter(obj => obj.id === r.id && obj.active === true).map(rel => (rel.dashboard_id, rel.widget_id, rel.position_x, rel.position_y, rel.width, rel.length, rel.update_by, rel.update_time))
-        .update(r.dashboard_id, r.widget_id, r.position_x, r.position_y, r.width, r.length, session.userId, CommonUtils.currentTime)
+      relDWTQ.filter(obj => obj.id === r.id && obj.active === true).map(rel => (rel.dashboard_id, rel.widget_id, rel.position_x, rel.position_y, rel.width, rel.length, rel.trigger_type, rel.trigger_params, rel.update_by, rel.update_time))
+        .update(r.dashboard_id, r.widget_id, r.position_x, r.position_y, r.width, r.length, r.trigger_type, r.trigger_params, session.userId, CommonUtils.currentTime)
     }): _*)
     db.run(query)
   }
