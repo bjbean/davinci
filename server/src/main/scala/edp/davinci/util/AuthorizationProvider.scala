@@ -2,7 +2,7 @@ package edp.davinci.util
 
 import akka.http.scaladsl.server.directives.Credentials
 import edp.davinci.module.{ConfigurationModuleImpl, PersistenceModuleImpl}
-import edp.davinci.persistence.entities.User
+import edp.davinci.persistence.entities.{QueryUserInfo, User}
 import edp.davinci.rest.{LoginClass, SessionClass}
 import org.slf4j.LoggerFactory
 import slick.jdbc.MySQLProfile.api._
@@ -22,17 +22,18 @@ class PassWordError(statusCode: Int = 400, desc: String = "password is wrong") e
 object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceModuleImpl {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  def createSessionClass(login: LoginClass): Future[Either[AuthorizationError, SessionClass]] = {
+  def createSessionClass(login: LoginClass): Future[Either[AuthorizationError, (SessionClass, QueryUserInfo)] with Product with Serializable] = {
     try {
       val user = findUser(login)
       user.flatMap {
         user =>
-          relUserGroupDal.findByFilter(rel => rel.user_id === user.id && rel.active === true).map[SessionClass] {
+          relUserGroupDal.findByFilter(rel => rel.user_id === user.id && rel.active === true).map{
             relSeq =>
               val groupIdList = new ListBuffer[Long]
               if (relSeq.nonEmpty) relSeq.foreach(groupIdList += _.group_id)
+              val userInfo = QueryUserInfo(user.id, user.email, user.title, user.name, user.admin)
               val session = SessionClass(user.id, groupIdList.toList, user.admin)
-              session
+              (session,userInfo)
           }
       }.map(Right(_)).recover {
         case e: AuthorizationError =>
