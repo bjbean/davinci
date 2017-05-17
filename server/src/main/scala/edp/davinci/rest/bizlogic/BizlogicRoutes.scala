@@ -44,7 +44,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   ))
   def getBizlogicByAllRoute: Route = path("bizlogics") {
     get {
-      parameter('active.as[Boolean].?) {active=>
+      parameter('active.as[Boolean].?) { active =>
         authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
           session =>
             if (session.admin) {
@@ -312,8 +312,10 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
         }
       val lastResultSql = if (olap_sql != "") {
         try {
-          val sqlArr = olap_sql.split("from")
-          sqlArr(0) + s" from ($subSql) as `$tableName`"
+          val sqlArr = olap_sql.split("table")
+          if (sqlArr.size == 2)
+            sqlArr(0) + s" ($subSql) as `$tableName` ${sqlArr(1)}"
+          else sqlArr(0) + s" ($subSql) as `$tableName`"
         } catch {
           case e: Throwable => logger.error("olap sql is not in right format", e)
             subSql
@@ -324,7 +326,8 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
       }
       logger.info("~~the lastResult sql:" + lastResultSql + "~~")
       val resultSqlArr: Array[String] =
-        if (sql.lastIndexOf(";") < 0) lastResultSql.split(";")
+        if (sql.lastIndexOf(";") < 0)
+          lastResultSql.split(";")
         else
           (sql.substring(0, sql.lastIndexOf(";")) + ";" + lastResultSql).split(";")
       resultSqlArr
