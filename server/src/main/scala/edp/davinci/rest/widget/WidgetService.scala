@@ -10,16 +10,24 @@ import scala.concurrent.Future
 class WidgetService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
   private lazy val wDal = modules.widgetDal
   private lazy val bDal = modules.bizlogicDal
+  private lazy val rGBDal = modules.relGroupBizlogicDal
   private lazy val widgetTQ = wDal.getTableQuery
+  private lazy val rGBTQ = rGBDal.getTableQuery
   private lazy val db = wDal.getDB
 
   def getAll(session: SessionClass): Future[Seq[(Long, Long, Long, String, Option[String], String, Option[String], Boolean)]] = {
     if (session.admin)
       db.run(widgetTQ.filter(_.active === true)
         .map(r => (r.id, r.widgetlib_id, r.bizlogic_id, r.name, r.olap_sql, r.desc, r.chart_params, r.publish)).result)
-    else
-      db.run(widgetTQ.filter(obj => obj.active === true && obj.publish === true)
-        .map(r => (r.id, r.widgetlib_id, r.bizlogic_id, r.name, r.olap_sql, r.desc, r.chart_params, r.publish)).result)
+    else {
+      val query = (widgetTQ.filter(obj => obj.active === true && obj.publish === true)
+        join rGBTQ.filter(r => r.group_id inSet session.groupIdList)
+        on (_.bizlogic_id === _.bizlogic_id))
+        .map {
+          case (w, _) => (w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql, w.desc, w.chart_params, w.publish)
+        }.result
+      db.run(query)
+    }
   }
 
   def update(widgetSeq: Seq[PutWidgetInfo], session: SessionClass): Future[Unit] = {
