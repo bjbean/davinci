@@ -27,6 +27,9 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   @ApiOperation(value = "get all users with the same domain", notes = "", nickname = "", httpMethod = "GET")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "active", value = "true or false", required = false, dataType = "boolean", paramType = "query")
+  ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -36,16 +39,20 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   ))
   def getUserByAllRoute: Route = path("users") {
     get {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session => getAllUsersComplete(session)
+      parameter('active.as[Boolean].?) { active =>
+        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          session => getAllUsersComplete(session, active.getOrElse(true))
+        }
       }
     }
   }
 
-  private def getAllUsersComplete(session: SessionClass): Route = {
+  private def getAllUsersComplete(session: SessionClass, active: Boolean): Route = {
     if (session.admin) {
-      onComplete(userService.getAll(session)) {
-        case Success(userSeq) => complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), userSeq))
+      onComplete(userService.getAll(session, active)) {
+        case Success(userSeq) =>
+          val responseUser = userSeq.map(u => QueryUserInfo(u._1, u._2, u._3, u._4, u._5, u._6))
+          complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), responseUser))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
@@ -89,7 +96,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
       } yield users
       onComplete(operation) {
         case Success(users) =>
-          val queryUsers = users.map(user => QueryUserInfo(user.id, user.email, user.title, user.name, user.admin,user.active))
+          val queryUsers = users.map(user => QueryUserInfo(user.id, user.email, user.title, user.name, user.admin, user.active))
           complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), queryUsers))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }

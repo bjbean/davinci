@@ -10,9 +10,10 @@ import scala.concurrent.Future
 class SourceService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
   private lazy val sDal = modules.sourceDal
 
-  def getAll: Future[Seq[PutSourceInfo]] = {
+  def getAll(active: Boolean): Future[Seq[(Long, String, String, String, String, String, Boolean)]] = {
     val sourceTQ = sDal.getTableQuery
-    sDal.getDB.run(sourceTQ.map(r => (r.id, r.name, r.connection_url, r.desc, r.`type`, r.config,r.active)).result).mapTo[Seq[PutSourceInfo]]
+    val tmpQuery = if (active) sourceTQ.filter(_.active === true) else sourceTQ
+    sDal.getDB.run(tmpQuery.map(r => (r.id, r.name, r.connection_url, r.desc, r.`type`, r.config, r.active)).result)
   }
 
   def update(sourceSeq: Seq[PutSourceInfo], session: SessionClass): Future[Unit] = {

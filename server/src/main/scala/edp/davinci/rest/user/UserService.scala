@@ -14,22 +14,23 @@ class UserService(modules: ConfigurationModule with PersistenceModule with Busin
   private lazy val relUGTQ = relDal.getTableQuery
   private lazy val db = uDal.getDB
 
-  def getAll(session: SessionClass): Future[Seq[QueryUserInfo]] = {
+  def getAll(session: SessionClass, active: Boolean): Future[Seq[(Long, String, String, String, Boolean, Boolean)]] = {
+    val tmpQuery = if (active) userTQ.filter(_.active === true) else userTQ
     if (session.admin)
-     db.run(userTQ.map(r => (r.id, r.email, r.title, r.name, r.admin,r.active)).result).mapTo[Seq[QueryUserInfo]]
+      db.run(tmpQuery.map(r => (r.id, r.email, r.title, r.name, r.admin, r.active)).result)
     else
-     db.run(userTQ.filter(_.id === session.userId).map(r => (r.id, r.email, r.title, r.name, r.admin,r.active)).result).mapTo[Seq[QueryUserInfo]]
+      db.run(tmpQuery.filter(_.id === session.userId).map(r => (r.id, r.email, r.title, r.name, r.admin, r.active)).result)
   }
 
   def update(userSeq: Seq[PutUserInfo], session: SessionClass): Future[Unit] = {
     val query = DBIO.seq(userSeq.map(r => {
-      userTQ.filter(_.id === r.id).map(user => (user.admin, user.name, user.email, user.title, user.update_by, user.update_time)).update(r.admin, r.name, r.email, r.title, session.userId, CommonUtils.currentTime)
+      userTQ.filter(_.id === r.id).map(user => (user.admin, user.name, user.email, user.title, user.active, user.update_by, user.update_time)).update(r.admin, r.name, r.email, r.title, r.active.getOrElse(true), session.userId, CommonUtils.currentTime)
     }): _*)
-   db.run(query)
+    db.run(query)
   }
 
   def updateLoginUser(loginUser: LoginUserInfo, session: SessionClass): Future[Int] = {
-   db.run(userTQ.filter(_.id === session.userId).map(user => (user.name, user.title, user.update_by, user.update_time)).update(loginUser.name, loginUser.title, session.userId, CommonUtils.currentTime))
+    db.run(userTQ.filter(_.id === session.userId).map(user => (user.name, user.title, user.update_by, user.update_time)).update(loginUser.name, loginUser.title, session.userId, CommonUtils.currentTime))
   }
 
   def getAllGroups(userId: Long): Future[Seq[PutRelUserGroup]] = {

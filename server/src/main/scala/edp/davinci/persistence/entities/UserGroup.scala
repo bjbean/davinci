@@ -14,12 +14,13 @@ case class UserGroup(id: Long,
 
 
 case class PostGroupInfo(name: String,
-                         desc: String) extends SimpleBaseEntity
+                         desc: String
+                         ) extends SimpleBaseEntity
 
 case class PutGroupInfo(id: Long,
                         name: String,
                         desc: String,
-                        active: Boolean)
+                        active: Option[Boolean] = Some(true))
 
 class GroupTable(tag: Tag) extends BaseTable[UserGroup](tag, "user_group") {
 

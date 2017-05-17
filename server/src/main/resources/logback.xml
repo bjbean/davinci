@@ -8,15 +8,17 @@
         </encoder>
     </appender>
     <logger name="slick.basic" level="debug"/>
-    <logger name="slick.jdbc" level="error" />
-    <logger name="slick.ast" level="error" />
-    <logger name="slick.memory" level="error" />
-    <logger name="slick.relational" level="error" />
-    <logger name="slick.compiler" level="error" />
-    <logger name="com.wordnik" level="error" />
-    <logger name="com.gettyimages" level="error" />
-    <root level="error">
+    <logger name="slick.jdbc" level="error"/>
+    <logger name="slick.ast" level="error"/>
+    <logger name="slick.memory" level="error"/>
+    <logger name="slick.relational" level="error"/>
+    <logger name="slick.compiler" level="error"/>
+    <logger name="com.wordnik" level="error"/>
+    <logger name="com.gettyimages" level="error"/>
+    <root level="info">
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
     </root>
 
 </configuration>

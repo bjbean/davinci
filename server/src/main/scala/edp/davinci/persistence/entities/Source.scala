@@ -39,7 +39,7 @@ case class PutSourceInfo(id: Long,
                          desc: String,
                          `type`: String,
                          config: String,
-                         active: Boolean)
+                         active: Option[Boolean] = Some(true))
 
 class SourceTable(tag: Tag) extends BaseTable[Source](tag, "source") {
   //  def domain_id = column[Long]("domain_id")

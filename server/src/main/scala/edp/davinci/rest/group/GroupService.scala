@@ -11,10 +11,18 @@ import scala.concurrent.Future
 class GroupService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
   private lazy val gDal = modules.groupDal
 
-  def getAll(session: SessionClass): Future[Seq[(Long, String, Option[String], Boolean)]] = {
+  def getAll(session: SessionClass, active: Boolean): Future[Seq[(Long, String, Option[String], Boolean)]] = {
     val groupTQ = gDal.getTableQuery
     if (session.admin)
-      gDal.getDB.run(groupTQ.map(r => (r.id, r.name, r.desc, r.active)).result)
+      if (active)
+        gDal.getDB.run(groupTQ.filter(_.active === true).map(r => (r.id, r.name, r.desc, r.active)).result)
+      else
+        gDal.getDB.run(groupTQ.map(r => (r.id, r.name, r.desc, r.active)).result)
+    else if (active)
+      gDal.getDB.run(groupTQ.withFilter(g => {
+        g.active === true
+        g.id inSet session.groupIdList
+      }).map(r => (r.id, r.name, r.desc, r.active)).result)
     else
       gDal.getDB.run(groupTQ.filter(g => g.id inSet session.groupIdList).map(r => (r.id, r.name, r.desc, r.active)).result)
   }
@@ -22,7 +30,7 @@ class GroupService(modules: ConfigurationModule with PersistenceModule with Busi
   def update(groupSeq: Seq[PutGroupInfo], session: SessionClass): Future[Unit] = {
     val groupTQ = gDal.getTableQuery
     val query = DBIO.seq(groupSeq.map(r => {
-      groupTQ.filter(_.id === r.id).map(group => (group.name, group.desc, group.update_by, group.update_time)).update(r.name, Some(r.desc), session.userId, CommonUtils.currentTime)
+      groupTQ.filter(_.id === r.id).map(group => (group.name, group.desc,group.active, group.update_by, group.update_time)).update(r.name, Some(r.desc),r.active.getOrElse(true), session.userId, CommonUtils.currentTime)
     }): _*)
     gDal.getDB.run(query)
   }

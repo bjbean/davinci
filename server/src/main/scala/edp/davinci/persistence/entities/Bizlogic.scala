@@ -36,6 +36,7 @@ case class PutBizlogicInfo(id: Long,
                            trigger_type: String,
                            frequency: String,
                            `catch`: String,
+                           active: Option[Boolean] = Some(true),
                            relBG: Seq[PostRelGroupBizlogic])
 
 
@@ -48,7 +49,7 @@ case class QueryBizlogic(id: Long,
                          trigger_type: String,
                          frequency: String,
                          `catch`: String,
-                         active:Boolean)
+                         active: Boolean)
 
 class BizlogicTable(tag: Tag) extends BaseTable[Bizlogic](tag, "bizlogic") {
 

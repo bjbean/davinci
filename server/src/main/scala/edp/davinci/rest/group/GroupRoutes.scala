@@ -24,6 +24,9 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   @ApiOperation(value = "get all group with the same domain", notes = "", nickname = "", httpMethod = "GET")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "active", value = "true or false", required = false, dataType = "boolean", paramType = "query")
+  ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 401, message = "authorization error"),
@@ -33,17 +36,19 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   ))
   def getGroupByAllRoute: Route = path("groups") {
     get {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session => getAllGroupsComplete(session)
+      parameter('active.as[Boolean].?) { active =>
+        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          session => getAllGroupsComplete(session,active.getOrElse(true))
+        }
       }
     }
   }
 
-  private def getAllGroupsComplete(session: SessionClass): Route = {
+  private def getAllGroupsComplete(session: SessionClass,active:Boolean): Route = {
     if (session.admin) {
-      onComplete(groupService.getAll(session)) {
+      onComplete(groupService.getAll(session,active )) {
         case Success(groupSeq) =>
-          val purGroups = groupSeq.map(g => PutGroupInfo(g._1, g._2, g._3.getOrElse(""), g._4))
+          val purGroups = groupSeq.map(g => PutGroupInfo(g._1, g._2, g._3.getOrElse(""), Some(g._4)))
           complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), purGroups))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -91,7 +96,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       val groupSeq = postGroupSeq.map(post => UserGroup(0, post.name, Some(post.desc), active = true, null, session.userId, null, session.userId))
       onComplete(modules.groupDal.insert(groupSeq)) {
         case Success(groupWithIdSeq) =>
-          val responseGroup = groupWithIdSeq.map(group => PutGroupInfo(group.id, group.name, group.desc.getOrElse(""),group.active))
+          val responseGroup = groupWithIdSeq.map(group => PutGroupInfo(group.id, group.name, group.desc.getOrElse(""), Some(group.active)))
           complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), responseGroup))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }

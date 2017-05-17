@@ -28,6 +28,7 @@ case class PutUserInfo(id: Long,
                        title: String,
                        name: String,
                        admin: Boolean,
+                       active:Option[Boolean]=Some(true),
                        relUG: Seq[PostRelUserGroup])
 
 case class QueryUserInfo(id: Long,

@@ -15,15 +15,16 @@ class WidgetService(modules: ConfigurationModule with PersistenceModule with Bus
   private lazy val rGBTQ = rGBDal.getTableQuery
   private lazy val db = wDal.getDB
 
-  def getAll(session: SessionClass): Future[Seq[(Long, Long, Long, String, Option[String], String, Option[String], Boolean,Boolean)]] = {
+  def getAll(session: SessionClass, active: Boolean): Future[Seq[(Long, Long, Long, String, Option[String], String, Option[String], Boolean, Boolean)]] = {
+    val tmpQuery = if (active) widgetTQ.filter(_.active === true) else widgetTQ
     if (session.admin)
-      db.run(widgetTQ.map(r => (r.id, r.widgetlib_id, r.bizlogic_id, r.name, r.olap_sql, r.desc, r.chart_params, r.publish,r.active)).result)
+      db.run(tmpQuery.map(r => (r.id, r.widgetlib_id, r.bizlogic_id, r.name, r.olap_sql, r.desc, r.chart_params, r.publish, r.active)).result)
     else {
-      val query = (widgetTQ.filter(obj => obj.publish === true)
+      val query = (tmpQuery.filter(obj => obj.publish === true)
         join rGBTQ.filter(r => r.group_id inSet session.groupIdList)
         on (_.bizlogic_id === _.bizlogic_id))
         .map {
-          case (w, _) => (w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql, w.desc, w.chart_params, w.publish,w.active)
+          case (w, _) => (w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql, w.desc, w.chart_params, w.publish, w.active)
         }.result
       db.run(query)
     }
@@ -31,8 +32,8 @@ class WidgetService(modules: ConfigurationModule with PersistenceModule with Bus
 
   def update(widgetSeq: Seq[PutWidgetInfo], session: SessionClass): Future[Unit] = {
     val query = DBIO.seq(widgetSeq.map(r => {
-      widgetTQ.filter(_.id === r.id).map(widget => (widget.bizlogic_id, widget.widgetlib_id, widget.name, widget.olap_sql, widget.desc, widget.chart_params, widget.publish, widget.update_by, widget.update_time))
-        .update(r.bizlogic_id, r.widgetlib_id, r.name, Some(r.olap_sql), r.desc, Some(r.chart_params), r.publish, session.userId, CommonUtils.currentTime)
+      widgetTQ.filter(_.id === r.id).map(widget => (widget.bizlogic_id, widget.widgetlib_id, widget.name, widget.olap_sql, widget.desc, widget.chart_params, widget.publish,widget.active, widget.update_by, widget.update_time))
+        .update(r.bizlogic_id, r.widgetlib_id, r.name, Some(r.olap_sql), r.desc, Some(r.chart_params), r.publish,r.active.getOrElse(true), session.userId, CommonUtils.currentTime)
     }): _*)
     db.run(query)
   }

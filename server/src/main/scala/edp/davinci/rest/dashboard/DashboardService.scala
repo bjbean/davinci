@@ -48,7 +48,7 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
 
   def update(session: SessionClass, dashboardSeq: Seq[PutDashboardInfo]): Future[Unit] = {
     val query = DBIO.seq(dashboardSeq.map(r => {
-      dashboardTQ.filter(obj => obj.id === r.id).map(dashboard => (dashboard.name, dashboard.desc, dashboard.publish, dashboard.update_by, dashboard.update_time)).update(r.name, r.desc, r.publish, session.userId, CommonUtils.currentTime)
+      dashboardTQ.filter(obj => obj.id === r.id).map(dashboard => (dashboard.name, dashboard.desc, dashboard.publish, dashboard.active, dashboard.update_by, dashboard.update_time)).update(r.name, r.desc, r.publish, r.active.getOrElse(true), session.userId, CommonUtils.currentTime)
     }): _*)
     db.run(query)
   }
@@ -61,11 +61,20 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
     db.run(query)
   }
 
-  def getAll(session: SessionClass): Future[Seq[(Long, String, Option[String], String, Boolean,Boolean)]] = {
+  def getAll(session: SessionClass, active: Boolean): Future[Seq[(Long, String, Option[String], String, Boolean, Boolean)]] = {
     val query =
-      if (session.admin) dashboardTQ.map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish,obj.active)).result
-      else
-        dashboardTQ.filter(obj =>obj.publish === true).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish,obj.active)).result
+      if (session.admin) {
+        if (active)
+          dashboardTQ.filter(_.active === true).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish, obj.active)).result
+        else
+          dashboardTQ.map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish, obj.active)).result
+      }
+      else {
+        if (active)
+          dashboardTQ.filter(obj => obj.publish === true && obj.active === true).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish, obj.active)).result
+        else
+          dashboardTQ.filter(obj => obj.publish === true).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish, obj.active)).result
+      }
     db.run(query)
   }
 

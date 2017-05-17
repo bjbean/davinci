@@ -24,7 +24,7 @@ case class PutDashboardInfo(id: Long,
                             pic: String,
                             desc: String,
                             publish: Boolean,
-                            active: Boolean
+                            active: Option[Boolean]=Some(true)
                            )
 
 class DashboardTable(tag: Tag) extends BaseTable[Dashboard](tag, "dashboard") {

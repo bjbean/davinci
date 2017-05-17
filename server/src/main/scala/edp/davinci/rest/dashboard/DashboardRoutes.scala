@@ -10,7 +10,7 @@ import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
-import io.swagger.annotations._
+import io.swagger.annotations.{ApiImplicitParams, _}
 import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success}
@@ -61,6 +61,9 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   }
 
   @ApiOperation(value = "get all dashboards with the same domain", notes = "", nickname = "", httpMethod = "GET")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "active", value = "true or false", required = false, dataType = "boolean", paramType = "query")
+  ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 403, message = "dashboard is not admin"),
@@ -69,14 +72,16 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   ))
   def getDashboardByAllRoute: Route = path("dashboards") {
     get {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session =>
-          onComplete(dashboardService.getAll(session)) {
-            case Success(dashboardSeq) =>
-              val dashboards = dashboardSeq.map(d => PutDashboardInfo(d._1, d._2, d._3.getOrElse(""), d._4, d._5, d._6))
-              complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), dashboards))
-            case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
-          }
+      parameter('active.as[Boolean].?){active =>
+        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          session =>
+            onComplete(dashboardService.getAll(session,active.getOrElse(true))) {
+              case Success(dashboardSeq) =>
+                val dashboards = dashboardSeq.map(d => PutDashboardInfo(d._1, d._2, d._3.getOrElse(""), d._4, d._5, Some(d._6)))
+                complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), dashboards))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+            }
+        }
       }
     }
   }
@@ -107,7 +112,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
       val dashboardSeq = postDashboardSeq.map(post => Dashboard(0, post.name, Some(post.pic), post.desc, post.publish, active = true, null, session.userId, null, session.userId))
       onComplete(modules.dashboardDal.insert(dashboardSeq)) {
         case Success(dashWithIdSeq) =>
-          val responseDashSeq = dashWithIdSeq.map(dashboard => PutDashboardInfo(dashboard.id, dashboard.name, dashboard.pic.getOrElse(""), dashboard.desc, dashboard.publish,dashboard.active))
+          val responseDashSeq = dashWithIdSeq.map(dashboard => PutDashboardInfo(dashboard.id, dashboard.name, dashboard.pic.getOrElse(""), dashboard.desc, dashboard.publish, Some(dashboard.active)))
           complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), responseDashSeq))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }

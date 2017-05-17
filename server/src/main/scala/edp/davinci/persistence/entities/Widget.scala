@@ -36,7 +36,7 @@ case class PutWidgetInfo(id: Long,
                          desc: String,
                          chart_params: String,
                          publish: Boolean,
-                         active: Boolean)
+                         active:Option[Boolean]=Some(true))
 
 class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 

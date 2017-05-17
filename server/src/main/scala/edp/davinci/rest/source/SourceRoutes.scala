@@ -25,6 +25,9 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   @ApiOperation(value = "get all source with the same domain", notes = "", nickname = "", httpMethod = "GET")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "active", value = "true or false", required = false, dataType = "boolean", paramType = "query")
+  ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -34,16 +37,20 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   ))
   def getSourceByAllRoute: Route = path("sources") {
     get {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session => getAllSourcesComplete(session)
+      parameter('active.as[Boolean].?) { active =>
+        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          session => getAllSourcesComplete(session, active.getOrElse(true))
+        }
       }
     }
   }
 
-  private def getAllSourcesComplete(session: SessionClass): Route = {
+  private def getAllSourcesComplete(session: SessionClass, active: Boolean): Route = {
     if (session.admin) {
-      onComplete(sourceService.getAll) {
-        case Success(sourceSeq) => complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), sourceSeq))
+      onComplete(sourceService.getAll(active)) {
+        case Success(sourceSeq) =>
+          val responseSource = sourceSeq.map(s => PutSourceInfo(s._1, s._2, s._3, s._4, s._5, s._6, Some(s._7)))
+          complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), responseSource))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
@@ -90,7 +97,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       val sourceSeq = postSourceSeq.map(post => Source(0, post.name, post.connection_url, post.desc, post.`type`, post.config, active = true, null, session.userId, null, session.userId))
       onComplete(modules.sourceDal.insert(sourceSeq)) {
         case Success(sourceWithIdSeq) =>
-          val responseSourceSeq = sourceWithIdSeq.map(source => PutSourceInfo(source.id, source.name, source.connection_url, source.desc, source.`type`, source.config,source.active))
+          val responseSourceSeq = sourceWithIdSeq.map(source => PutSourceInfo(source.id, source.name, source.connection_url, source.desc, source.`type`, source.config, Some(source.active)))
           complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), responseSourceSeq))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }

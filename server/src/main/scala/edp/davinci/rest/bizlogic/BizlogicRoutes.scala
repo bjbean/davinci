@@ -32,6 +32,9 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   @ApiOperation(value = "get all bizlogics", notes = "", nickname = "", httpMethod = "GET")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "active", value = "true or false", required = false, dataType = "boolean", paramType = "query")
+  ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -41,16 +44,18 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   ))
   def getBizlogicByAllRoute: Route = path("bizlogics") {
     get {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session =>
-          if (session.admin) {
-            onComplete(bizlogicService.getAllBiz) {
-              case Success(bizlogicSeq) =>
-                val queryResult = bizlogicSeq.map(biz => QueryBizlogic(biz._1, biz._2, biz._3, biz._4, biz._5, biz._6.getOrElse(""),biz._7,biz._8,biz._9,biz._10))
-                complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), queryResult))
-              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
-            }
-          } else complete(Forbidden, ResponseJson[String](getHeader(403, "user is not admin", session), ""))
+      parameter('active.as[Boolean].?) {active=>
+        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          session =>
+            if (session.admin) {
+              onComplete(bizlogicService.getAllBiz(active.getOrElse(true))) {
+                case Success(bizlogicSeq) =>
+                  val queryResult = bizlogicSeq.map(biz => QueryBizlogic(biz._1, biz._2, biz._3, biz._4, biz._5, biz._6.getOrElse(""), biz._7, biz._8, biz._9, biz._10))
+                  complete(OK, ResponseSeqJson[QueryBizlogic](getHeader(200, session), queryResult))
+                case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+              }
+            } else complete(Forbidden, ResponseJson[String](getHeader(403, "user is not admin", session), ""))
+        }
       }
     }
   }
@@ -81,10 +86,10 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   private def postBizlogic(session: SessionClass, bizlogicSeq: Seq[PostBizlogicInfo]): Route = {
     if (session.admin) {
       val uniqueTableName = "table" + java.util.UUID.randomUUID().toString
-      val bizEntitySeq = bizlogicSeq.map(biz => Bizlogic(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, Some(biz.desc),biz.trigger_type,biz.frequency,biz.`catch`, active = true, null, session.userId, null, session.userId))
+      val bizEntitySeq = bizlogicSeq.map(biz => Bizlogic(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, Some(biz.desc), biz.trigger_type, biz.frequency, biz.`catch`, active = true, null, session.userId, null, session.userId))
       onComplete(modules.bizlogicDal.insert(bizEntitySeq)) {
         case Success(bizSeq) =>
-          val queryBiz = bizSeq.map(biz => QueryBizlogic(biz.id, biz.source_id, biz.name, biz.sql_tmpl, biz.result_table, biz.desc.getOrElse(""),biz.trigger_type,biz.frequency,biz.`catch`,biz.active))
+          val queryBiz = bizSeq.map(biz => QueryBizlogic(biz.id, biz.source_id, biz.name, biz.sql_tmpl, biz.result_table, biz.desc.getOrElse(""), biz.trigger_type, biz.frequency, biz.`catch`, biz.active))
           val relSeq = for {biz <- bizSeq
                             rel <- bizlogicSeq.head.relBG
           } yield RelGroupBizlogic(0, rel.group_id, biz.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
