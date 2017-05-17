@@ -15,13 +15,13 @@ class BizlogicService(modules: ConfigurationModule with PersistenceModule with B
   private lazy val sourceTQ = modules.sourceDal.getTableQuery
   private lazy val db = bDal.getDB
 
-  def getAllBiz: Future[Seq[(Long, Long, String, String, String, Option[String], String, String, String)]] = {
-    db.run(bizlogicTQ.filter(_.active === true).map(r => (r.id, r.source_id, r.name, r.sql_tmpl, r.result_table, r.desc,r.trigger_type,r.frequency,r.`catch`)).result)
-  }
+  def getAllBiz: Future[Seq[(Long, Long, String, String, String, Option[String], String, String, String, Boolean)]] = {
+    db.run(bizlogicTQ.map(r => (r.id, r.source_id, r.name, r.sql_tmpl, r.result_table, r.desc,r.trigger_type,r.frequency,r.`catch`,r.active)).result)
+}
 
   def updateBiz(bizlogicSeq: Seq[PutBizlogicInfo], session: SessionClass): Future[Unit] = {
     val query = DBIO.seq(bizlogicSeq.map(r => {
-      bizlogicTQ.filter(obj => obj.id === r.id && obj.active === true).map(bizlogic => (bizlogic.name, bizlogic.source_id, bizlogic.sql_tmpl, bizlogic.desc,bizlogic.trigger_type,bizlogic.frequency,bizlogic.`catch`, bizlogic.update_by, bizlogic.update_time))
+      bizlogicTQ.filter(obj => obj.id === r.id).map(bizlogic => (bizlogic.name, bizlogic.source_id, bizlogic.sql_tmpl, bizlogic.desc,bizlogic.trigger_type,bizlogic.frequency,bizlogic.`catch`, bizlogic.update_by, bizlogic.update_time))
         .update(r.name, r.source_id, r.sql_tmpl, Some(r.desc),r.trigger_type,r.frequency,r.`catch`, session.userId, CommonUtils.currentTime)
     }): _*)
     db.run(query)
@@ -40,13 +40,13 @@ class BizlogicService(modules: ConfigurationModule with PersistenceModule with B
 
 
   def getSourceInfo(bizlogicId: Long): Future[Seq[(String, String)]] = {
-    val query = (bizlogicTQ.filter(obj => obj.active === true && obj.id === bizlogicId) join sourceTQ.filter(_.active === true) on (_.source_id === _.id))
+    val query = (bizlogicTQ.filter(obj => obj.id === bizlogicId) join sourceTQ on (_.source_id === _.id))
       .map { case (_, s) => (s.connection_url, s.config) }.result
     db.run(query)
   }
 
   def getSqlTmpl(bizlogicId: Long): Future[Option[(String, String)]] = {
-    val query = bizlogicTQ.filter(obj => obj.active === true && obj.id === bizlogicId).map(b =>(b.sql_tmpl,b.result_table)).result.headOption
+    val query = bizlogicTQ.filter(obj =>obj.id === bizlogicId).map(b =>(b.sql_tmpl,b.result_table)).result.headOption
     db.run(query)
   }
 

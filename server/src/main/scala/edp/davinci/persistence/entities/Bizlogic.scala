@@ -47,7 +47,8 @@ case class QueryBizlogic(id: Long,
                          desc: String,
                          trigger_type: String,
                          frequency: String,
-                         `catch`: String)
+                         `catch`: String,
+                         active:Boolean)
 
 class BizlogicTable(tag: Tag) extends BaseTable[Bizlogic](tag, "bizlogic") {
 
