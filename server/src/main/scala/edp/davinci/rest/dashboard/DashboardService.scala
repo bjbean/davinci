@@ -22,7 +22,7 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
 
   def getInsideInfo(session: SessionClass, dashboardId: Long): Future[Seq[(Long, Long, Long, Int, Int, Int, Int, String, String)]] = {
     val query = if (session.admin)
-      (relDWTQ.filter(obj => obj.dashboard_id === dashboardId && obj.active === true) join widgetTQ.filter(widget => widget.active === true) on (_.widget_id === _.id)).
+      (relDWTQ.filter(obj => obj.dashboard_id === dashboardId) join widgetTQ on (_.widget_id === _.id)).
         map {
           case (r, w) => (r.id, w.id, w.bizlogic_id, r.position_x, r.position_y, r.width, r.length, r.trigger_type, r.trigger_params)
         }.result
@@ -32,8 +32,8 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
         rel.active === true
       }).map(_.bizlogic_id)
 
-      (relDWTQ.filter(obj => obj.dashboard_id === dashboardId && obj.active === true) join
-        widgetTQ.filter(obj => obj.bizlogic_id in bizIds).filter(obj => obj.active === true && obj.publish === true) on (_.widget_id === _.id)).
+      (relDWTQ.filter(obj => obj.dashboard_id === dashboardId) join
+        widgetTQ.filter(obj => obj.bizlogic_id in bizIds).filter(obj => obj.publish === true) on (_.widget_id === _.id)).
         map {
           case (r, w) => (r.id, w.id, w.bizlogic_id, r.position_x, r.position_y, r.width, r.length, r.trigger_type, r.trigger_params)
         }
@@ -48,24 +48,24 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
 
   def update(session: SessionClass, dashboardSeq: Seq[PutDashboardInfo]): Future[Unit] = {
     val query = DBIO.seq(dashboardSeq.map(r => {
-      dashboardTQ.filter(obj => obj.id === r.id && obj.active === true).map(dashboard => (dashboard.name, dashboard.desc, dashboard.publish, dashboard.update_by, dashboard.update_time)).update(r.name, r.desc, r.publish, session.userId, CommonUtils.currentTime)
+      dashboardTQ.filter(obj => obj.id === r.id).map(dashboard => (dashboard.name, dashboard.desc, dashboard.publish, dashboard.update_by, dashboard.update_time)).update(r.name, r.desc, r.publish, session.userId, CommonUtils.currentTime)
     }): _*)
     db.run(query)
   }
 
   def updateRelDashboardWidget(session: SessionClass, relSeq: Seq[PutRelDashboardWidget]): Future[Unit] = {
     val query = DBIO.seq(relSeq.map(r => {
-      relDWTQ.filter(obj => obj.id === r.id && obj.active === true).map(rel => (rel.dashboard_id, rel.widget_id, rel.position_x, rel.position_y, rel.width, rel.length, rel.trigger_type, rel.trigger_params, rel.update_by, rel.update_time))
+      relDWTQ.filter(obj => obj.id === r.id).map(rel => (rel.dashboard_id, rel.widget_id, rel.position_x, rel.position_y, rel.width, rel.length, rel.trigger_type, rel.trigger_params, rel.update_by, rel.update_time))
         .update(r.dashboard_id, r.widget_id, r.position_x, r.position_y, r.width, r.length, r.trigger_type, r.trigger_params, session.userId, CommonUtils.currentTime)
     }): _*)
     db.run(query)
   }
 
-  def getAll(session: SessionClass): Future[Seq[(Long, String, Option[String], String, Boolean)]] = {
+  def getAll(session: SessionClass): Future[Seq[(Long, String, Option[String], String, Boolean,Boolean)]] = {
     val query =
-      if (session.admin) dashboardTQ.filter(_.active === true).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish)).result
+      if (session.admin) dashboardTQ.map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish,obj.active)).result
       else
-        dashboardTQ.filter(obj => obj.active === true && obj.publish === true).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish)).result
+        dashboardTQ.filter(obj =>obj.publish === true).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish,obj.active)).result
     db.run(query)
   }
 

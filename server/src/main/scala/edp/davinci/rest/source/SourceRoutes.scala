@@ -90,7 +90,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       val sourceSeq = postSourceSeq.map(post => Source(0, post.name, post.connection_url, post.desc, post.`type`, post.config, active = true, null, session.userId, null, session.userId))
       onComplete(modules.sourceDal.insert(sourceSeq)) {
         case Success(sourceWithIdSeq) =>
-          val responseSourceSeq = sourceWithIdSeq.map(source => PutSourceInfo(source.id, source.name, source.connection_url, source.desc, source.`type`, source.config))
+          val responseSourceSeq = sourceWithIdSeq.map(source => PutSourceInfo(source.id, source.name, source.connection_url, source.desc, source.`type`, source.config,source.active))
           complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), responseSourceSeq))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }

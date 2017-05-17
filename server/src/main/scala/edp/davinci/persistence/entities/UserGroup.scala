@@ -18,7 +18,8 @@ case class PostGroupInfo(name: String,
 
 case class PutGroupInfo(id: Long,
                         name: String,
-                        desc: String)
+                        desc: String,
+                        active: Boolean)
 
 class GroupTable(tag: Tag) extends BaseTable[UserGroup](tag, "user_group") {
 

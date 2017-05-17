@@ -9,11 +9,14 @@ import scala.concurrent.Future
 
 
 class GroupService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
- private lazy val gDal = modules.groupDal
+  private lazy val gDal = modules.groupDal
 
-  def getAll: Future[Seq[(Long, String, Option[String])]] = {
+  def getAll(session: SessionClass): Future[Seq[(Long, String, Option[String], Boolean)]] = {
     val groupTQ = gDal.getTableQuery
-    gDal.getDB.run(groupTQ.filter(_.active === true).map(r => (r.id, r.name, r.desc)).result)
+    if (session.admin)
+      gDal.getDB.run(groupTQ.map(r => (r.id, r.name, r.desc, r.active)).result)
+    else
+      gDal.getDB.run(groupTQ.filter(g => g.id inSet session.groupIdList).map(r => (r.id, r.name, r.desc, r.active)).result)
   }
 
   def update(groupSeq: Seq[PutGroupInfo], session: SessionClass): Future[Unit] = {
@@ -25,38 +28,38 @@ class GroupService(modules: ConfigurationModule with PersistenceModule with Busi
   }
 
 
-//  def getAllGroupsComplete(session: SessionClass): Route = {
-//    if (session.admin) {
-//      onComplete(getAll) {
-//        case Success(groupSeq) =>
-//          if (groupSeq.nonEmpty) complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), groupSeq))
-//          else complete(NotFound, getHeader(404, session))
-//        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-//      }
-//    } else complete(Forbidden, getHeader(403, session))
-//  }
-//
-//  def putUserComplete(session: SessionClass, groupSeq: Seq[PutGroupInfo]): Route = {
-//    if (session.admin) {
-//      val future = update(groupSeq, session)
-//      onComplete(future) {
-//        case Success(_) => complete(OK, getHeader(200, session))
-//        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-//      }
-//    } else complete(Forbidden, getHeader(403, session))
-//  }
-//
-//  def postGroup(session: SessionClass, postGroupSeq: Seq[PostGroupInfo]) = {
-//    if (session.admin) {
-//      val groupSeq = postGroupSeq.map(post => UserGroup(0, post.name, post.desc, active = true, null, session.userId, null, session.userId))
-//      onComplete(groupDal.insert(groupSeq)) {
-//        case Success(groupWithIdSeq) =>
-//          val responseGroup = groupWithIdSeq.map(group => PutGroupInfo(group.id, group.name, group.desc))
-//          complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), responseGroup))
-//        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-//      }
-//    } else complete(Forbidden, getHeader(403, session))
-//
-//  }
+  //  def getAllGroupsComplete(session: SessionClass): Route = {
+  //    if (session.admin) {
+  //      onComplete(getAll) {
+  //        case Success(groupSeq) =>
+  //          if (groupSeq.nonEmpty) complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), groupSeq))
+  //          else complete(NotFound, getHeader(404, session))
+  //        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+  //      }
+  //    } else complete(Forbidden, getHeader(403, session))
+  //  }
+  //
+  //  def putUserComplete(session: SessionClass, groupSeq: Seq[PutGroupInfo]): Route = {
+  //    if (session.admin) {
+  //      val future = update(groupSeq, session)
+  //      onComplete(future) {
+  //        case Success(_) => complete(OK, getHeader(200, session))
+  //        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+  //      }
+  //    } else complete(Forbidden, getHeader(403, session))
+  //  }
+  //
+  //  def postGroup(session: SessionClass, postGroupSeq: Seq[PostGroupInfo]) = {
+  //    if (session.admin) {
+  //      val groupSeq = postGroupSeq.map(post => UserGroup(0, post.name, post.desc, active = true, null, session.userId, null, session.userId))
+  //      onComplete(groupDal.insert(groupSeq)) {
+  //        case Success(groupWithIdSeq) =>
+  //          val responseGroup = groupWithIdSeq.map(group => PutGroupInfo(group.id, group.name, group.desc))
+  //          complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), responseGroup))
+  //        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
+  //      }
+  //    } else complete(Forbidden, getHeader(403, session))
+  //
+  //  }
 
 }

@@ -5,7 +5,7 @@ import slick.jdbc.H2Profile.api._
 
 case class Dashboard(id: Long,
                      name: String,
-                     pic:Option[String],
+                     pic: Option[String],
                      desc: String,
                      publish: Boolean,
                      active: Boolean,
@@ -15,15 +15,17 @@ case class Dashboard(id: Long,
                      update_by: Long) extends BaseEntity
 
 case class PostDashboardInfo(name: String,
-                             pic:String,
+                             pic: String,
                              desc: String,
                              publish: Boolean) extends SimpleBaseEntity
 
 case class PutDashboardInfo(id: Long,
                             name: String,
-                            pic:String,
+                            pic: String,
                             desc: String,
-                            publish: Boolean)
+                            publish: Boolean,
+                            active: Boolean
+                           )
 
 class DashboardTable(tag: Tag) extends BaseTable[Dashboard](tag, "dashboard") {
 
@@ -42,5 +44,5 @@ class DashboardTable(tag: Tag) extends BaseTable[Dashboard](tag, "dashboard") {
 
   def update_by = column[Long]("update_by")
 
-  def * = (id, name, pic,desc, publish, active, create_time, create_by, update_time, update_by) <> (Dashboard.tupled, Dashboard.unapply)
+  def * = (id, name, pic, desc, publish, active, create_time, create_by, update_time, update_by) <> (Dashboard.tupled, Dashboard.unapply)
 }

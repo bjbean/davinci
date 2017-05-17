@@ -41,9 +41,9 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
 
   private def getAllGroupsComplete(session: SessionClass): Route = {
     if (session.admin) {
-      onComplete(groupService.getAll) {
+      onComplete(groupService.getAll(session)) {
         case Success(groupSeq) =>
-          val purGroups = groupSeq.map(g => PutGroupInfo(g._1, g._2, g._3.getOrElse("")))
+          val purGroups = groupSeq.map(g => PutGroupInfo(g._1, g._2, g._3.getOrElse(""), g._4))
           complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), purGroups))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -91,7 +91,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       val groupSeq = postGroupSeq.map(post => UserGroup(0, post.name, Some(post.desc), active = true, null, session.userId, null, session.userId))
       onComplete(modules.groupDal.insert(groupSeq)) {
         case Success(groupWithIdSeq) =>
-          val responseGroup = groupWithIdSeq.map(group => PutGroupInfo(group.id, group.name, group.desc.getOrElse("")))
+          val responseGroup = groupWithIdSeq.map(group => PutGroupInfo(group.id, group.name, group.desc.getOrElse(""),group.active))
           complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), responseGroup))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }

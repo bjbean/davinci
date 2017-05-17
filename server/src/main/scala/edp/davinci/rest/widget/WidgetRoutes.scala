@@ -45,7 +45,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     if (session.admin) {
       onComplete(widgetService.getAll(session)) {
         case Success(widgetSeq) =>
-          val responseSeq: Seq[PutWidgetInfo] = widgetSeq.map(r => PutWidgetInfo(r._1, r._2, r._3, r._4, r._5.getOrElse(""), r._6, r._7.getOrElse(""), r._8))
+          val responseSeq: Seq[PutWidgetInfo] = widgetSeq.map(r => PutWidgetInfo(r._1, r._2, r._3, r._4, r._5.getOrElse(""), r._6, r._7.getOrElse(""), r._8,r._9))
           complete(OK, ResponseJson[Seq[PutWidgetInfo]](getHeader(200, session), responseSeq))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -79,7 +79,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.bizlogic_id, post.name, Some(post.olap_sql), post.desc, Some(post.chart_params), post.publish, active = true, null, session.userId, null, session.userId))
       onComplete(modules.widgetDal.insert(widgetSeq)) {
         case Success(widgets) =>
-          val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql.getOrElse(""), w.desc, w.chart_params.getOrElse(""), w.publish))
+          val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql.getOrElse(""), w.desc, w.chart_params.getOrElse(""), w.publish,w.active))
           complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session), putWidgets))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }

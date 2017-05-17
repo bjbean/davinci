@@ -89,7 +89,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
       } yield users
       onComplete(operation) {
         case Success(users) =>
-          val queryUsers = users.map(user => QueryUserInfo(user.id, user.email, user.title, user.name, user.admin))
+          val queryUsers = users.map(user => QueryUserInfo(user.id, user.email, user.title, user.name, user.admin,user.active))
           complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), queryUsers))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }

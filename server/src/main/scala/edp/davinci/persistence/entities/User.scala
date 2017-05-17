@@ -34,7 +34,8 @@ case class QueryUserInfo(id: Long,
                          email: String,
                          title: String,
                          name: String,
-                         admin: Boolean)
+                         admin: Boolean,
+                         active: Boolean)
 
 class UserTable(tag: Tag) extends BaseTable[User](tag, "user") {
 

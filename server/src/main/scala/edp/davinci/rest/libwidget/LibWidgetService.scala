@@ -9,7 +9,7 @@ import scala.concurrent.Future
 class LibWidgetService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
   def getAll: Future[Seq[QueryLibWidget]] = {
     val libDal = modules.libWidgetDal
-    libDal.getDB.run(libDal.getTableQuery.filter(_.active === true).map(l => (l.id, l.name, l.params, l.`type`)).result).mapTo[Seq[QueryLibWidget]]
+    libDal.getDB.run(libDal.getTableQuery.map(l => (l.id, l.name, l.params, l.`type`,l.active)).result).mapTo[Seq[QueryLibWidget]]
   }
 
 }

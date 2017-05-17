@@ -35,7 +35,8 @@ case class PutWidgetInfo(id: Long,
                          olap_sql: String,
                          desc: String,
                          chart_params: String,
-                         publish: Boolean)
+                         publish: Boolean,
+                         active: Boolean)
 
 class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 

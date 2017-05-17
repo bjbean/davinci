@@ -15,16 +15,15 @@ class WidgetService(modules: ConfigurationModule with PersistenceModule with Bus
   private lazy val rGBTQ = rGBDal.getTableQuery
   private lazy val db = wDal.getDB
 
-  def getAll(session: SessionClass): Future[Seq[(Long, Long, Long, String, Option[String], String, Option[String], Boolean)]] = {
+  def getAll(session: SessionClass): Future[Seq[(Long, Long, Long, String, Option[String], String, Option[String], Boolean,Boolean)]] = {
     if (session.admin)
-      db.run(widgetTQ.filter(_.active === true)
-        .map(r => (r.id, r.widgetlib_id, r.bizlogic_id, r.name, r.olap_sql, r.desc, r.chart_params, r.publish)).result)
+      db.run(widgetTQ.map(r => (r.id, r.widgetlib_id, r.bizlogic_id, r.name, r.olap_sql, r.desc, r.chart_params, r.publish,r.active)).result)
     else {
-      val query = (widgetTQ.filter(obj => obj.active === true && obj.publish === true)
+      val query = (widgetTQ.filter(obj => obj.publish === true)
         join rGBTQ.filter(r => r.group_id inSet session.groupIdList)
         on (_.bizlogic_id === _.bizlogic_id))
         .map {
-          case (w, _) => (w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql, w.desc, w.chart_params, w.publish)
+          case (w, _) => (w.id, w.widgetlib_id, w.bizlogic_id, w.name, w.olap_sql, w.desc, w.chart_params, w.publish,w.active)
         }.result
       db.run(query)
     }
@@ -40,7 +39,7 @@ class WidgetService(modules: ConfigurationModule with PersistenceModule with Bus
 
   def getSql(widgetId: Long): Future[Seq[(String, String, String)]] = {
     val bizlogicTQ = bDal.getTableQuery
-    val query = (widgetTQ.filter(obj => obj.id === widgetId && obj.active === true) join bizlogicTQ.filter(_.active === true) on (_.bizlogic_id === _.id))
+    val query = (widgetTQ.filter(obj => obj.id === widgetId) join bizlogicTQ on (_.bizlogic_id === _.id))
       .map {
         case (w, b) => (w.olap_sql.getOrElse(""), b.sql_tmpl, b.result_table)
       }.result

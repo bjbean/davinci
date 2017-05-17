@@ -53,7 +53,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
       case Success(info) =>
         val (insideInfo, dashboards) = info
         val dashboard = dashboards.head
-        val infoSeq: Seq[WidgetInfo] = insideInfo.map(r => WidgetInfo(r._1,r._2,r._3,r._4,r._5,r._6,r._7,r._8,r._9))
+        val infoSeq: Seq[WidgetInfo] = insideInfo.map(r => WidgetInfo(r._1, r._2, r._3, r._4, r._5, r._6, r._7, r._8, r._9))
         val dashboardInfo = DashboardInfo(dashboard._1, dashboard._2, dashboard._3.getOrElse(""), dashboard._4, dashboard._5, infoSeq)
         complete(OK, ResponseJson[DashboardInfo](getHeader(200, session), dashboardInfo))
       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -73,7 +73,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
         session =>
           onComplete(dashboardService.getAll(session)) {
             case Success(dashboardSeq) =>
-              val dashboards = dashboardSeq.map(d => PutDashboardInfo(d._1, d._2, d._3.getOrElse(""), d._4, d._5))
+              val dashboards = dashboardSeq.map(d => PutDashboardInfo(d._1, d._2, d._3.getOrElse(""), d._4, d._5, d._6))
               complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), dashboards))
             case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }
@@ -107,7 +107,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
       val dashboardSeq = postDashboardSeq.map(post => Dashboard(0, post.name, Some(post.pic), post.desc, post.publish, active = true, null, session.userId, null, session.userId))
       onComplete(modules.dashboardDal.insert(dashboardSeq)) {
         case Success(dashWithIdSeq) =>
-          val responseDashSeq = dashWithIdSeq.map(dashboard => PutDashboardInfo(dashboard.id, dashboard.name, dashboard.pic.getOrElse(""), dashboard.desc, dashboard.publish))
+          val responseDashSeq = dashWithIdSeq.map(dashboard => PutDashboardInfo(dashboard.id, dashboard.name, dashboard.pic.getOrElse(""), dashboard.desc, dashboard.publish,dashboard.active))
           complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), responseDashSeq))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -184,10 +184,10 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   def postWidget2Dashboard(session: SessionClass, postRelDWSeq: Seq[PostRelDashboardWidget]): Route = {
     if (session.admin) {
-      val relDWSeq = postRelDWSeq.map(post => RelDashboardWidget(0, post.dashboard_id, post.widget_id, post.position_x, post.position_y, post.length, post.width,post.trigger_type,post.trigger_params, active = true, null, session.userId, null, session.userId))
+      val relDWSeq = postRelDWSeq.map(post => RelDashboardWidget(0, post.dashboard_id, post.widget_id, post.position_x, post.position_y, post.length, post.width, post.trigger_type, post.trigger_params, active = true, null, session.userId, null, session.userId))
       onComplete(modules.relDashboardWidgetDal.insert(relDWSeq)) {
         case Success(relDWWithIdSeq) =>
-          val responseRelDWSeq = relDWWithIdSeq.map(rel => PutRelDashboardWidget(rel.id, rel.dashboard_id, rel.widget_id, rel.position_x, rel.position_y, rel.length, rel.width,rel.trigger_type,rel.trigger_params))
+          val responseRelDWSeq = relDWWithIdSeq.map(rel => PutRelDashboardWidget(rel.id, rel.dashboard_id, rel.widget_id, rel.position_x, rel.position_y, rel.length, rel.width, rel.trigger_type, rel.trigger_params))
           complete(OK, ResponseSeqJson[PutRelDashboardWidget](getHeader(200, session), responseRelDWSeq))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }

@@ -12,7 +12,7 @@ class SourceService(modules: ConfigurationModule with PersistenceModule with Bus
 
   def getAll: Future[Seq[PutSourceInfo]] = {
     val sourceTQ = sDal.getTableQuery
-    sDal.getDB.run(sourceTQ.filter(_.active === true).map(r => (r.id, r.name, r.connection_url, r.desc, r.`type`, r.config)).result).mapTo[Seq[PutSourceInfo]]
+    sDal.getDB.run(sourceTQ.map(r => (r.id, r.name, r.connection_url, r.desc, r.`type`, r.config,r.active)).result).mapTo[Seq[PutSourceInfo]]
   }
 
   def update(sourceSeq: Seq[PutSourceInfo], session: SessionClass): Future[Unit] = {

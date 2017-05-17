@@ -31,7 +31,7 @@ object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceMod
             relSeq =>
               val groupIdList = new ListBuffer[Long]
               if (relSeq.nonEmpty) relSeq.foreach(groupIdList += _.group_id)
-              val userInfo = QueryUserInfo(user.id, user.email, user.title, user.name, user.admin)
+              val userInfo = QueryUserInfo(user.id, user.email, user.title, user.name, user.admin,user.active)
               val session = SessionClass(user.id, groupIdList.toList, user.admin)
               (session,userInfo)
           }

@@ -25,7 +25,8 @@ case class SimpleLibWidget(name: String,
 case class QueryLibWidget(id: Long,
                           name: String,
                           params: String,
-                          `type`: String)
+                          `type`: String,
+                          active: Boolean)
 
 class LibWidgetTable(tag: Tag) extends BaseTable[LibWidget](tag, "widgetlib") {
   //  def `type` = column[String]("type")

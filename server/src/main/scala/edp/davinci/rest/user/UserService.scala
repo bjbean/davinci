@@ -16,9 +16,9 @@ class UserService(modules: ConfigurationModule with PersistenceModule with Busin
 
   def getAll(session: SessionClass): Future[Seq[QueryUserInfo]] = {
     if (session.admin)
-     db.run(userTQ.filter(_.active === true).map(r => (r.id, r.email, r.title, r.name, r.admin)).result).mapTo[Seq[QueryUserInfo]]
+     db.run(userTQ.map(r => (r.id, r.email, r.title, r.name, r.admin,r.active)).result).mapTo[Seq[QueryUserInfo]]
     else
-     db.run(userTQ.filter(_.id === session.userId).map(r => (r.id, r.email, r.title, r.name, r.admin)).result).mapTo[Seq[QueryUserInfo]]
+     db.run(userTQ.filter(_.id === session.userId).map(r => (r.id, r.email, r.title, r.name, r.admin,r.active)).result).mapTo[Seq[QueryUserInfo]]
   }
 
   def update(userSeq: Seq[PutUserInfo], session: SessionClass): Future[Unit] = {
@@ -33,7 +33,7 @@ class UserService(modules: ConfigurationModule with PersistenceModule with Busin
   }
 
   def getAllGroups(userId: Long): Future[Seq[PutRelUserGroup]] = {
-    val query = relUGTQ.filter(rel => rel.active === true && rel.user_id === userId)
+    val query = relUGTQ.filter(rel => rel.user_id === userId)
       .map(r => (r.id, r.group_id)).result
     db.run(query).mapTo[Seq[PutRelUserGroup]]
   }

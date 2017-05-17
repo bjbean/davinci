@@ -64,9 +64,9 @@ class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(imp
     tableQ.filter(_.id === r.id).update(r)
   }): _*))
 
-  override def findById(id: Long): Future[Option[A]] = getDB.run(tableQ.filter(obj => obj.id === id && obj.active === true).result.headOption)
+  override def findById(id: Long): Future[Option[A]] = getDB.run(tableQ.filter(obj => obj.id === id).result.headOption)
 
-  override def findByName(name: String): Future[Option[A]] = getDB.run(tableQ.filter(obj => obj.name === name && obj.active === true).result.headOption)
+  override def findByName(name: String): Future[Option[A]] = getDB.run(tableQ.filter(obj => obj.name === name).result.headOption)
 
   override def findAll[C: CanBeQueryCondition](f: (T) => C): Future[Seq[BaseInfo]] = getDB.run(tableQ.withFilter(f).map(r => (r.id, r.name)).result).mapTo[Seq[BaseInfo]]
 
