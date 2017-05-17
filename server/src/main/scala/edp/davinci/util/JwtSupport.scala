@@ -6,6 +6,8 @@ import edp.davinci.rest.SessionClass
 import pdi.jwt.algorithms.JwtHmacAlgorithm
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtHeader}
 
+import scala.util.Try
+
 object JwtSupport extends ConfigurationModuleImpl {
 
   private val typ = Option(config.getString("jwtToken.typ")).getOrElse("JWT")
@@ -24,7 +26,7 @@ object JwtSupport extends ConfigurationModuleImpl {
   }
 
   def decodeToken(token: String): SessionClass = {
-    val decodeToken = Jwt.decodeRawAll(token, secret, Seq(algorithm))
+    val decodeToken: Try[(String, String, String)] = Jwt.decodeRawAll(token, secret, Seq(algorithm))
     val session = json2caseClass[SessionClass](decodeToken.get._2)
     session
   }

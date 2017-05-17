@@ -48,12 +48,11 @@ class LibWidgetRoutes(modules: ConfigurationModule with PersistenceModule with B
     get {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
         session =>
-          if (session.admin) {
-            onComplete(libWidgetService.getAll) {
-              case Success(libWidgetSeq) => complete(OK, ResponseSeqJson[QueryLibWidget](getHeader(200, session), libWidgetSeq))
-              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
-            }
-          } else complete(Forbidden, ResponseJson[String](getHeader(403, "user is not admin", session), ""))
+          onComplete(libWidgetService.getAll) {
+            case Success(libWidgetSeq) => complete(OK, ResponseSeqJson[QueryLibWidget](getHeader(200, session), libWidgetSeq))
+            case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+          }
+
       }
     }
   }
