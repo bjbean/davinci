@@ -205,7 +205,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   @ApiOperation(value = "get calculation results by biz id", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "id", value = "bizlogic id", required = true, dataType = "integer", paramType = "path"),
-    new ApiImplicitParam(name = "olap_sql", value = "olap_sql", required = false, dataType = "string", paramType = "query")
+    new ApiImplicitParam(name = "olap_sql", value = "olap_sql", required = false, dataType = "string", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "ok"),
@@ -214,11 +214,11 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 400, message = "bad request")
   ))
   def getCalculationResRoute: Route = path("bizlogics" / LongNumber / "resultset") { bizId =>
-    get {
+    post {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
         session =>
-          parameter('olap_sql.as[String].?) { olapSql =>
-            getResultSetComplete(session, bizId, olapSql.getOrElse(""))
+          entity(as[String]) { olapSql =>
+            getResultSetComplete(session, bizId, olapSql)
           }
       }
     }
