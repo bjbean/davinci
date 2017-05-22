@@ -27,17 +27,13 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
           case (r, w) => (r.id, w.id, w.bizlogic_id, r.position_x, r.position_y, r.width, r.length, r.trigger_type, r.trigger_params)
         }.result
     else {
-      val bizIds = relGBTQ.withFilter(rel => {
-        rel.group_id inSet session.groupIdList
-        rel.active === true
-      }).map(_.bizlogic_id)
-
+      val bizIds = relGBTQ.filter(_.group_id inSet session.groupIdList).map(_.bizlogic_id)
       (relDWTQ.filter(obj => obj.dashboard_id === dashboardId) join
-        widgetTQ.filter(obj => obj.bizlogic_id in bizIds).filter(obj => obj.publish === true) on (_.widget_id === _.id)).
-        map {
-          case (r, w) => (r.id, w.id, w.bizlogic_id, r.position_x, r.position_y, r.width, r.length, r.trigger_type, r.trigger_params)
-        }
-    }.result
+        widgetTQ.filter(_.publish === true).filter(_.bizlogic_id in bizIds) on (_.widget_id === _.id))
+        .map {
+          case (rDW, w) => println("jhhh"); (rDW.id, w.id, w.bizlogic_id, rDW.position_x, rDW.position_y, rDW.width, rDW.length, rDW.trigger_type, rDW.trigger_params)
+        }.result
+    }
     db.run(query)
   }
 

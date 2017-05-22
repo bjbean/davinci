@@ -202,7 +202,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
 
 
   @Path("/{id}/resultset")
-  @ApiOperation(value = "get calculation results by biz id", notes = "", nickname = "", httpMethod = "GET")
+  @ApiOperation(value = "get calculation results by biz id", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "id", value = "bizlogic id", required = true, dataType = "integer", paramType = "path"),
     new ApiImplicitParam(name = "olap_sql", value = "olap_sql", required = false, dataType = "string", paramType = "query")
