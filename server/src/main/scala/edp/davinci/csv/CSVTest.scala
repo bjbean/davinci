@@ -9,5 +9,4 @@ val baos = new ByteArrayOutputStream()
   val a = Seq("a","b b  ","c/ \"\\cc")
   val w = writer.writeRow(a)
   println(baos.toString("UTF-8"))
-
 }
