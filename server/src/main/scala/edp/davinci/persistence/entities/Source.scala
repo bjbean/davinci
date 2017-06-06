@@ -15,17 +15,6 @@ case class Source(id: Long,
                   update_time: String,
                   update_by: Long) extends BaseEntity
 
-case class SimpleSource(name: String,
-                        connection_url: String,
-                        desc: String,
-                        `type`: String,
-                        config: String,
-                        active: Boolean,
-                        create_time: String,
-                        create_by: Long,
-                        update_time: String,
-                        update_by: Long) extends SimpleBaseEntity
-
 
 case class PostSourceInfo(name: String,
                           connection_url: String,
