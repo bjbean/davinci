@@ -21,19 +21,20 @@ class PassWordError(statusCode: Int = 400, desc: String = "password is wrong") e
 
 object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceModuleImpl {
   private val logger = LoggerFactory.getLogger(this.getClass)
+  lazy val realm = "davinci"
 
   def createSessionClass(login: LoginClass): Future[Either[AuthorizationError, (SessionClass, QueryUserInfo)] with Product with Serializable] = {
     try {
       val user = findUser(login)
       user.flatMap {
         user =>
-          relUserGroupDal.findByFilter(rel => rel.user_id === user.id && rel.active).map{
+          relUserGroupDal.findByFilter(rel => rel.user_id === user.id && rel.active).map {
             relSeq =>
               val groupIdList = new ListBuffer[Long]
               if (relSeq.nonEmpty) relSeq.foreach(groupIdList += _.group_id)
-              val userInfo = QueryUserInfo(user.id, user.email, user.title, user.name, user.admin,user.active)
+              val userInfo = QueryUserInfo(user.id, user.email, user.title, user.name, user.admin, user.active)
               val session = SessionClass(user.id, groupIdList.toList, user.admin)
-              (session,userInfo)
+              (session, userInfo)
           }
       }.map(Right(_)).recover {
         case e: AuthorizationError =>

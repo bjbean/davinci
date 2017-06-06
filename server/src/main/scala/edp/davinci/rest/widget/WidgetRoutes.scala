@@ -21,6 +21,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   val routes: Route = getAllWidgetsRoute ~ postWidgetRoute ~ deleteWidgetByIdRoute ~ putWidgetRoute ~ getWholeSqlByWidgetIdRoute
   private lazy val widgetService = new WidgetService(modules)
   private val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val routeName = "widgets"
 
   @ApiOperation(value = "list all widgets", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
@@ -33,10 +34,10 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getAllWidgetsRoute: Route = path("widgets") {
+  def getAllWidgetsRoute: Route = path(routeName) {
     get {
       parameter('active.as[Boolean].?) { active =>
-        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
           session => getAllWidgetsComplete(session, active.getOrElse(true))
         }
       }
@@ -63,11 +64,11 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def postWidgetRoute: Route = path("widgets") {
+  def postWidgetRoute: Route = path(routeName) {
     post {
       entity(as[PostWidgetInfoSeq]) {
         widgetSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => postWidgetComplete(session, widgetSeq.payload)
           }
       }
@@ -98,11 +99,11 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def putWidgetRoute: Route = path("widgets") {
+  def putWidgetRoute: Route = path(routeName) {
     put {
       entity(as[PutWidgetInfoSeq]) {
         widgetSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => putWidgetComplete(session, widgetSeq.payload)
           }
       }
@@ -130,7 +131,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteWidgetByIdRoute: Route = modules.widgetRoutes.deleteByIdRoute("widgets")
+  def deleteWidgetByIdRoute: Route = modules.widgetRoutes.deleteByIdRoute(routeName)
 
   @Path("/{widgetId}/sqls")
   @ApiOperation(value = "get whole sql by widget id", notes = "", nickname = "", httpMethod = "GET")
@@ -142,9 +143,9 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getWholeSqlByWidgetIdRoute: Route = path("widgets" / LongNumber / "sqls") { widgetId =>
+  def getWholeSqlByWidgetIdRoute: Route = path(routeName / LongNumber / "sqls") { widgetId =>
     get {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+      authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session => getWholeSqlComplete(session, widgetId)
       }
     }

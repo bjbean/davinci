@@ -1,12 +1,12 @@
 package edp.davinci.rest.bizlogic
 
-import java.io.Serializable
+import java.io.ByteArrayOutputStream
 import java.sql.{Connection, Statement}
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.{Directive1, Directives, Route}
-import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
+import akka.http.scaladsl.server.{Directives, Route}
+import edp.davinci.csv.CSVWriter
 import edp.davinci.module.{ConfigurationModule, PersistenceModule, _}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
@@ -16,7 +16,6 @@ import edp.davinci.util.JsonProtocol._
 import edp.endurance.db.DbConnection
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
-
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -29,7 +28,14 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
 
   val routes: Route = postBizlogicRoute ~ putBizlogicRoute ~ getBizlogicByAllRoute ~ deleteBizlogicByIdRoute ~ getGroupsByBizIdRoute ~ getCalculationResRoute ~ deleteRelGBById
   private lazy val bizlogicService = new BizlogicService(modules)
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val logger = LoggerFactory.getLogger(this.getClass)
+
+  private lazy val adHocTable = "table"
+  private lazy val semiSeparator = ";"
+  private lazy val urlSep = "<:>"
+  private lazy val defaultEncode = "UTF-8"
+  private lazy val paramSep = "\\?"
+
 
   @ApiOperation(value = "get all bizlogics", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
@@ -45,7 +51,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   def getBizlogicByAllRoute: Route = path("bizlogics") {
     get {
       parameter('active.as[Boolean].?) { active =>
-        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
           session =>
             if (session.admin) {
               onComplete(bizlogicService.getAllBiz(active.getOrElse(true))) {
@@ -76,7 +82,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     post {
       entity(as[PostBizlogicInfoSeq]) {
         bizlogicSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => postBizlogic(session, bizlogicSeq.payload)
           }
       }
@@ -85,7 +91,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
 
   private def postBizlogic(session: SessionClass, bizlogicSeq: Seq[PostBizlogicInfo]): Route = {
     if (session.admin) {
-      val uniqueTableName = "table" + java.util.UUID.randomUUID().toString
+      val uniqueTableName = adHocTable + java.util.UUID.randomUUID().toString
       val bizEntitySeq = bizlogicSeq.map(biz => Bizlogic(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, Some(biz.desc), biz.trigger_type, biz.frequency, biz.`catch`, active = true, null, session.userId, null, session.userId))
       onComplete(modules.bizlogicDal.insert(bizEntitySeq)) {
         case Success(bizSeq) =>
@@ -118,7 +124,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     put {
       entity(as[PutBizlogicInfoSeq]) {
         bizlogicSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => putBizlogicComplete(session, bizlogicSeq.payload)
           }
       }
@@ -169,7 +175,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   ))
   def deleteRelGBById: Route = path("bizlogics" / "groups" / LongNumber) { relId =>
     delete {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+      authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session => modules.relGroupBizlogicRoutes.deleteByIdComplete(relId, session)
       }
     }
@@ -189,7 +195,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   ))
   def getGroupsByBizIdRoute: Route = path("bizlogics" / LongNumber / "groups") { bizId =>
     get {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+      authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
           val future = bizlogicService.getGroups(bizId)
           onComplete(future) {
@@ -215,18 +221,17 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   ))
   def getCalculationResRoute: Route = path("bizlogics" / LongNumber / "resultset") { bizId =>
     post {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+      authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
-          entity(as[String]) { adhocSql =>
-            println(adhocSql+"~~~~~~~~~~~~~"+(adhocSql=="{}"))
-            getResultSetComplete(session, bizId, adhocSql)
+          entity(as[String]) { adHocSql =>
+            getResultSetComplete(session, bizId, adHocSql)
           }
       }
     }
   }
 
 
-  private def getResultSetComplete(session: SessionClass, bizId: Long, adhocSql: String): Route = {
+  private def getResultSetComplete(session: SessionClass, bizId: Long, adHocSql: String): Route = {
     val operation = for {
       a <- bizlogicService.getSourceInfo(bizId)
       b <- bizlogicService.getSqlTmpl(bizId)
@@ -236,9 +241,9 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
       case Success(info) =>
         if (info._1.nonEmpty) {
           val (connectionUrl, _) = info._1.head
-          val (sqlTmpl, tableName) = info._2.getOrElse(("", ""))
+          val (sqlTemp, tableName) = info._2.getOrElse(("", ""))
           val sqlParam = info._3.getOrElse("")
-          val resultSql = getSqlArr(sqlTmpl, sqlParam, tableName, adhocSql)
+          val resultSql = getSqlArr(sqlTemp, sqlParam, tableName, adHocSql)
           val result = getResult(connectionUrl, resultSql)
           complete(OK, ResponseJson[BizlogicResult](getHeader(200, session), BizlogicResult(result)))
         } else
@@ -248,16 +253,16 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   }
 
 
-  private def getResult(connectionUrl: String, sql: Array[String]): List[Seq[String]] = {
-    val resultList = new ListBuffer[Seq[String]]
+  private def getResult(connectionUrl: String, sql: Array[String]): List[String] = {
+    val resultList = new ListBuffer[String]
     val columnList = new ListBuffer[String]
     var dbConnection: Connection = null
     var statement: Statement = null
     if (connectionUrl != null) {
-      val connectionInfo = connectionUrl.split("""<:>""")
+      val connectionInfo = connectionUrl.split(urlSep)
       if (connectionInfo.size != 3) {
         logger.info("connection is not in right format")
-        List(Seq(""))
+        List("")
       }
       else {
         try {
@@ -268,82 +273,95 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
           val meta = resultSet.getMetaData
           for (i <- 1 to meta.getColumnCount)
             columnList.append(meta.getColumnName(i))
-          resultList.append(columnList)
+          resultList.append(covert2CSV(columnList))
           while (resultSet.next())
-            resultList.append(getRow(resultSet))
+            resultList.append(covert2CSV(getRow(resultSet)))
           resultList.toList
         } catch {
-          case e: Throwable => logger.error("get reuslt exception", e)
+          case e: Throwable => logger.error("get result exception", e)
         } finally {
-          if (statement != null)
-            statement.close()
-          if (dbConnection != null)
-            dbConnection.close()
+          if (statement != null) statement.close()
+          if (dbConnection != null) dbConnection.close()
         }
         resultList.toList
       }
     } else {
       logger.info("connection is not given or is null")
-      List(Seq(""))
+      List("")
     }
   }
 
-  private def getSqlArr(sqlTmpl: String, param: String, tableName: String, adhocSql: String): Array[String] = {
-    if (sqlTmpl != "") {
-      var sql = sqlTmpl.trim
-      logger.info("~~the initial sql template:" + sqlTmpl + "~~")
-      val paramArr = param.split("\\?")
-      paramArr.foreach(p => sql = sql.replaceFirst("\\?", p))
-      logger.info("~~sql template after the replacement:" + sql + "~~")
+  private def covert2CSV(row: Seq[String]): String = {
+    val byteArrOS = new ByteArrayOutputStream()
+    val writer = CSVWriter.open(byteArrOS)
+    writer.writeRow(row)
+    val CSVStr = byteArrOS.toString(defaultEncode)
+    byteArrOS.close()
+    writer.close()
+    CSVStr
+  }
+
+  private def getSqlArr(sqlTemp: String, param: String, tableName: String, adHocSql: String): Array[String] = {
+    if (sqlTemp != "") {
+      var sql = sqlTemp.trim
+      logger.info("the initial sql template:" + sqlTemp)
+
+      val paramArr = param.split(paramSep)
+      paramArr.foreach(p => sql = sql.replaceFirst(paramSep, p))
+      logger.info("sql template after the replacement:" + sql)
+
       val projectSql: String = getProjectSql(sql)
-      val lastResultSql = mixinAdhocSql(projectSql, adhocSql, tableName)
-      logger.info("~~the lastResult sql:" + lastResultSql + "~~")
+      val lastResultSql = mixinAdHocSql(projectSql, adHocSql, tableName)
+      logger.info("the lastResult sql:" + lastResultSql)
+
       val resultSqlArr: Array[String] =
-        if (sql.lastIndexOf(";") < 0)
-          lastResultSql.split(";")
+        if (sql.lastIndexOf(semiSeparator) < 0)
+          lastResultSql.split(semiSeparator)
         else
-          (sql.substring(0, sql.lastIndexOf(";")) + ";" + lastResultSql).split(";")
+          (sql.substring(0, sql.lastIndexOf(semiSeparator)) + semiSeparator + lastResultSql).split(semiSeparator)
       resultSqlArr
     } else {
-      logger.info("there is no sql_tmpl")
+      logger.info("there is no sql template")
       null.asInstanceOf[Array[String]]
     }
 
   }
 
   private def getProjectSql(sql: String): String = {
-    val semicoIndex = sql.lastIndexOf(";")
+    val semiIndex = sql.lastIndexOf(semiSeparator)
     val subSql: String =
-      if (semicoIndex < 0) sql
+      if (semiIndex < 0) sql
       else {
-        if (semicoIndex == sql.length - 1) {
-          if (sql.substring(0, semicoIndex).lastIndexOf(";") < 0) {
+        if (semiIndex == sql.length - 1) {
+          if (sql.substring(0, semiIndex).lastIndexOf(semiSeparator) < 0) {
             logger.info("only the last char is semicolon")
-            sql.substring(0, semicoIndex)
+
+            sql.substring(0, semiIndex)
           }
           else {
-            val lastIndex = sql.substring(0, semicoIndex).lastIndexOf(";")
+            val lastIndex = sql.substring(0, semiIndex).lastIndexOf(semiSeparator)
             logger.info("has the second last semicolon")
-            sql.substring(lastIndex, semicoIndex)
+
+            sql.substring(lastIndex, semiIndex)
           }
-        } else sql.substring(semicoIndex)
+        } else sql.substring(semiIndex)
       }
     subSql
   }
 
-  private def mixinAdhocSql(projectSql: String, adhocSql: String, tableName: String): String = {
-    if (adhocSql != "" && adhocSql != "{}") {
+  private def mixinAdHocSql(projectSql: String, adHocSql: String, tableName: String): String = {
+    if (adHocSql != "{}") {
       try {
-        val sqlArr = adhocSql.split("table")
+        val sqlArr = adHocSql.split(adHocTable)
         if (sqlArr.size == 2)
           sqlArr(0) + s" ($projectSql) as `$tableName` ${sqlArr(1)}"
         else sqlArr(0) + s" ($projectSql) as `$tableName`"
       } catch {
-        case e: Throwable => logger.error("adhoc sql is not in right format", e)
+        case e: Throwable => logger.error("adHoc sql is not in right format", e)
           projectSql
       }
     } else {
-      logger.info("adhoc sql is empty")
+      logger.info("adHoc sql is empty")
       projectSql
     }
   }

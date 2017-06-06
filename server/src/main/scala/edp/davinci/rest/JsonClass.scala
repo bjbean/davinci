@@ -70,7 +70,7 @@ case class PutUserInfoSeq(payload: Seq[PutUserInfo])
 
 case class PutWidgetInfoSeq(payload: Seq[PutWidgetInfo])
 
-case class BizlogicResult(result: List[Seq[String]] = null)
+case class BizlogicResult(result: Seq[String] = null)
 
 case class ResponsePayload(response: String)
 

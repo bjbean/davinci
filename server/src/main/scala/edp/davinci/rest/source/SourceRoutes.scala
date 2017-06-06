@@ -23,6 +23,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   val routes: Route = getSourceByAllRoute ~ postSourceRoute ~ putSourceRoute ~ deleteSourceByIdRoute
   private lazy val sourceService = new SourceService(modules)
   private val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val routeName = "sources"
 
   @ApiOperation(value = "get all source with the same domain", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
@@ -35,10 +36,10 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getSourceByAllRoute: Route = path("sources") {
+  def getSourceByAllRoute: Route = path(routeName) {
     get {
       parameter('active.as[Boolean].?) { active =>
-        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
           session => getAllSourcesComplete(session, active.getOrElse(true))
         }
       }
@@ -67,7 +68,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   //    new ApiResponse(code = 401, message = "authorization error"),
   //    new ApiResponse(code = 500, message = "internal server error")
   //  ))
-  //  def getSourceByPageRoute: Route = modules.sourceRoutes.paginateRoute("sources","domain_id")
+  //  def getSourceByPageRoute: Route = modules.sourceRoutes.paginateRoute(routeName,"domain_id")
 
 
   @ApiOperation(value = "Add new sources to the system", notes = "", nickname = "", httpMethod = "POST")
@@ -80,11 +81,11 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def postSourceRoute: Route = path("sources") {
+  def postSourceRoute: Route = path(routeName) {
     post {
       entity(as[PostSourceInfoSeq]) {
         sourceSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => postSource(session, sourceSeq.payload)
           }
       }
@@ -116,11 +117,11 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def putSourceRoute: Route = path("sources") {
+  def putSourceRoute: Route = path(routeName) {
     put {
       entity(as[PutSourceInfoSeq]) {
         sourceSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => putSourceComplete(session, sourceSeq.payload)
           }
       }
@@ -149,6 +150,6 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteSourceByIdRoute: Route = modules.sourceRoutes.deleteByIdRoute("sources")
+  def deleteSourceByIdRoute: Route = modules.sourceRoutes.deleteByIdRoute(routeName)
 
 }

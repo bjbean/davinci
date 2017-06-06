@@ -22,6 +22,7 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   val routes: Route = getSqlByAllRoute ~ postSqlLogRoute ~ putSqlLogRoute
   private lazy val sqlLogService = new SqlLogService(modules)
   private val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val routeName = "sqlLogs"
 
 
   @ApiOperation(value = "get all sqlLogs", notes = "", nickname = "", httpMethod = "GET")
@@ -32,9 +33,9 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getSqlByAllRoute: Route = path("sqlLogs") {
+  def getSqlByAllRoute: Route = path(routeName) {
     get {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+      authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session => getAllLogsComplete(session)
       }
     }
@@ -61,11 +62,11 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def postSqlLogRoute: Route = path("sqlLogs") {
+  def postSqlLogRoute: Route = path(routeName) {
     post {
       entity(as[SimpleSqlLogSeq]) {
         sqlLogSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => modules.sqlLogRoutes.postComplete(session, sqlLogSeq.payload)
           }
       }
@@ -84,11 +85,11 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def putSqlLogRoute: Route = path("sqlLogs") {
+  def putSqlLogRoute: Route = path(routeName) {
     put {
       entity(as[SqlLogSeq]) {
         sqlLogSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => putSqlLogComplete(session, sqlLogSeq.payload)
           }
       }

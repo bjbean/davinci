@@ -21,7 +21,8 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
 
   val routes: Route = getGroupByAllRoute ~ postGroupRoute ~ putGroupRoute ~ deleteGroupByIdRoute
   private lazy val groupService = new GroupService(modules)
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  //  private val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val routeName = "groups"
 
   @ApiOperation(value = "get all group with the same domain", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
@@ -34,19 +35,19 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 404, message = "dashboard not found"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getGroupByAllRoute: Route = path("groups") {
+  def getGroupByAllRoute: Route = path(routeName) {
     get {
       parameter('active.as[Boolean].?) { active =>
-        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-          session => getAllGroupsComplete(session,active.getOrElse(true))
+        authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
+          session => getAllGroupsComplete(session, active.getOrElse(true))
         }
       }
     }
   }
 
-  private def getAllGroupsComplete(session: SessionClass,active:Boolean): Route = {
+  private def getAllGroupsComplete(session: SessionClass, active: Boolean): Route = {
     if (session.admin) {
-      onComplete(groupService.getAll(session,active )) {
+      onComplete(groupService.getAll(session, active)) {
         case Success(groupSeq) =>
           val purGroups = groupSeq.map(g => PutGroupInfo(g._1, g._2, g._3.getOrElse(""), Some(g._4)))
           complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), purGroups))
@@ -66,7 +67,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   //    new ApiResponse(code = 401, message = "authorization error"),
   //    new ApiResponse(code = 500, message = "internal server error")
   //  ))
-  //  def getGroupByPageRoute = modules.groupRoutes.pagenifationRoute("groups")
+  //  def getGroupByPageRoute = modules.groupRoutes.pagenifationRoute(routeName)
 
 
   @ApiOperation(value = "Add a new group to the system", notes = "", nickname = "", httpMethod = "POST")
@@ -80,11 +81,11 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 404, message = "dashboard not found"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def postGroupRoute: Route = path("groups") {
+  def postGroupRoute: Route = path(routeName) {
     post {
       entity(as[PostGroupInfoSeq]) {
         groupSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => postGroup(session, groupSeq.payload)
           }
       }
@@ -115,11 +116,11 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def putGroupRoute: Route = path("groups") {
+  def putGroupRoute: Route = path(routeName) {
     put {
       entity(as[PutGroupInfoSeq]) {
         groupSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => putGroupComplete(session, groupSeq.payload)
           }
       }
@@ -148,7 +149,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteGroupByIdRoute: Route = modules.groupRoutes.deleteByIdRoute("groups")
+  def deleteGroupByIdRoute: Route = modules.groupRoutes.deleteByIdRoute(routeName)
 
 
 }

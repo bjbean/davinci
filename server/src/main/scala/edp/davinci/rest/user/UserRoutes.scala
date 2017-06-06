@@ -14,8 +14,6 @@ import io.swagger.annotations._
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 @Api(value = "/users", consumes = "application/json", produces = "application/json")
@@ -25,6 +23,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   val routes: Route = postUserRoute ~ putUserRoute ~ putLoginUserRoute ~ getUserByAllRoute ~ deleteUserByIdRoute ~ getGroupsByUserIdRoute ~ deleteUserFromGroupRoute
   private lazy val userService = new UserService(modules)
   private val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val routeName = "users"
 
   @ApiOperation(value = "get all users with the same domain", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
@@ -37,10 +36,10 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getUserByAllRoute: Route = path("users") {
+  def getUserByAllRoute: Route = path(routeName) {
     get {
       parameter('active.as[Boolean].?) { active =>
-        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
           session => getAllUsersComplete(session, active.getOrElse(true))
         }
       }
@@ -70,11 +69,11 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def postUserRoute: Route = path("users") {
+  def postUserRoute: Route = path(routeName) {
     post {
       entity(as[PostUserInfoSeq]) {
         userSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => postUserComplete(session, userSeq.payload)
           }
       }
@@ -115,11 +114,11 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def putUserRoute: Route = path("users") {
+  def putUserRoute: Route = path(routeName) {
     put {
       entity(as[PutUserInfoSeq]) {
         userSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => putUserComplete(session, userSeq.payload)
           }
       }
@@ -158,11 +157,11 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def putLoginUserRoute: Route = path("users" / "profile") {
+  def putLoginUserRoute: Route = path(routeName / "profile") {
     put {
       entity(as[LoginUserInfo]) {
         user =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => putLoginUserComplete(session, user)
           }
       }
@@ -190,7 +189,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteUserByIdRoute: Route = modules.userRoutes.deleteByIdRoute("users")
+  def deleteUserByIdRoute: Route = modules.userRoutes.deleteByIdRoute(routeName)
 
   //  @Path("{page=\\d+&size=\\d+}")
   //  @ApiOperation(value = "get users with paginate", notes = "", nickname = "", httpMethod = "GET")
@@ -203,7 +202,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   //    new ApiResponse(code = 401, message = "authorization error"),
   //    new ApiResponse(code = 500, message = "internal server error")
   //  ))
-  //  def getUserByPageRoute = modules.userRoutes.paginateRoute("users", "domain_id")
+  //  def getUserByPageRoute = modules.userRoutes.paginateRoute(routeName, "domain_id")
 
   @Path("/{user_id}/groups")
   @ApiOperation(value = "get groups by user id", notes = "", nickname = "", httpMethod = "GET")
@@ -217,9 +216,9 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getGroupsByUserIdRoute: Route = path("users" / LongNumber / "groups") { userId =>
+  def getGroupsByUserIdRoute: Route = path(routeName / LongNumber / "groups") { userId =>
     get {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+      authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session => getGroupsByUserIdComplete(session, userId)
       }
 
@@ -246,9 +245,9 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteUserFromGroupRoute: Route = path("users" / "groups" / LongNumber) { relId =>
+  def deleteUserFromGroupRoute: Route = path(routeName / "groups" / LongNumber) { relId =>
     delete {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+      authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session => modules.relUserGroupRoutes.deleteByIdComplete(relId, session)
       }
     }

@@ -22,7 +22,8 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   val routes: Route = getWidgetByDashboardIdRoute ~ postDashboardRoute ~ putDashboardRoute ~ postWidget2DashboardRoute ~ getDashboardByAllRoute ~ deleteDashboardByIdRoute ~ deleteWidgetFromDashboardRoute ~ postWidget2DashboardRoute ~ putWidgetInDashboardRoute
   private lazy val dashboardService = new DashboardService(modules)
-  private val logger = LoggerFactory.getLogger(this.getClass)
+//  private lazy val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val routeName = "dashboards"
 
   @Path("/{dashboard_id}")
   @ApiOperation(value = "get one dashboard from system by id", notes = "", nickname = "", httpMethod = "GET")
@@ -35,9 +36,9 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 404, message = "dashboard not found"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getWidgetByDashboardIdRoute: Route = path("dashboards" / LongNumber) { dashboard_id =>
+  def getWidgetByDashboardIdRoute: Route = path(routeName / LongNumber) { dashboard_id =>
     get {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+      authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session => getDashboardById(dashboard_id, session)
       }
     }
@@ -70,10 +71,10 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getDashboardByAllRoute: Route = path("dashboards") {
+  def getDashboardByAllRoute: Route = path(routeName) {
     get {
       parameter('active.as[Boolean].?){active =>
-        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
           session =>
             onComplete(dashboardService.getAll(session,active.getOrElse(true))) {
               case Success(dashboardSeq) =>
@@ -96,11 +97,11 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def postDashboardRoute: Route = path("dashboards") {
+  def postDashboardRoute: Route = path(routeName) {
     post {
       entity(as[PostDashboardInfoSeq]) {
         dashboardSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => postDashBoard(session, dashboardSeq.payload)
           }
       }
@@ -131,11 +132,11 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def putDashboardRoute: Route = path("dashboards") {
+  def putDashboardRoute: Route = path(routeName) {
     put {
       entity(as[PutDashboardSeq]) {
         dashboardSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => putDashboardComplete(session, dashboardSeq.payload)
           }
       }
@@ -163,7 +164,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteDashboardByIdRoute: Route = modules.dashboardRoutes.deleteByIdRoute("dashboards")
+  def deleteDashboardByIdRoute: Route = modules.dashboardRoutes.deleteByIdRoute(routeName)
 
   @Path("/widgets")
   @ApiOperation(value = "add widgets to a dashboard", notes = "", nickname = "", httpMethod = "POST")
@@ -176,11 +177,11 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def postWidget2DashboardRoute: Route = path("dashboards" / "widgets") {
+  def postWidget2DashboardRoute: Route = path(routeName / "widgets") {
     post {
       entity(as[PostRelDashboardWidgetSeq]) {
         relDashboardWidgetSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => postWidget2Dashboard(session, relDashboardWidgetSeq.payload)
           }
       }
@@ -211,11 +212,11 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def putWidgetInDashboardRoute: Route = path("dashboards" / "widgets") {
+  def putWidgetInDashboardRoute: Route = path(routeName / "widgets") {
     put {
       entity(as[PutRelDashboardWidgetSeq]) {
         relDashboardWidgetSeq =>
-          authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
             session => updateWidgetInDashboard(session, relDashboardWidgetSeq.payload)
           }
       }
@@ -244,9 +245,9 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteWidgetFromDashboardRoute: Route = path("dashboards" / "widgets" / LongNumber) { relId =>
+  def deleteWidgetFromDashboardRoute: Route = path(routeName / "widgets" / LongNumber) { relId =>
     delete {
-      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+      authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
           if (session.admin) {
             onComplete(dashboardService.deleteRelDWById(session, relId)) {
