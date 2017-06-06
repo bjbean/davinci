@@ -20,7 +20,7 @@ class WidgetService(modules: ConfigurationModule with PersistenceModule with Bus
     if (session.admin)
       db.run(tmpQuery.map(r => (r.id, r.widgetlib_id, r.bizlogic_id, r.name, r.olap_sql, r.desc, r.chart_params, r.publish, r.active)).result)
     else {
-      val query = (tmpQuery.filter(obj => obj.publish === true)
+      val query = (tmpQuery.filter(_.publish)
         join rGBTQ.filter(r => r.group_id inSet session.groupIdList)
         on (_.bizlogic_id === _.bizlogic_id))
         .map {

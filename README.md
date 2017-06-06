@@ -1,80 +1,10 @@
 edp
 ======
-how to package wormhole/davinci?
-------
-cd edp
 
--- for linux terminal --
-mvn --non-recursive clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true; \
-cd common; mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true; cd ..; \
-cd endurance/endurance-db; mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true; cd ../..; \
-cd endurance/endurance-hadoop; mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true; cd ../..; \
-cd endurance/endurance-hbase; mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true; cd ../..; \
-cd endurance/endurance-kafka; mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true; cd ../..; \
-cd endurance/endurance-spark; mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true; cd ../..; \
-cd wormhole-ums; mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true; cd ..; \
-cd litup; mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true; cd ..; \
-cd moonbox; mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true; cd ..; \
-cd swifts; mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true; cd ..; \
-cd swifts-yrd; mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true; cd ..
+how to make a dist package
+--------------------------
+cd edp-davinci && mvn clean package -Pdist
 
--- for windows idea2016 terminal --
-mvn --non-recursive clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true 
-cd common
-mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true
-cd ../
-cd endurance/endurance-db
-mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true
-cd ../../
-cd endurance/endurance-hadoop
-mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true
-cd ../../
-cd endurance/endurance-hbase
-mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true
-cd ../../
-cd endurance/endurance-kafka
-mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true
-cd ../../
-cd endurance/endurance-spark
-mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true
-cd ../../
-cd wormhole-ums
-mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true
-cd ../
-cd litup
-mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true
-cd ../
-cd moonbox
-mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true
-cd ../
-cd swifts/swifts-common
-mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true
-cd ../../
-cd swifts/swifts-framework
-mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true
-cd ../../
-cd swifts-yrd
-mvn clean deploy -Dassembly.skipAssembly=true -U -Dmaven.test.skip=true
-cd ../
-
-cd wormhole
-mvn clean package -U -Dmaven.test.skip=true
-
-cd swifts/swifts-sql
-mvn clean package -U -Dmaven.test.skip=true
-
-cd swifts/swifts-strategy
-mvn clean package -U -Dmaven.test.skip=true
-
-cd davinci; mvn clean package -U -Dmaven.test.skip=true; cd ..
-
-mvn clean install -Dassembly.skipAssembly=true -Dmaven.test.skip=true
-
-how to package wormhole without test?
-------
-cd wormhole; mvn clean package -U -Dmaven.test.skip=true; cd ..
-
-mvn clean package -Dmaven.test.skip=true
 
 
 

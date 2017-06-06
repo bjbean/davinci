@@ -17,7 +17,7 @@ class BizlogicService(modules: ConfigurationModule with PersistenceModule with B
 
   def getAllBiz(active: Boolean): Future[Seq[(Long, Long, String, String, String, Option[String], String, String, String, Boolean)]] = {
     if (active)
-      db.run(bizlogicTQ.filter(_.active === true).map(r => (r.id, r.source_id, r.name, r.sql_tmpl, r.result_table, r.desc, r.trigger_type, r.frequency, r.`catch`, r.active)).result)
+      db.run(bizlogicTQ.filter(_.active).map(r => (r.id, r.source_id, r.name, r.sql_tmpl, r.result_table, r.desc, r.trigger_type, r.frequency, r.`catch`, r.active)).result)
     else
       db.run(bizlogicTQ.map(r => (r.id, r.source_id, r.name, r.sql_tmpl, r.result_table, r.desc, r.trigger_type, r.frequency, r.`catch`, r.active)).result)
   }

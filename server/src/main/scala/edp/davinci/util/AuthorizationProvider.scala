@@ -27,7 +27,7 @@ object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceMod
       val user = findUser(login)
       user.flatMap {
         user =>
-          relUserGroupDal.findByFilter(rel => rel.user_id === user.id && rel.active === true).map{
+          relUserGroupDal.findByFilter(rel => rel.user_id === user.id && rel.active).map{
             relSeq =>
               val groupIdList = new ListBuffer[Long]
               if (relSeq.nonEmpty) relSeq.foreach(groupIdList += _.group_id)

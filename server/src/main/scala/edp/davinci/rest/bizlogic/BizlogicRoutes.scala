@@ -205,7 +205,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   @ApiOperation(value = "get calculation results by biz id", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "id", value = "bizlogic id", required = true, dataType = "integer", paramType = "path"),
-    new ApiImplicitParam(name = "olap_sql", value = "olap_sql", required = false, dataType = "string", paramType = "body")
+    new ApiImplicitParam(name = "adhoc_sql", value = "adhoc_sql", required = false, dataType = "string", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "ok"),
@@ -217,15 +217,16 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     post {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
         session =>
-          entity(as[String]) { olapSql =>
-            getResultSetComplete(session, bizId, olapSql)
+          entity(as[String]) { adhocSql =>
+            println(adhocSql+"~~~~~~~~~~~~~"+(adhocSql=="{}"))
+            getResultSetComplete(session, bizId, adhocSql)
           }
       }
     }
   }
 
 
-  private def getResultSetComplete(session: SessionClass, bizId: Long, olapSql: String): Route = {
+  private def getResultSetComplete(session: SessionClass, bizId: Long, adhocSql: String): Route = {
     val operation = for {
       a <- bizlogicService.getSourceInfo(bizId)
       b <- bizlogicService.getSqlTmpl(bizId)
@@ -237,7 +238,7 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
           val (connectionUrl, _) = info._1.head
           val (sqlTmpl, tableName) = info._2.getOrElse(("", ""))
           val sqlParam = info._3.getOrElse("")
-          val resultSql = fullfilSql(sqlTmpl, sqlParam, tableName, olapSql)
+          val resultSql = getSqlArr(sqlTmpl, sqlParam, tableName, adhocSql)
           val result = getResult(connectionUrl, resultSql)
           complete(OK, ResponseJson[BizlogicResult](getHeader(200, session), BizlogicResult(result)))
         } else
@@ -287,43 +288,15 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     }
   }
 
-  private def fullfilSql(sqlTmpl: String, param: String, tableName: String, olap_sql: String): Array[String] = {
+  private def getSqlArr(sqlTmpl: String, param: String, tableName: String, adhocSql: String): Array[String] = {
     if (sqlTmpl != "") {
       var sql = sqlTmpl.trim
       logger.info("~~the initial sql template:" + sqlTmpl + "~~")
       val paramArr = param.split("\\?")
       paramArr.foreach(p => sql = sql.replaceFirst("\\?", p))
       logger.info("~~sql template after the replacement:" + sql + "~~")
-      val semicoIndex = sql.lastIndexOf(";")
-      val subSql: String =
-        if (semicoIndex < 0) sql
-        else {
-          if (semicoIndex == sql.length - 1) {
-            if (sql.substring(0, semicoIndex).lastIndexOf(";") < 0) {
-              logger.info("only the last char is semicolon")
-              sql.substring(0, semicoIndex)
-            }
-            else {
-              val lastIndex = sql.substring(0, semicoIndex).lastIndexOf(";")
-              logger.info("has the second last semicolon")
-              sql.substring(lastIndex, semicoIndex)
-            }
-          } else sql.substring(semicoIndex)
-        }
-      val lastResultSql = if (olap_sql != "") {
-        try {
-          val sqlArr = olap_sql.split("table")
-          if (sqlArr.size == 2)
-            sqlArr(0) + s" ($subSql) as `$tableName` ${sqlArr(1)}"
-          else sqlArr(0) + s" ($subSql) as `$tableName`"
-        } catch {
-          case e: Throwable => logger.error("olap sql is not in right format", e)
-            subSql
-        }
-      } else {
-        logger.info("olap sql is empty")
-        subSql
-      }
+      val projectSql: String = getProjectSql(sql)
+      val lastResultSql = mixinAdhocSql(projectSql, adhocSql, tableName)
       logger.info("~~the lastResult sql:" + lastResultSql + "~~")
       val resultSqlArr: Array[String] =
         if (sql.lastIndexOf(";") < 0)
@@ -334,6 +307,44 @@ class BizlogicRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     } else {
       logger.info("there is no sql_tmpl")
       null.asInstanceOf[Array[String]]
+    }
+
+  }
+
+  private def getProjectSql(sql: String): String = {
+    val semicoIndex = sql.lastIndexOf(";")
+    val subSql: String =
+      if (semicoIndex < 0) sql
+      else {
+        if (semicoIndex == sql.length - 1) {
+          if (sql.substring(0, semicoIndex).lastIndexOf(";") < 0) {
+            logger.info("only the last char is semicolon")
+            sql.substring(0, semicoIndex)
+          }
+          else {
+            val lastIndex = sql.substring(0, semicoIndex).lastIndexOf(";")
+            logger.info("has the second last semicolon")
+            sql.substring(lastIndex, semicoIndex)
+          }
+        } else sql.substring(semicoIndex)
+      }
+    subSql
+  }
+
+  private def mixinAdhocSql(projectSql: String, adhocSql: String, tableName: String): String = {
+    if (adhocSql != "" && adhocSql != "{}") {
+      try {
+        val sqlArr = adhocSql.split("table")
+        if (sqlArr.size == 2)
+          sqlArr(0) + s" ($projectSql) as `$tableName` ${sqlArr(1)}"
+        else sqlArr(0) + s" ($projectSql) as `$tableName`"
+      } catch {
+        case e: Throwable => logger.error("adhoc sql is not in right format", e)
+          projectSql
+      }
+    } else {
+      logger.info("adhoc sql is empty")
+      projectSql
     }
   }
 

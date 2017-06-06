@@ -34,16 +34,16 @@ trait PersistenceModuleImpl extends PersistenceModule with DbModule {
   override implicit lazy val db: JdbcProfile#Backend#Database = dbConfig.db
   println("after~~~~~~~~~~~~~~~~~~~~~~~")
 
-  override val groupDal = new BaseDalImpl[GroupTable, UserGroup](TableQuery[GroupTable])
-  override val sqlLogDal = new BaseDalImpl[SqlLogTable, SqlLog](TableQuery[SqlLogTable])
-  override val sourceDal = new BaseDalImpl[SourceTable, Source](TableQuery[SourceTable])
-  override val userDal = new BaseDalImpl[UserTable, User](TableQuery[UserTable])
-  override val relUserGroupDal = new BaseDalImpl[RelUserGroupTable, RelUserGroup](TableQuery[RelUserGroupTable])
-  override val dashboardDal = new BaseDalImpl[DashboardTable, Dashboard](TableQuery[DashboardTable])
-  override val relDashboardWidgetDal = new BaseDalImpl[RelDashboardWidgetTable, RelDashboardWidget](TableQuery[RelDashboardWidgetTable])
-  override val widgetDal = new BaseDalImpl[WidgetTable, Widget](TableQuery[WidgetTable])
-  override val libWidgetDal = new BaseDalImpl[LibWidgetTable, LibWidget](TableQuery[LibWidgetTable])
-  override val bizlogicDal = new BaseDalImpl[BizlogicTable, Bizlogic](TableQuery[BizlogicTable])
-  override val relGroupBizlogicDal = new BaseDalImpl[RelGroupBizlogicTable, RelGroupBizlogic](TableQuery[RelGroupBizlogicTable])
+  override lazy val groupDal = new BaseDalImpl[GroupTable, UserGroup](TableQuery[GroupTable])
+  override lazy val sqlLogDal = new BaseDalImpl[SqlLogTable, SqlLog](TableQuery[SqlLogTable])
+  override lazy val sourceDal = new BaseDalImpl[SourceTable, Source](TableQuery[SourceTable])
+  override lazy val userDal = new BaseDalImpl[UserTable, User](TableQuery[UserTable])
+  override lazy val relUserGroupDal = new BaseDalImpl[RelUserGroupTable, RelUserGroup](TableQuery[RelUserGroupTable])
+  override lazy val dashboardDal = new BaseDalImpl[DashboardTable, Dashboard](TableQuery[DashboardTable])
+  override lazy val relDashboardWidgetDal = new BaseDalImpl[RelDashboardWidgetTable, RelDashboardWidget](TableQuery[RelDashboardWidgetTable])
+  override lazy val widgetDal = new BaseDalImpl[WidgetTable, Widget](TableQuery[WidgetTable])
+  override lazy val libWidgetDal = new BaseDalImpl[LibWidgetTable, LibWidget](TableQuery[LibWidgetTable])
+  override lazy val bizlogicDal = new BaseDalImpl[BizlogicTable, Bizlogic](TableQuery[BizlogicTable])
+  override lazy val relGroupBizlogicDal = new BaseDalImpl[RelGroupBizlogicTable, RelGroupBizlogic](TableQuery[RelGroupBizlogicTable])
 
 }

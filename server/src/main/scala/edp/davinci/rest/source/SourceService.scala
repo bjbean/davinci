@@ -12,7 +12,7 @@ class SourceService(modules: ConfigurationModule with PersistenceModule with Bus
 
   def getAll(active: Boolean): Future[Seq[(Long, String, String, String, String, String, Boolean)]] = {
     val sourceTQ = sDal.getTableQuery
-    val tmpQuery = if (active) sourceTQ.filter(_.active === true) else sourceTQ
+    val tmpQuery = if (active) sourceTQ.filter(_.active) else sourceTQ
     sDal.getDB.run(tmpQuery.map(r => (r.id, r.name, r.connection_url, r.desc, r.`type`, r.config, r.active)).result)
   }
 

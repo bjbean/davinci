@@ -1,7 +1,7 @@
 <assembly>
     <id>dist</id>
     <formats>
-        <format>tar.gz</format>
+        <format>zip</format>
     </formats>
     <includeBaseDirectory>false</includeBaseDirectory>
 
@@ -13,9 +13,9 @@
         </fileSet>
         <fileSet>
             <directory>
-                ${project.parent.basedir}/sbin
+                ${project.parent.basedir}/conf
             </directory>
-            <outputDirectory>sbin</outputDirectory>
+            <outputDirectory>conf</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>
@@ -24,10 +24,10 @@
             <outputDirectory>bin</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>
-                ${project.parent.basedir}/conf
-            </directory>
-            <outputDirectory>conf</outputDirectory>
+            <outputDirectory>log</outputDirectory>
+            <excludes>
+                <exclude>**/*</exclude>
+            </excludes>
         </fileSet>
     </fileSets>
 
@@ -40,4 +40,11 @@
             <useProjectArtifact>false</useProjectArtifact>
         </dependencySet>
     </dependencySets>
+
+    <!--<files>
+        <file>
+            <source>${project.parent.basedir}/server/target/davinci-server_2.11-${project.parent.version}-jar-with-dependencies.jar</source>
+            <outputDirectory>plugin</outputDirectory>
+        </file>
+    </files>-->
 </assembly>

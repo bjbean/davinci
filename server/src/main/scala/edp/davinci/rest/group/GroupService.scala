@@ -15,7 +15,7 @@ class GroupService(modules: ConfigurationModule with PersistenceModule with Busi
     val groupTQ = gDal.getTableQuery
     if (session.admin)
       if (active)
-        gDal.getDB.run(groupTQ.filter(_.active === true).map(r => (r.id, r.name, r.desc, r.active)).result)
+        gDal.getDB.run(groupTQ.filter(_.active).map(r => (r.id, r.name, r.desc, r.active)).result)
       else
         gDal.getDB.run(groupTQ.map(r => (r.id, r.name, r.desc, r.active)).result)
     else if (active)

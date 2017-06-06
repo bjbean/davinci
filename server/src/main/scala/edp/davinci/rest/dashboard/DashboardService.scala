@@ -29,7 +29,7 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
     else {
       val bizIds = relGBTQ.filter(_.group_id inSet session.groupIdList).map(_.bizlogic_id)
       (relDWTQ.filter(obj => obj.dashboard_id === dashboardId) join
-        widgetTQ.filter(_.publish === true).filter(_.bizlogic_id in bizIds) on (_.widget_id === _.id))
+        widgetTQ.filter(_.publish).filter(_.bizlogic_id in bizIds) on (_.widget_id === _.id))
         .map {
           case (rDW, w) => println("jhhh"); (rDW.id, w.id, w.bizlogic_id, rDW.position_x, rDW.position_y, rDW.width, rDW.length, rDW.trigger_type, rDW.trigger_params)
         }.result
@@ -61,15 +61,15 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
     val query =
       if (session.admin) {
         if (active)
-          dashboardTQ.filter(_.active === true).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish, obj.active)).result
+          dashboardTQ.filter(_.active).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish, obj.active)).result
         else
           dashboardTQ.map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish, obj.active)).result
       }
       else {
         if (active)
-          dashboardTQ.filter(obj => obj.publish === true && obj.active === true).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish, obj.active)).result
+          dashboardTQ.filter(obj => obj.publish && obj.active).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish, obj.active)).result
         else
-          dashboardTQ.filter(obj => obj.publish === true).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish, obj.active)).result
+          dashboardTQ.filter(obj => obj.publish ).map(obj => (obj.id, obj.name, obj.pic, obj.desc, obj.publish, obj.active)).result
       }
     db.run(query)
   }
