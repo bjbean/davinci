@@ -26,7 +26,7 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatSqlLogSeq: RootJsonFormat[SqlLogSeq] = jsonFormat1(SqlLogSeq)
 
   implicit val formatTablePrivilege: RootJsonFormat[Source] = jsonFormat11(Source)
-  implicit val formatSimpleTablePrivilege: RootJsonFormat[SimpleSource] = jsonFormat10(SimpleSource)
+
 
   implicit val formatRelUserGroupResponse: RootJsonFormat[PostRelUserGroup] = jsonFormat1(PostRelUserGroup)
   implicit val formatRelUserGroupResponseSeq: RootJsonFormat[PostRelUserGroupSeq] = jsonFormat1(PostRelUserGroupSeq)
@@ -61,17 +61,17 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatDashboardInfo: RootJsonFormat[DashboardInfo] = jsonFormat6(DashboardInfo)
 
 
-  implicit val formatPostRelGroupBizlogic: RootJsonFormat[PostRelGroupBizlogic] = jsonFormat2(PostRelGroupBizlogic)
-  implicit val formatPutRelGroupBizlogic: RootJsonFormat[PutRelGroupBizlogic] = jsonFormat3(PutRelGroupBizlogic)
-  implicit val formatPostRelGroupBizlogicSeq: RootJsonFormat[PostRelGroupBizlogicSeq] = jsonFormat1(PostRelGroupBizlogicSeq)
-  implicit val formatPutRelGroupBizlogicSeq: RootJsonFormat[PutRelGroupBizlogicSeq] = jsonFormat1(PutRelGroupBizlogicSeq)
+  implicit val formatPostRelGroupBizlogic: RootJsonFormat[PostRelGroupFlatTable] = jsonFormat2(PostRelGroupFlatTable)
+  implicit val formatPutRelGroupBizlogic: RootJsonFormat[PutRelGroupFlatTable] = jsonFormat3(PutRelGroupFlatTable)
+  implicit val formatPostRelGroupBizlogicSeq: RootJsonFormat[PostRelGroupFlatTableSeq] = jsonFormat1(PostRelGroupFlatTableSeq)
+  implicit val formatPutRelGroupBizlogicSeq: RootJsonFormat[PutRelGroupFlatTableSeq] = jsonFormat1(PutRelGroupFlatTableSeq)
 
-  implicit val formatBizlogic: RootJsonFormat[Bizlogic] = jsonFormat14(Bizlogic)
-  implicit val formatPostBizlogicInfo: RootJsonFormat[PostBizlogicInfo] = jsonFormat8(PostBizlogicInfo)
-  implicit val formatPutBizlogicInfo: RootJsonFormat[PutBizlogicInfo] = jsonFormat10(PutBizlogicInfo)
-  implicit val formatQUeryBizlogic: RootJsonFormat[QueryBizlogic] = jsonFormat10(QueryBizlogic)
-  implicit val formatPostBizlogicInfoSeq: RootJsonFormat[PostBizlogicInfoSeq] = jsonFormat1(PostBizlogicInfoSeq)
-  implicit val formatPutBizlogicInfoSeq: RootJsonFormat[PutBizlogicInfoSeq] = jsonFormat1(PutBizlogicInfoSeq)
+  implicit val formatBizlogic: RootJsonFormat[FlatTable] = jsonFormat14(FlatTable)
+  implicit val formatPostBizlogicInfo: RootJsonFormat[PostFlatTableInfo] = jsonFormat8(PostFlatTableInfo)
+  implicit val formatPutBizlogicInfo: RootJsonFormat[PutFlatTableInfo] = jsonFormat10(PutFlatTableInfo)
+  implicit val formatQUeryBizlogic: RootJsonFormat[QueryFlatTable] = jsonFormat10(QueryFlatTable)
+  implicit val formatPostBizlogicInfoSeq: RootJsonFormat[PostFlatTableInfoSeq] = jsonFormat1(PostFlatTableInfoSeq)
+  implicit val formatPutBizlogicInfoSeq: RootJsonFormat[PutFlatTableInfoSeq] = jsonFormat1(PutFlatTableInfoSeq)
 
   implicit val formatLibWidget: RootJsonFormat[LibWidget] = jsonFormat9(LibWidget)
   implicit val formatQueryLibWidget: RootJsonFormat[QueryLibWidget] = jsonFormat5(QueryLibWidget)
@@ -95,7 +95,7 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatPutLoginUserInfo: RootJsonFormat[LoginUserInfo] = jsonFormat2(LoginUserInfo)
 
-  implicit val formatBizlogicResult: RootJsonFormat[BizlogicResult] = jsonFormat1(BizlogicResult)
+  implicit val formatBizlogicResult: RootJsonFormat[FlatTableResult] = jsonFormat1(FlatTableResult)
 
   implicit val formatResponsePayload: RootJsonFormat[ResponsePayload] = jsonFormat1(ResponsePayload)
 
@@ -114,7 +114,7 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit object formatBaseEntity extends RootJsonFormat[BaseEntity] {
 
     def write(obj: BaseEntity): JsValue = obj match {
-      case biz: Bizlogic => biz.toJson
+      case biz: FlatTable => biz.toJson
       case dashboard: Dashboard => dashboard.toJson
       case group: UserGroup => group.toJson
       case ligWidget: LibWidget => ligWidget.toJson

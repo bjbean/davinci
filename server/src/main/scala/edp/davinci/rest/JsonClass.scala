@@ -20,7 +20,7 @@ case class SqlInfo(sqls: Array[String])
 
 case class OlapSql(payload: String)
 
-case class WidgetInfo(id: Long, widget_id: Long, bizlogicId: Long, position_x: Int, position_y: Int, width: Int, length: Int,trigger_type:String,trigger_params:String)
+case class WidgetInfo(id: Long, widget_id: Long, flatTableId: Long, position_x: Int, position_y: Int, width: Int, length: Int, trigger_type:String, trigger_params:String)
 
 case class DashboardInfo(id: Long, name: String, pic: String, desc: String, publish: Boolean, widgets: Seq[WidgetInfo])
 
@@ -32,13 +32,13 @@ case class PostRelDashboardWidgetSeq(payload: Seq[PostRelDashboardWidget])
 
 case class PutRelDashboardWidgetSeq(payload: Seq[PutRelDashboardWidget])
 
-case class PostRelGroupBizlogicSeq(payload: Seq[PostRelGroupBizlogic])
+case class PostRelGroupFlatTableSeq(payload: Seq[PostRelGroupFlatTable])
 
-case class PutRelGroupBizlogicSeq(payload: Seq[PutRelGroupBizlogic])
+case class PutRelGroupFlatTableSeq(payload: Seq[PutRelGroupFlatTable])
 
 case class PostUserInfoSeq(payload: Seq[PostUserInfo])
 
-case class PostBizlogicInfoSeq(payload: Seq[PostBizlogicInfo])
+case class PostFlatTableInfoSeq(payload: Seq[PostFlatTableInfo])
 
 case class PostDashboardInfoSeq(payload: Seq[PostDashboardInfo])
 
@@ -54,7 +54,7 @@ case class PostWidgetInfoSeq(payload: Seq[PostWidgetInfo])
 
 case class SimpleRelUserGroupSeq(payload: Seq[SimpleRelUserGroup])
 
-case class PutBizlogicInfoSeq(payload: Seq[PutBizlogicInfo])
+case class PutFlatTableInfoSeq(payload: Seq[PutFlatTableInfo])
 
 case class PutDashboardSeq(payload: Seq[PutDashboardInfo])
 
@@ -70,7 +70,7 @@ case class PutUserInfoSeq(payload: Seq[PutUserInfo])
 
 case class PutWidgetInfoSeq(payload: Seq[PutWidgetInfo])
 
-case class BizlogicResult(result: Seq[String] = null)
+case class FlatTableResult(result: Seq[String] = null)
 
 case class ResponsePayload(response: String)
 

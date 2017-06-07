@@ -16,8 +16,8 @@ trait RoutesModuleImpl {
    val relDashboardWidgetRoutes = new BaseRoutesImpl[RelDashboardWidgetTable, RelDashboardWidget](relDashboardWidgetDal)
    val widgetRoutes = new BaseRoutesImpl[WidgetTable, Widget](widgetDal)
    val libWidgetRoutes = new BaseRoutesImpl[LibWidgetTable, LibWidget](libWidgetDal)
-   val bizlogicRoutes = new BaseRoutesImpl[BizlogicTable, Bizlogic](bizlogicDal)
-   val relGroupBizlogicRoutes = new BaseRoutesImpl[RelGroupBizlogicTable, RelGroupBizlogic](relGroupBizlogicDal)
+   val flatTableRoutes = new BaseRoutesImpl[FlatTbl, FlatTable](flatTableDal)
+   val relGroupFlatTableRoutes = new BaseRoutesImpl[RelGroupFlatTblTable, RelGroupFlatTable](relGroupFlatTableDal)
 
 }
 

@@ -9,7 +9,11 @@
 //import scala.concurrent.duration._
 //
 //object SQLJob {
+///*
+//mount table aaa options(type'mysql', url 'jdbc:mysql://10.100.30.220:3306/test', dbname 'test', dbtable 'test1_10w', user 'root', password '123456')
 //
+//select count(*) from aaa
+// */
 //  val driver: AkkaDriver = new AkkaDriver("")
 //  val tenantId = UUID.randomUUID().toString
 //  val questId = UUID.randomUUID().toString

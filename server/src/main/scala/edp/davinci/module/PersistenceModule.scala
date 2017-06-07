@@ -21,8 +21,8 @@ trait PersistenceModule {
   val relDashboardWidgetDal: BaseDal[RelDashboardWidgetTable, RelDashboardWidget]
   val widgetDal: BaseDal[WidgetTable, Widget]
   val libWidgetDal: BaseDal[LibWidgetTable, LibWidget]
-  val bizlogicDal: BaseDal[BizlogicTable, Bizlogic]
-  val relGroupBizlogicDal: BaseDal[RelGroupBizlogicTable, RelGroupBizlogic]
+  val flatTableDal: BaseDal[FlatTbl, FlatTable]
+  val relGroupFlatTableDal: BaseDal[RelGroupFlatTblTable, RelGroupFlatTable]
 }
 
 trait PersistenceModuleImpl extends PersistenceModule with DbModule {
@@ -43,7 +43,7 @@ trait PersistenceModuleImpl extends PersistenceModule with DbModule {
   override lazy val relDashboardWidgetDal = new BaseDalImpl[RelDashboardWidgetTable, RelDashboardWidget](TableQuery[RelDashboardWidgetTable])
   override lazy val widgetDal = new BaseDalImpl[WidgetTable, Widget](TableQuery[WidgetTable])
   override lazy val libWidgetDal = new BaseDalImpl[LibWidgetTable, LibWidget](TableQuery[LibWidgetTable])
-  override lazy val bizlogicDal = new BaseDalImpl[BizlogicTable, Bizlogic](TableQuery[BizlogicTable])
-  override lazy val relGroupBizlogicDal = new BaseDalImpl[RelGroupBizlogicTable, RelGroupBizlogic](TableQuery[RelGroupBizlogicTable])
+  override lazy val flatTableDal = new BaseDalImpl[FlatTbl, FlatTable](TableQuery[FlatTbl])
+  override lazy val relGroupFlatTableDal = new BaseDalImpl[RelGroupFlatTblTable, RelGroupFlatTable](TableQuery[RelGroupFlatTblTable])
 
 }
