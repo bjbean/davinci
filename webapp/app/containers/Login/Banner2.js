@@ -1,0 +1,77 @@
+import React, { PureComponent } from 'react'
+
+import styles from './Login2.less'
+
+export class Banner extends PureComponent {
+
+  componentDidMount () {
+    const cubes = document.querySelectorAll(`.${styles.cube}`)
+    const cubeLength = cubes.length
+
+    this.interval = setInterval(() => {
+      const rollingOnTime = Math.round(Math.random() * 5000)
+      const rollingBackTime = Math.round(Math.random() * 55000) + 5000
+
+      setTimeout(() => {
+        const magicNumber = Math.floor(Math.random() * cubeLength)
+        const chosen = cubes[magicNumber]
+        const ror = Math.random() > 0.5 ? styles.cubeRock : styles.cubeRoll
+        chosen.classList.add(ror)
+
+        setTimeout(() => {
+          chosen.classList.remove(ror)
+        }, rollingBackTime)
+      }, rollingOnTime)
+    }, 1000)
+  }
+
+  componentWillUnmount () {
+    clearInterval(this.interval)
+  }
+
+  render () {
+    const cubePositions = {
+      d: [2, 7, 2, 2, 5],
+      a: [3, 2, 2, 2, 3],
+      v: [3, 1, 1, 1, 3],
+      i1: [2, 2, 7, 2, 2],
+      n: [7, 1, 1, 1, 7],
+      c: [5, 2, 2, 2, 2],
+      i2: [2, 2, 7, 2, 2]
+    }
+
+    const cubes = (k) => cubePositions[k].map((num, numIndex) =>
+      Array.from(Array(num))
+        .map((c, index) => (
+          <div
+            key={`${k}-${numIndex}-${index}`}
+            className={`${styles.cube} ${styles[`${k}-${numIndex + 1}-${index + 1}`]}`}
+          >
+            <div className={styles.front}></div>
+            <div className={styles.back}></div>
+            <div className={styles.top}></div>
+            <div className={styles.bottom}></div>
+            <div className={styles.left}></div>
+            <div className={styles.right}></div>
+          </div>
+        ))
+    )
+
+    const words = Object.keys(cubePositions).map(k => (
+      <div
+        key={k}
+        className={`${styles.word} ${styles[k]}`}
+      >
+        {cubes(k)}
+      </div>
+    ))
+
+    return (
+      <div className={styles.banner}>
+        {words}
+      </div>
+    )
+  }
+}
+
+export default Banner

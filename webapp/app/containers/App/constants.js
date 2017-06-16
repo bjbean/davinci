@@ -1,0 +1,5 @@
+export const DEFAULT_LOCALE = 'en'
+export const LOGIN = 'davinci/App/LOGIN'
+export const LOGGED = 'davinci/App/LOGGED'
+export const LOGOUT = 'davinci/App/LOGOUT'
+export const SET_LOGIN_USER = 'davinci/App/SET_LOGIN_USER'

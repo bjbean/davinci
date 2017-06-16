@@ -1,0 +1,144 @@
+@import "../../assets/less/variable";
+
+.dashboardItem {
+  height: 120px;
+  background-color: @body-background;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
+  margin-bottom: 20px;
+  border-radius: 2px;
+  box-shadow: 0 2px 3px 0 rgba(0,0,0,.05);
+  transform: translate3d(0, 0, 0);
+  transition: all 200ms;
+  position: relative;
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: 0 7px 21px 0 rgba(0,0,0,.15);
+    transform: translate3d(0, -5px, 0);
+  }
+
+  &.editing {
+    opacity: .3;
+  }
+
+  header {
+    background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0) 100%);
+  }
+
+  .title {
+    padding: 12px 40px 0 12px;
+    color: @white;
+
+    .ellipsis;
+  }
+
+  .content {
+    padding: 8px 12px 24px;
+    color: @white;
+
+    .ellipsis;
+  }
+
+  .icon {
+    position: absolute;
+    top: 8px;
+    opacity: .7;
+    color: @white;
+    transition: transform 200ms ease;
+
+    &:hover {
+      opacity: 1;
+      transform: scale(1.1, 1.1);
+    }
+  }
+
+  .edit {
+    right: 28px;
+
+    .icon;
+  }
+
+  .delete {
+    right: 8px;
+
+    .icon;
+  }
+}
+
+.gridItem {
+  &:hover {
+    .tools {
+      opacity: 1;
+    }
+  }
+
+  .title {
+    line-height: 40px;
+    padding: 0 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tools {
+    line-height: 1;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    opacity: 0;
+
+    i {
+      font-size: 18px;
+      margin-left: 8px;
+      cursor: pointer;
+      transition: transform 200ms ease;
+
+      &:hover {
+        transform: scale(1.1, 1.1);
+      }
+    }
+  }
+
+  .block {
+    position: absolute;
+    top: 40px;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    overflow-y: auto;
+  }
+
+  .move {
+    cursor: pointer;
+  }
+}
+
+.gridBottom {
+  height: 100px;
+}
+
+.olapForm {
+  min-width: 256px;
+
+  .olapFormItem {
+    margin-bottom: 0;
+  }
+
+  .olapFilters {
+    margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .gridItem {
+    .tools {
+      opacity: 1;
+    }
+
+    .move {
+      display: none;
+    }
+  }
+}
