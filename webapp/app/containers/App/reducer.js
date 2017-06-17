@@ -1,5 +1,4 @@
 import {
-  LOGIN,
   LOGGED,
   LOGOUT,
   SET_LOGIN_USER
@@ -13,8 +12,6 @@ const initialState = fromJS({
 
 function appReducer (state = initialState, { type, payload }) {
   switch (type) {
-    case LOGIN:
-      return state
     case LOGGED:
       return state
         .set('logged', true)

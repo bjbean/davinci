@@ -9,6 +9,7 @@ import Widget from './containers/Widget'
 import Dashboard from './containers/Dashboard'
 import Grid from './containers/Dashboard/Grid'
 import Login from './containers/Login'
+import Visual from './containers/Visual'
 
 const errorLoading = (err) => {
   console.error('Dynamic page loading failed', err) // eslint-disable-line no-console
@@ -27,49 +28,60 @@ export default function createRoutes (store) {
       component: Login
     },
     {
-      path: '/report',
-      name: 'report',
+      path: '/visual',
+      component: Visual,
       indexRoute: {
         onEnter: (_, replace) => {
-          replace('/report/dashboard')
+          replace('/visual/report')
         }
       },
-      component: Report,
       childRoutes: [
         {
-          path: '/report/dashboard',
-          name: 'dashboard',
-          component: Dashboard
-        },
-        {
-          path: '/report/grid/:id',
-          name: 'grid',
-          component: Grid
-        },
-        {
-          path: '/report/widget',
-          name: 'widget',
-          component: Widget
-        },
-        {
-          path: '/report/bizlogic',
-          name: 'bizlogic',
-          component: Bizlogic
-        },
-        {
-          path: '/report/source',
-          name: 'source',
-          component: Source
-        },
-        {
-          path: '/report/user',
-          name: 'user',
-          component: User
-        },
-        {
-          path: '/report/group',
-          name: 'group',
-          component: Group
+          path: '/visual/report',
+          name: 'report',
+          indexRoute: {
+            onEnter: (_, replace) => {
+              replace('/visual/report/dashboard')
+            }
+          },
+          component: Report,
+          childRoutes: [
+            {
+              path: '/visual/report/dashboard',
+              name: 'dashboard',
+              component: Dashboard
+            },
+            {
+              path: '/visual/report/grid/:id',
+              name: 'grid',
+              component: Grid
+            },
+            {
+              path: '/visual/report/widget',
+              name: 'widget',
+              component: Widget
+            },
+            {
+              path: '/visual/report/bizlogic',
+              name: 'bizlogic',
+              component: Bizlogic
+            },
+            {
+              path: '/visual/report/source',
+              name: 'source',
+              component: Source
+            },
+            {
+              path: '/visual/report/user',
+              name: 'user',
+              component: User
+            },
+            {
+              path: '/visual/report/group',
+              name: 'group',
+              component: Group
+            }
+          ]
         }
       ]
     },

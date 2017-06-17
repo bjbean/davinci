@@ -24,7 +24,7 @@ export class Report extends React.Component {
     } = this.props
 
     const sidebarOptions = sidebar && sidebar.map(item => {
-      const isOptionActive = item.route.indexOf(routes[2].name) >= 0
+      const isOptionActive = item.route.indexOf(routes[3].name) >= 0
       const iconClassName = `iconfont ${item.icon}`
       return (
         <SidebarOption

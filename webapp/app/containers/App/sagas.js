@@ -1,14 +1,14 @@
 import { takeLatest } from 'redux-saga'
 import { call, fork, put } from 'redux-saga/effects'
 
-import { LOGIN } from './constants'
-import { logged } from './actions'
+import { LOGIN, GET_LOGIN_USER } from './constants'
+import { logged, loginUserGetted } from './actions'
 
 import request from '../../utils/request'
 import api from '../../utils/api'
 import { notifySagasError } from '../../utils/util'
 import { promiseSagaCreator } from '../../utils/reduxPromisation'
-import { readListAdapter } from '../../utils/asyncAdapter'
+import { readListAdapter, readObjectAdapter } from '../../utils/asyncAdapter'
 
 export const login = promiseSagaCreator(
   function* ({ username, password }) {
@@ -34,6 +34,24 @@ export function* loginWatcher () {
   yield fork(takeLatest, LOGIN, login)
 }
 
+export const getLoginUser = promiseSagaCreator(
+  function* () {
+    const asyncData = yield call(request, `${api.user}/token`)
+    const loginUser = readObjectAdapter(asyncData)
+    yield put(logged(loginUser))
+    localStorage.setItem('loginUser', JSON.stringify(loginUser))
+    return loginUser
+  },
+  function (err) {
+    notifySagasError(err, 'getLoginUser')
+  }
+)
+
+export function* getLoginUserWatcher () {
+  yield fork(takeLatest, GET_LOGIN_USER, getLoginUser)
+}
+
 export default [
-  loginWatcher
+  loginWatcher,
+  getLoginUserWatcher
 ]

@@ -69,7 +69,7 @@ const rootRoute = {
   childRoutes: createRoutes(store),
   indexRoute: {
     onEnter: (_, replace) => {
-      replace('/report')
+      replace('/visual')
     }
   }
 }
