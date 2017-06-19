@@ -2,7 +2,7 @@ package edp.davinci.rest
 
 import akka.http.scaladsl.server._
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
-import edp.davinci.rest.bizlogic.BizlogicRoutes
+import edp.davinci.rest.flattable.FlatTableRoutes
 import edp.davinci.rest.dashboard.DashboardRoutes
 import edp.davinci.rest.group.GroupRoutes
 import edp.davinci.rest.libwidget.LibWidgetRoutes
@@ -18,7 +18,7 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
   val changePwd = new ChangePwdRoutes(modules)
   val users = new UserRoutes(modules)
   val source = new SourceRoutes(modules)
-  val bizlogic = new BizlogicRoutes(modules)
+  val flatTable = new FlatTableRoutes(modules)
   val dashboard = new DashboardRoutes(modules)
   val widget = new WidgetRoutes(modules)
   val libWidget = new LibWidgetRoutes(modules)
@@ -32,7 +32,7 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
           corsHandler(users.routes) ~
           corsHandler(changePwd.routes) ~
           corsHandler(source.routes) ~
-          corsHandler(bizlogic.routes) ~
+          corsHandler(flatTable.routes) ~
           corsHandler(dashboard.routes) ~
           corsHandler(widget.routes) ~
           corsHandler(libWidget.routes) ~

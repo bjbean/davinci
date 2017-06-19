@@ -7,7 +7,7 @@ import slick.lifted.ProvenShape
 
 case class Widget(id: Long,
                   widgetlib_id: Long,
-                  bizlogic_id: Long,
+                  flatTable_id: Long,
                   name: String,
                   olap_sql: Option[String] = None,
                   desc: String,
@@ -21,7 +21,7 @@ case class Widget(id: Long,
 
 
 case class PostWidgetInfo(widgetlib_id: Long,
-                          bizlogic_id: Long,
+                          flatTable_id: Long,
                           name: String,
                           olap_sql: String,
                           desc: String,
@@ -30,7 +30,7 @@ case class PostWidgetInfo(widgetlib_id: Long,
 
 case class PutWidgetInfo(id: Long,
                          widgetlib_id: Long,
-                         bizlogic_id: Long,
+                         flatTable_id: Long,
                          name: String,
                          olap_sql: String,
                          desc: String,
@@ -42,7 +42,7 @@ class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
   def widgetlib_id: Rep[Long] = column[Long]("widgetlib_id")
 
-  def bizlogic_id: Rep[Long] = column[Long]("bizlogic_id")
+  def flatTable_id: Rep[Long] = column[Long]("flatTable_id")
 
   def olap_sql: Rep[Option[String]] = column[Option[String]]("olap_sql", O.Default(null))
 
@@ -60,5 +60,5 @@ class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
   def update_by: Rep[Long] = column[Long]("update_by")
 
-  def * : ProvenShape[Widget] = (id, widgetlib_id, bizlogic_id, name, olap_sql, desc, chart_params, publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
+  def * : ProvenShape[Widget] = (id, widgetlib_id, flatTable_id, name, olap_sql, desc, chart_params, publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
 }

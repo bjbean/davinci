@@ -15,8 +15,8 @@ import io.swagger.annotations._
 import edp.davinci.util.CommonUtils._
 import org.slf4j.LoggerFactory
 
-@Api(value = "/libWidgets", consumes = "application/json", produces = "application/json")
-@Path("/libWidgets")
+@Api(value = "/libwidgets", consumes = "application/json", produces = "application/json")
+@Path("/libwidgets")
 class LibWidgetRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = getLibWidgetByAllRoute
@@ -44,7 +44,7 @@ class LibWidgetRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 402, message = "internal service error")
   ))
-  def getLibWidgetByAllRoute: Route = path("libWidgets") {
+  def getLibWidgetByAllRoute: Route = path("libwidgets") {
     get {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
         session =>

@@ -14,8 +14,8 @@ class UserService(modules: ConfigurationModule with PersistenceModule with Busin
   private lazy val relUGTQ = relDal.getTableQuery
   private lazy val db = uDal.getDB
 
-  def getAll(session: SessionClass, active: Boolean): Future[Seq[(Long, String, String, String, Boolean, Boolean)]] = {
-    val tmpQuery = if (active) userTQ.filter(u =>u.active && !u.admin) else userTQ.filter(!_.admin)
+  def getAll(session: SessionClass, active: Boolean = true): Future[Seq[(Long, String, String, String, Boolean, Boolean)]] = {
+    val tmpQuery = if (active) userTQ.filter(u => u.active && !u.admin) else userTQ.filter(!_.admin)
     if (session.admin)
       db.run(tmpQuery.map(r => (r.id, r.email, r.title, r.name, r.admin, r.active)).result)
     else
@@ -45,5 +45,9 @@ class UserService(modules: ConfigurationModule with PersistenceModule with Busin
       relUGTQ.filter(_.user_id === r.id).delete
     }): _*)
     db.run(query)
+  }
+
+  def getUserInfo(session:SessionClass): Future[Seq[(Long, String, String, String, Boolean, Boolean)]] ={
+    db.run(userTQ.filter(_.id === session.userId).map(r => (r.id, r.email, r.title, r.name, r.admin, r.active)).result)
   }
 }

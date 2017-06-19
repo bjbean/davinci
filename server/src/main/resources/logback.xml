@@ -30,16 +30,16 @@
             <pattern>%date{MM/dd HH:mm:ss} %-5level[%.15thread] %logger{1} - %msg%n</pattern>
         </encoder>
     </appender>
-    <logger name="slick" level="ERROR" />
+    <logger name="slick" level="INFO" />
     <logger name="slick.jdbc" level="DEBUG" />
-    <logger name="slick.basic.BasicBackend.action" level="${log.action:-ERROR}"/>
+    <logger name="slick.basic.BasicBackend.action" level="${log.action:-INFO}"/>
     <!--<logger name="slick.jdbc.DriverDataSource" level="${log.jdbc.driver:-info}"/>-->
     <!--<logger name="slick.jdbc.JdbcBackend.statement" level="${log.jdbc.statement:-info}"/>-->
-    <logger name="slick.jdbc.JdbcBackend.parameter" level="${log.jdbc.parameter:-ERROR}"/>
+    <logger name="slick.jdbc.JdbcBackend.parameter" level="${log.jdbc.parameter:-INFO}"/>
     <!--<logger name="slick.jdbc.JdbcBackend.benchmark" level="${log.jdbc.bench:-info}"/>-->
-    <logger name="slick.jdbc.StatementInvoker.result" level="${log.jdbc.result:-ERROR}"/>
+    <logger name="slick.jdbc.StatementInvoker.result" level="${log.jdbc.result:-INFO}"/>
 
-    <root level="ERROR">
+    <root level="INFO">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
         <appender-ref ref="CONSOLE"/>
