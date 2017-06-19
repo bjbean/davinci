@@ -1,6 +1,5 @@
 import React, { PropTypes, PureComponent } from 'react'
 import { connect } from 'react-redux'
-import { createStructuredSelector } from 'reselect'
 
 import Banner from './Banner3'
 import LoginForm from './LoginForm'
@@ -8,19 +7,28 @@ import Row from 'antd/lib/row'
 import Col from 'antd/lib/col'
 import Button from 'antd/lib/button'
 
-import { login } from '../App/actions'
-import { makeSelectLogged } from '../App/selectors'
+import { login, logged, setLoginUser } from '../App/actions'
 import { promiseDispatcher } from '../../utils/reduxPromisation'
+import checkLogin from '../../utils/checkLogin'
+import { setToken } from '../../utils/request'
 
 import styles from './Login3.less'
 
 export class Login extends PureComponent {
   componentWillMount () {
-    const {
-      logged,
-      router
-    } = this.props
-    if (logged) router.push('/')
+    this.checkNormalLogin()
+  }
+
+  checkNormalLogin = () => {
+    if (checkLogin()) {
+      const token = localStorage.getItem('TOKEN')
+      const loginUser = localStorage.getItem('loginUser')
+
+      setToken(token)
+      this.props.onLogged()
+      this.props.onSetLoginUser(JSON.parse(loginUser))
+      this.props.router.push('/')
+    }
   }
 
   doLogin = () => {
@@ -65,20 +73,19 @@ export class Login extends PureComponent {
 }
 
 Login.propTypes = {
-  logged: PropTypes.bool,
   router: PropTypes.any,
-  onLogin: PropTypes.func
+  onLogin: PropTypes.func,
+  onLogged: PropTypes.func,
+  onSetLoginUser: PropTypes.func
 }
-
-const mapStateToProps = createStructuredSelector({
-  logged: makeSelectLogged()
-})
 
 export function mapDispatchToProps (dispatch) {
   return {
-    onLogin: (username, password) => promiseDispatcher(dispatch, login, username, password)
+    onLogin: (username, password) => promiseDispatcher(dispatch, login, username, password),
+    onLogged: () => promiseDispatcher(dispatch, logged),
+    onSetLoginUser: (user) => promiseDispatcher(dispatch, setLoginUser, user)
   }
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(Login)
+export default connect(null, mapDispatchToProps)(Login)
 

@@ -39,7 +39,7 @@ export class Dashboard extends React.Component {
   }
 
   toGrid = (dashboard) => () => {
-    this.props.router.push(`/report/grid/${dashboard.id}`)
+    this.props.router.push(`/visual/report/grid/${dashboard.id}`)
   }
 
   showDashboardForm = (formType, dashboard) => (e) => {

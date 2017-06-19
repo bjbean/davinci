@@ -11,7 +11,7 @@ export class SidebarOption extends React.PureComponent {
       { [styles.active]: this.props.active }
     )
 
-    const linkRoute = `/report/${this.props.route[0]}`
+    const linkRoute = `/visual/report/${this.props.route[0]}`
 
     return (
       <div className={optionClass}>

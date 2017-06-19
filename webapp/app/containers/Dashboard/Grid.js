@@ -580,7 +580,7 @@ export class Grid extends React.Component {
             <Col md={18} sm={12}>
               <Breadcrumb className={utilStyles.breadcrumb}>
                 <Breadcrumb.Item>
-                  <Link to="/report/dashboard">
+                  <Link to="/visual/report/dashboard">
                     Dashboard
                   </Link>
                 </Breadcrumb.Item>
