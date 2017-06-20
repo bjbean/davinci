@@ -79,9 +79,10 @@ export class Workbench extends React.Component {
   bizlogicChange = (val, sql) => {
     this.setState({ tableLoading: true })
     this.props.onLoadBizdatas(val, sql)
-      .then(data => {
+      .then(resultset => {
+        console.log(resultset)
         this.setState({
-          dataSource: data,
+          dataSource: resultset.dataSource,
           tableLoading: false
         })
       })
@@ -233,7 +234,7 @@ Workbench.propTypes = {
 
 export function mapDispatchToProps (dispatch) {
   return {
-    onLoadBizdatas: (id, sql) => promiseDispatcher(dispatch, loadBizdatas, id, sql),
+    onLoadBizdatas: (id, sql) => promiseDispatcher(dispatch, loadBizdatas, id, sql, undefined, undefined),
     onAddWidget: (widget) => promiseDispatcher(dispatch, addWidget, widget),
     onEditWidget: (widget) => promiseDispatcher(dispatch, editWidget, widget)
   }

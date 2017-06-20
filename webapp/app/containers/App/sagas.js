@@ -2,7 +2,7 @@ import { takeLatest } from 'redux-saga'
 import { call, fork, put } from 'redux-saga/effects'
 
 import { LOGIN, GET_LOGIN_USER } from './constants'
-import { logged, loginUserGetted } from './actions'
+import { logged } from './actions'
 
 import request from '../../utils/request'
 import api from '../../utils/api'

@@ -1,26 +1,31 @@
 import React, { PropTypes } from 'react'
-// import Table from 'antd/lib/table'
+import classnames from 'classnames'
+
+import Table from 'antd/lib/table'
 import echarts from 'echarts/lib/echarts'
-import 'echarts/lib/chart/bar'
-import 'echarts/lib/chart/line'
-import 'echarts/lib/chart/scatter'
-import 'echarts/lib/chart/pie'
-import 'echarts/lib/chart/sankey'
-import 'echarts/lib/chart/funnel'
-import 'echarts/lib/chart/treemap'
-import './temp/wordCloud'
-import 'echarts/lib/component/legend'
-import 'echarts/lib/component/tooltip'
-import 'echarts/lib/component/toolbox'
 
 import chartOptionsGenerator from './chartOptionsGenerator'
 
+import { TABLE_HEADER_HEIGHT, COLUMN_WIDTH } from '../../globalConstants'
+import utilStyles from '../../assets/less/util.less'
 import styles from './Widget.less'
 
 export class WidgetChart extends React.PureComponent {
+  constructor (props) {
+    super(props)
+    this.state = {
+      tableWidth: 0,
+      tableHeight: 0
+    }
+  }
+
   componentDidMount () {
     this.chart = echarts.init(document.getElementById('chartContainer'))
     this.renderChart(this.props)
+    this.setState({
+      tableWidth: this.refs.widgetChart.offsetHeight,
+      tableHeight: this.refs.widgetChart.offsetHeight - TABLE_HEADER_HEIGHT
+    })
   }
 
   componentWillUpdate (nextProps) {
@@ -29,39 +34,86 @@ export class WidgetChart extends React.PureComponent {
 
   renderChart = ({ dataSource, chartInfo, chartParams }) => {
     this.chart.clear()
-    const chartOptions = chartOptionsGenerator({
-      dataSource,
-      chartInfo,
-      chartParams
-    })
+    if (chartInfo.type !== 'table') {
+      const chartOptions = chartOptionsGenerator({
+        dataSource,
+        chartInfo,
+        chartParams
+      })
 
-    switch (chartInfo.type) {
-      case 'line':
-      case 'bar':
-      case 'scatter':
-      case 'area':
-        if (chartOptions.xAxis && chartOptions.series) {
-          this.chart.setOption(chartOptions)
-        }
-        break
-      default:
-        if (chartOptions.series) {
-          this.chart.setOption(chartOptions)
-        }
-        break
+      switch (chartInfo.type) {
+        case 'line':
+        case 'bar':
+        case 'scatter':
+        case 'area':
+          if (chartOptions.xAxis && chartOptions.series) {
+            this.chart.setOption(chartOptions)
+          }
+          break
+        default:
+          if (chartOptions.series) {
+            this.chart.setOption(chartOptions)
+          }
+          break
+      }
     }
   }
 
   render () {
+    const {
+      dataSource,
+      chartInfo
+    } = this.props
+
+    const {
+      tableWidth,
+      tableHeight
+    } = this.state
+
+    const columnKeys = dataSource.length && Object.keys(dataSource[0])
+    const columns = columnKeys
+      ? Object.keys(dataSource[0])
+          .filter(k => typeof dataSource[0][k] !== 'object')
+          .map(k => ({
+            title: k.toUpperCase(),
+            dataIndex: k,
+            key: k,
+            width: COLUMN_WIDTH
+          }))
+      : []
+
+    const predictColumnsWidth = columnKeys && columnKeys.length * COLUMN_WIDTH
+    const tableWidthObj = predictColumnsWidth > tableWidth
+      ? { x: predictColumnsWidth }
+      : null
+    const tableSize = Object.assign({}, tableWidthObj, { y: tableHeight })
+
+    const tableClass = classnames({
+      [utilStyles.hide]: chartInfo.type !== 'table'
+    })
+    const chartClass = classnames({
+      [utilStyles.hide]: chartInfo.type === 'table'
+    })
+
     return (
-      <div id="chartContainer" className={styles.chartContainer}></div>
+      <div className={styles.widgetChart} ref="widgetChart">
+        <Table
+          className={`${styles.tableContainer} ${tableClass}`}
+          dataSource={dataSource}
+          rowKey={s => s.id}
+          columns={columns}
+          scroll={tableSize}
+          bordered
+        />
+        <div id="chartContainer" className={`${styles.chartContainer} ${chartClass}`}></div>
+      </div>
     )
   }
 }
 
 WidgetChart.propTypes = {
-  dataSource: PropTypes.array,  // eslint-disable-line
-  chartInfo: PropTypes.object,  // eslint-disable-line
+  dataSource: PropTypes.array,
+  chartInfo: PropTypes.object,
   chartParams: PropTypes.object   // eslint-disable-line
 }
 

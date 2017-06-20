@@ -7,6 +7,7 @@ import Icon from 'antd/lib/icon'
 import Button from 'antd/lib/button'
 import Input from 'antd/lib/input'
 
+import { TABLE_HEADER_HEIGHT, COLUMN_WIDTH } from '../../globalConstants'
 import styles from './Widget.less'
 
 export class SplitView extends PureComponent {
@@ -18,17 +19,14 @@ export class SplitView extends PureComponent {
       tableWidth: 0,
       tableHeight: 0,
 
-      loading: false,
-
-      TABLE_HEADER_HEIGHT: 50,
-      COLUMN_WIDTH: 150
+      loading: false
     }
   }
 
   componentDidMount () {
     this.setState({
       tableWidth: this.refs.tableContainer.offsetHeight,
-      tableHeight: this.refs.tableContainer.offsetHeight - this.state.TABLE_HEADER_HEIGHT
+      tableHeight: this.refs.tableContainer.offsetHeight - TABLE_HEADER_HEIGHT
     })
   }
 
@@ -69,8 +67,7 @@ export class SplitView extends PureComponent {
       chartInitiate,
       tableWidth,
       tableHeight,
-      loading,
-      COLUMN_WIDTH
+      loading
     } = this.state
 
     const columnKeys = dataSource && dataSource.length && Object.keys(dataSource[0])

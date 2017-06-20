@@ -48,6 +48,18 @@ import './assets/override/antd.css'
 import './assets/override/react-grid.css'
 import './assets/less/style.less'
 
+import 'echarts/lib/chart/bar'
+import 'echarts/lib/chart/line'
+import 'echarts/lib/chart/scatter'
+import 'echarts/lib/chart/pie'
+import 'echarts/lib/chart/sankey'
+import 'echarts/lib/chart/funnel'
+import 'echarts/lib/chart/treemap'
+import './containers/Widget/temp/wordCloud'
+import 'echarts/lib/component/legend'
+import 'echarts/lib/component/tooltip'
+import 'echarts/lib/component/toolbox'
+
 // Create redux store with history
 // this uses the singleton browserHistory provided by react-router
 // Optionally, this could be changed to leverage a created history

@@ -5,7 +5,6 @@ import Input from 'antd/lib/input'
 import InputNumber from 'antd/lib/input-number'
 import Select from 'antd/lib/select'
 import Checkbox from 'antd/lib/checkbox'
-// import Icon from 'antd/lib/icon'
 import Row from 'antd/lib/row'
 import Col from 'antd/lib/col'
 const FormItem = Form.Item
@@ -51,102 +50,143 @@ export class WidgetForm extends React.Component {
 
     if (chartInfo) {
       const columns = dataSource && dataSource.length ? Object.keys(dataSource[0]) : []
-      const parsedParams = JSON.parse(chartInfo.params)
+      // FIXME table widget 硬编码
+      if (chartInfo.type !== 'table') {
+        const parsedParams = JSON.parse(chartInfo.params)
 
-      chartParams = parsedParams.map(info => {
-        const formItems = info.items.map(item => {
-          let formItem = ''
+        chartParams = parsedParams.map(info => {
+          const formItems = info.items.map(item => {
+            let formItem = ''
 
-          switch (item.component) {
-            case 'select':
-              formItem = (
-                <Col key={item.name} span={24}>
-                  <FormItem label={item.title}>
-                    {getFieldDecorator(item.name, {})(
-                      <Select
-                        placeholder={item.tip || item.name}
-                        onChange={onFormItemChange(item.name)}
-                      >
-                        {
-                          columns.map(c => (
-                            <Option key={c} value={c}>{c}</Option>
-                          ))
-                        }
-                      </Select>
-                    )}
-                  </FormItem>
-                </Col>
-              )
-              break
-            case 'multiSelect':
-              formItem = (
-                <Col key={item.name} span={24}>
-                  <FormItem label={item.title}>
-                    {getFieldDecorator(item.name, {})(
-                      <Select
-                        placeholder={item.tip || item.name}
-                        mode="multiple"
-                        onChange={onFormItemChange(item.name)}
-                      >
-                        {
-                          columns.map(c => (<Option key={c} value={c}>{c}</Option>))
-                        }
-                      </Select>
-                    )}
-                  </FormItem>
-                </Col>
-              )
-              break
-            case 'checkbox':
-              formItem = (
-                <Col key={item.name} span={12}>
-                  <FormItem label="">
-                    {getFieldDecorator(item.name, {
-                      initialValue: []
-                    })(
-                      <CheckboxGroup
-                        options={[{label: item.title, value: item.name}]}
-                        onChange={onFormItemChange(item.name)}
-                      />
-                    )}
-                  </FormItem>
-                </Col>
-              )
-              break
-            case 'inputnumber':
-              formItem = (
-                <Col key={item.name} span={12}>
-                  <FormItem label={item.title}>
-                    {getFieldDecorator(item.name, {
-                      initialValue: 0
-                    })(
-                      <InputNumber
-                        placeholder={item.tip || item.name}
-                        min={item.min || 0}
-                        max={item.max || 1000000000000}
-                        onChange={onFormItemChange(item.name)}
-                      />
-                    )}
-                  </FormItem>
-                </Col>
-              )
-              break
-            default:
-              break
-          }
+            switch (item.component) {
+              case 'select':
+                formItem = (
+                  <Col key={item.name} span={24}>
+                    <FormItem label={item.title}>
+                      {getFieldDecorator(item.name, {})(
+                        <Select
+                          placeholder={item.tip || item.name}
+                          onChange={onFormItemChange(item.name)}
+                        >
+                          {
+                            columns.map(c => (
+                              <Option key={c} value={c}>{c}</Option>
+                            ))
+                          }
+                        </Select>
+                      )}
+                    </FormItem>
+                  </Col>
+                )
+                break
+              case 'multiSelect':
+                formItem = (
+                  <Col key={item.name} span={24}>
+                    <FormItem label={item.title}>
+                      {getFieldDecorator(item.name, {})(
+                        <Select
+                          placeholder={item.tip || item.name}
+                          mode="multiple"
+                          onChange={onFormItemChange(item.name)}
+                        >
+                          {
+                            columns.map(c => (<Option key={c} value={c}>{c}</Option>))
+                          }
+                        </Select>
+                      )}
+                    </FormItem>
+                  </Col>
+                )
+                break
+              case 'checkbox':
+                formItem = (
+                  <Col key={item.name} span={12}>
+                    <FormItem label="">
+                      {getFieldDecorator(item.name, {
+                        initialValue: []
+                      })(
+                        <CheckboxGroup
+                          options={[{label: item.title, value: item.name}]}
+                          onChange={onFormItemChange(item.name)}
+                        />
+                      )}
+                    </FormItem>
+                  </Col>
+                )
+                break
+              case 'inputnumber':
+                formItem = (
+                  <Col key={item.name} span={12}>
+                    <FormItem label={item.title}>
+                      {getFieldDecorator(item.name, {
+                        initialValue: 0
+                      })(
+                        <InputNumber
+                          placeholder={item.tip || item.name}
+                          min={item.min || 0}
+                          max={item.max || 1000000000000}
+                          onChange={onFormItemChange(item.name)}
+                        />
+                      )}
+                    </FormItem>
+                  </Col>
+                )
+                break
+              default:
+                break
+            }
 
-          return formItem
+            return formItem
+          })
+
+          return (
+            <div className={styles.chartParams} key={info.name}>
+              <h4 className={styles.paramsTitle}>{info.title}</h4>
+              <Row className={styles.paramsRegion}>
+                {formItems}
+              </Row>
+            </div>
+          )
         })
-
-        return (
-          <div className={styles.chartParams} key={info.name}>
-            <h4 className={styles.paramsTitle}>{info.title}</h4>
+      } else {
+        chartParams = (
+          <div className={styles.chartParams}>
+            <h4 className={styles.paramsTitle}>Column Config</h4>
             <Row className={styles.paramsRegion}>
-              {formItems}
+              <Col span={24}>
+                <FormItem label="维度列">
+                  {getFieldDecorator('dimensionColumns', {})(
+                    <Select
+                      placeholder="Dimensions"
+                      mode="multiple"
+                      onChange={onFormItemChange('dimensionColumns')}
+                    >
+                      {
+                        columns.map(c => (<Option key={c} value={c}>{c}</Option>))
+                      }
+                    </Select>
+                  )}
+                </FormItem>
+              </Col>
+              <Col span={24}>
+                <FormItem label="指标列">
+                  {getFieldDecorator('metricColumns', {})(
+                    <Select
+                      placeholder="Metrics"
+                      mode="multiple"
+                      onChange={onFormItemChange('metricColumns')}
+                    >
+                      {
+                        columns.map(c => (<Option key={c} value={c}>{c}</Option>))
+                      }
+                    </Select>
+                  )}
+                </FormItem>
+              </Col>
             </Row>
           </div>
         )
-      })
+      }
     }
 
     return (
