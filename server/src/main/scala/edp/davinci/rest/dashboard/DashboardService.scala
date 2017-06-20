@@ -11,7 +11,7 @@ import scala.concurrent.Future
 
 class DashboardService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
   private lazy val relDWDal = modules.relDashboardWidgetDal
-  private lazy val relGBDal = modules.relGroupBizlogicDal
+  private lazy val relGBDal = modules.relGroupFlatTableDal
   private lazy val wDal = modules.widgetDal
   private lazy val dDal = modules.dashboardDal
   private lazy val relDWTQ = relDWDal.getTableQuery
@@ -24,14 +24,14 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
     val query = if (session.admin)
       (relDWTQ.filter(obj => obj.dashboard_id === dashboardId) join widgetTQ on (_.widget_id === _.id)).
         map {
-          case (r, w) => (r.id, w.id, w.bizlogic_id, r.position_x, r.position_y, r.width, r.length, r.trigger_type, r.trigger_params)
+          case (r, w) => (r.id, w.id, w.flatTable_id, r.position_x, r.position_y, r.width, r.length, r.trigger_type, r.trigger_params)
         }.result
     else {
-      val bizIds = relGBTQ.filter(_.group_id inSet session.groupIdList).map(_.bizlogic_id)
+      val flatIds = relGBTQ.filter(_.group_id inSet session.groupIdList).map(_.flatTable_id)
       (relDWTQ.filter(obj => obj.dashboard_id === dashboardId) join
-        widgetTQ.filter(_.publish).filter(_.bizlogic_id in bizIds) on (_.widget_id === _.id))
+        widgetTQ.filter(_.publish).filter(_.flatTable_id in flatIds) on (_.widget_id === _.id))
         .map {
-          case (rDW, w) => println("jhhh"); (rDW.id, w.id, w.bizlogic_id, rDW.position_x, rDW.position_y, rDW.width, rDW.length, rDW.trigger_type, rDW.trigger_params)
+          case (rDW, w) => (rDW.id, w.id, w.flatTable_id, rDW.position_x, rDW.position_y, rDW.width, rDW.length, rDW.trigger_type, rDW.trigger_params)
         }.result
     }
     db.run(query)

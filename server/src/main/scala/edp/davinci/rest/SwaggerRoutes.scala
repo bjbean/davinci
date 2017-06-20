@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.github.swagger.akka.{HasActorSystem, SwaggerHttpService}
 import edp.davinci.Boot
-import edp.davinci.rest.bizlogic.BizlogicRoutes
+import edp.davinci.rest.flattable.FlatTableRoutes
 import edp.davinci.rest.dashboard.DashboardRoutes
 import edp.davinci.rest.group.GroupRoutes
 import edp.davinci.rest.libwidget.LibWidgetRoutes
@@ -23,7 +23,7 @@ class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
     typeOf[LoginRoutes],
     typeOf[UserRoutes],
     typeOf[ChangePwdRoutes],
-    typeOf[BizlogicRoutes],
+    typeOf[FlatTableRoutes],
     typeOf[DashboardRoutes],
     typeOf[WidgetRoutes],
     typeOf[SourceRoutes],

@@ -15,14 +15,14 @@ import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success}
 
-@Api(value = "/sqlLogs", consumes = "application/json", produces = "application/json")
-@Path("/sqlLogs")
+@Api(value = "/sqllogs", consumes = "application/json", produces = "application/json")
+@Path("/sqllogs")
 class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = getSqlByAllRoute ~ postSqlLogRoute ~ putSqlLogRoute
   private lazy val sqlLogService = new SqlLogService(modules)
   private val logger = LoggerFactory.getLogger(this.getClass)
-  private lazy val routeName = "sqlLogs"
+  private lazy val routeName = "sqllogs"
 
 
   @ApiOperation(value = "get all sqlLogs", notes = "", nickname = "", httpMethod = "GET")

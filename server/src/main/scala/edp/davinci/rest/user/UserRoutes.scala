@@ -20,7 +20,7 @@ import scala.util.{Failure, Success}
 @Path("/users")
 class UserRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
-  val routes: Route = postUserRoute ~ putUserRoute ~ putLoginUserRoute ~ getUserByAllRoute ~ deleteUserByIdRoute ~ getGroupsByUserIdRoute ~ deleteUserFromGroupRoute
+  val routes: Route = postUserRoute ~ putUserRoute ~ putLoginUserRoute ~ getUserByAllRoute ~ deleteUserByIdRoute ~ getGroupsByUserIdRoute ~ deleteUserFromGroupRoute ~ getUserInfoByToken
   private lazy val userService = new UserService(modules)
   private val logger = LoggerFactory.getLogger(this.getClass)
   private lazy val routeName = "users"
@@ -249,6 +249,29 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     delete {
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session => modules.relUserGroupRoutes.deleteByIdComplete(relId, session)
+      }
+    }
+  }
+
+  @Path("/token")
+  @ApiOperation(value = "remove user from group by rel id", notes = "", nickname = "", httpMethod = "GET")
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "OK"),
+    new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 404, message = "users not found"),
+    new ApiResponse(code = 401, message = "authorization error"),
+    new ApiResponse(code = 400, message = "bad request")
+  ))
+  def getUserInfoByToken: Route = path("users" / "token") {
+    get {
+      authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
+        session =>
+          onComplete(userService.getUserInfo(session)) {
+            case Success(userSeq) =>
+              val responseUser = userSeq.map(u => QueryUserInfo(u._1, u._2, u._3, u._4, u._5, u._6))
+              complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), responseUser))
+            case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+          }
       }
     }
   }
