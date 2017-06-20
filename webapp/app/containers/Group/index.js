@@ -119,7 +119,7 @@ export class Group extends React.PureComponent {
     this.setState({
       [`${columnName}FilterDropdownVisible`]: false,
       tableSource: this.props.groups.map(record => {
-        const match = record.name.match(reg)
+        const match = record[columnName].match(reg)
         if (!match) {
           return null
         }
@@ -127,7 +127,7 @@ export class Group extends React.PureComponent {
           ...record,
           [columnName]: (
             <span>
-              {record.name.split(reg).map((text, i) => (
+              {record[columnName].split(reg).map((text, i) => (
                 i > 0 ? [<span className={utilStyles.highlight}>{match[0]}</span>, text] : text
               ))}
             </span>
