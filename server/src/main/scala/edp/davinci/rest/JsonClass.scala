@@ -3,7 +3,7 @@ package edp.davinci.rest
 import edp.davinci.persistence.entities._
 
 //token class
-case class LoginClass(username: String, password: String)
+case class LoginClass(username: String, pwd: String)
 
 case class LoginUserInfo(title: String, name: String)
 

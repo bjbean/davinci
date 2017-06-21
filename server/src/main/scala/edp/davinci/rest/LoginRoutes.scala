@@ -28,7 +28,7 @@ class LoginRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 401, message = "unspecified error"),
-    new ApiResponse(code = 400, message = "password is wrong"),
+    new ApiResponse(code = 400, message = "pwd is wrong"),
     new ApiResponse(code = 404, message = "user not found")
   ))
   def accessTokenRoute: Route = path("login") {
