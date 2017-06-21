@@ -129,10 +129,14 @@ export function* editBizlogicWatcher () {
 }
 
 export const getBizdatas = promiseSagaCreator(
-  function* ({ id, sql }) {
+  function* ({ id, sql, offset, limit }) {
+    let queries = ''
+    if (offset !== undefined && limit !== undefined) {
+      queries = `?offset=${offset}&limit=${limit}`
+    }
     const asyncData = yield call(request, {
       method: 'post',
-      url: `${api.bizlogic}/${id}/resultset`,
+      url: `${api.bizlogic}/${id}/resultset${queries}`,
       data: sql || {}
     })
     const bizdatas = resultsetConverter(readListAdapter(asyncData))
@@ -145,10 +149,22 @@ export const getBizdatas = promiseSagaCreator(
 )
 
 function resultsetConverter (resultset) {
+  let dataSource = []
+  let types = []
+
   if (resultset.result && resultset.result.length) {
     const arr = resultset.result
-    const keys = csvParser.toArray(arr.splice(0, 1)[0])
-    return arr.map(csvVal => {
+    const keysWithType = csvParser.toArray(arr.splice(0, 1)[0])
+
+    let keys = []
+
+    keysWithType.forEach(kwt => {
+      const kwtArr = kwt.split(':')
+      keys.push(kwtArr[0])
+      types.push(kwtArr[1])
+    })
+
+    dataSource = arr.map(csvVal => {
       const jsonVal = csvParser.toArray(csvVal)
       let obj = {}
       keys.forEach((k, index) => {
@@ -156,8 +172,14 @@ function resultsetConverter (resultset) {
       })
       return obj
     })
-  } else {
-    return []
+  }
+
+  return {
+    dataSource: dataSource,
+    types: types,
+    pageSize: resultset.limit,
+    pageIndex: parseInt(resultset.offset / resultset.limit) + 1,
+    total: resultset.totalCount
   }
 }
 

@@ -1,21 +1,20 @@
 import React, { PropTypes } from 'react'
 
 import Input from 'antd/lib/input'
-import Button from 'antd/lib/button'
+const Search = Input.Search
 
 import utilStyles from '../../assets/less/util.less'
 
 export function SearchFilterDropdown (props) {
   return (
     <div className={utilStyles.searchFilterDropdown}>
-      <Input
+      <Search
         size="large"
-        placeholder={`Search${props.columnName}`}
+        placeholder={`Search ${props.columnName}`}
         value={props.filterValue}
         onChange={props.onSearchInputChange}
-        onPressEnter={props.onSearch}
+        onSearch={props.onSearch}
       />
-      <Button type="primary" onClick={props.onSearch}>Search</Button>
     </div>
   )
 }

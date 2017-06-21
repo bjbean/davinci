@@ -7,6 +7,7 @@ import echarts from 'echarts/lib/echarts'
 import Container from '../../components/Container'
 import WidgetForm from './WidgetForm'
 import Workbench from '../Widget/Workbench'
+import ChartUnit from './ChartUnit'
 import { Responsive, WidthProvider } from 'react-grid-layout'
 import Row from 'antd/lib/row'
 import Col from 'antd/lib/col'
@@ -16,7 +17,6 @@ import Tooltip from 'antd/lib/tooltip'
 import Modal from 'antd/lib/modal'
 import Popconfirm from 'antd/lib/popconfirm'
 import Breadcrumb from 'antd/lib/breadcrumb'
-import Table from 'antd/lib/table'
 import Form from 'antd/lib/form'
 // import Input from 'antd/lib/input'
 import InputNumber from 'antd/lib/input-number'
@@ -49,7 +49,6 @@ export class Grid extends React.Component {
     super(props)
     this.state = {
       cols: { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 },
-      currentBreakpoint: 'lg',
       mounted: false,
 
       widgetItems: false,
@@ -67,7 +66,7 @@ export class Grid extends React.Component {
 
       olapVisible: false,
 
-      tableBizdatas: []
+      flattables: {}
     }
     this.frequent = {}
   }
@@ -126,41 +125,57 @@ export class Grid extends React.Component {
     this.props.onClearCurrentDashboard()
   }
 
-  renderChart = (id, widgetId) => {
+  renderChart = (id, widgetId, olap, offset, limit, callback) => {
     const {
       widgets,
       widgetlibs,
       onLoadBizdatas
     } = this.props
 
-    let domId = `widget_${id}`
-    let currentChart = this.charts[domId]
-
-    if (currentChart) {
-      currentChart.dispose()
-    }
-    currentChart = echarts.init(document.getElementById(domId))
-    currentChart.showLoading('default', { color: '#8BC34A' })
-    this.charts[domId] = currentChart
-
     const widget = widgets.find(w => w.id === widgetId)
     const widgetlib = widgetlibs.find(wl => wl.id === widget.widgetlib_id)
 
-    onLoadBizdatas(widget.flatTable_id, widget.olap_sql)
-      .then((dataSource) => {
-        const chartOptions = chartOptionsGenerator({
-          dataSource: dataSource,
-          chartInfo: widgetlib,
-          chartParams: Object.assign({
-            id: widget.id,
-            name: widget.name,
-            desc: widget.desc,
-            flatTable_id: widget.flatTable_id,
-            widgetlib_id: widget.widgetlib_id
-          }, JSON.parse(widget.chart_params))
-        })
-        currentChart.setOption(chartOptions)
-        currentChart.hideLoading()
+    let domId = `widget_${id}`
+    let currentChart = this.charts[domId]
+
+    if (widgetlib.type !== 'table') {
+      domId = `widget_${id}`
+      currentChart = this.charts[domId]
+
+      if (currentChart) {
+        currentChart.dispose()
+      }
+      currentChart = echarts.init(document.getElementById(domId))
+      currentChart.showLoading('default', { color: '#8BC34A' })
+      this.charts[domId] = currentChart
+    }
+
+    onLoadBizdatas(widget.flatTable_id, olap || widget.olap_sql, offset, limit)
+      .then((resultset) => {
+        if (widgetlib.type !== 'table') {
+          const chartOptions = chartOptionsGenerator({
+            dataSource: resultset.dataSource,
+            chartInfo: widgetlib,
+            chartParams: Object.assign({
+              id: widget.id,
+              name: widget.name,
+              desc: widget.desc,
+              flatTable_id: widget.flatTable_id,
+              widgetlib_id: widget.widgetlib_id
+            }, JSON.parse(widget.chart_params))
+          })
+          currentChart.setOption(chartOptions)
+          currentChart.hideLoading()
+        } else {
+          this.setState({
+            flattables: Object.assign({}, this.state.flattables, {
+              [`table_${id}`]: resultset
+            })
+          })
+          if (callback) {
+            callback()
+          }
+        }
       })
   }
 
@@ -184,13 +199,8 @@ export class Grid extends React.Component {
     }
   }
 
-  onBreakpointChange = (breakpoint) => {
-    this.setState({
-      currentBreakpoint: breakpoint
-    })
-  }
-
   onLayoutChange = (layout, layouts) => {
+    // setTimtout 中 setState 会被同步执行
     setTimeout(() => {
       const { loginUser, currentDashboard, currentItems } = this.props
       const { widgetItems } = this.state
@@ -406,19 +416,21 @@ export class Grid extends React.Component {
       editPositionSign,
       workbenchWidget,
       workbenchVisible,
-      olapVisible
+      olapVisible,
+      flattables
     } = this.state
 
     let grids
 
-    if (widgetItems && widgets) {
+    if (widgetItems && widgets && widgetlibs) {
       let layouts = {
         lg: []
       }
       let itemblocks = []
 
-      widgetItems.forEach((item, index) => {
-        let widgetName = widgets.find(w => w.id === item.widget_id).name
+      widgetItems.forEach(item => {
+        const widget = widgets.find(w => w.id === item.widget_id)
+        const widgetlib = widgetlibs.find(wl => wl.id === widget.widgetlib_id)
 
         layouts.lg.push({
           x: item.x,
@@ -456,10 +468,21 @@ export class Grid extends React.Component {
           )
         }
 
+        const resultset = flattables[`table_${item.i}`]
+        const dataSource = resultset ? resultset.dataSource : []
+        const dataTypes = resultset ? resultset.types : []
+        const pagination = resultset
+          ? {
+            pageSize: resultset.pageSize,
+            current: resultset.pageIndex,
+            total: resultset.total,
+            showSizeChanger: true
+          } : false
+
         itemblocks.push((
           <div key={item.i} className={styles.gridItem}>
             <h4 className={styles.title}>
-              {widgetName}
+              {widget.name}
             </h4>
             <div className={styles.tools}>
               <Tooltip title="移动">
@@ -475,26 +498,19 @@ export class Grid extends React.Component {
               </Tooltip>
               {deleteButton}
             </div>
-            <div className={styles.block} id={`widget_${item.i}`}>
-              <Table
-                dataSource={this.state.tableBizdatas}
-                rowKey={s => s.id}
-                columns={
-                  this.state.tableBizdatas.length
-                    ? Object.keys(this.state.tableBizdatas[0])
-                      .filter(k => typeof this.state.tableBizdatas[0][k] !== 'object')
-                      .map(k => ({
-                        title: k.toUpperCase(),
-                        dataIndex: k,
-                        key: k,
-                        width: 150
-                      }))
-                    : []
-                }
-                pagination={false}
-                bordered
-              />
-            </div>
+            <ChartUnit
+              id={item.i}
+              dataSource={dataSource || []}
+              dataTypes={dataTypes}
+              pagination={pagination}
+              chartInfo={widgetlib}
+              chartParams={widget}
+              x={item.x}
+              y={item.y}
+              w={item.w}
+              g={item.h}
+              onTableSearch={this.renderChart}
+            />
           </div>
         ))
       })
@@ -507,7 +523,6 @@ export class Grid extends React.Component {
           margin={[20, 20]}
           cols={cols}
           layouts={layouts}
-          onBreakpointChange={this.onBreakpointChange}
           onLayoutChange={this.onLayoutChange}
           measureBeforeMount={false}
           draggableHandle={`.${styles.move}`}
@@ -767,7 +782,7 @@ export function mapDispatchToProps (dispatch) {
     onLoadWidgets: () => promiseDispatcher(dispatch, loadWidgets),
     onLoadWidgetlibs: () => promiseDispatcher(dispatch, loadWidgetlibs),
     onLoadBizlogics: () => promiseDispatcher(dispatch, loadBizlogics),
-    onLoadBizdatas: (id, sql) => promiseDispatcher(dispatch, loadBizdatas, id, sql),
+    onLoadBizdatas: (id, sql, offset, limit) => promiseDispatcher(dispatch, loadBizdatas, id, sql, offset, limit),
     onClearCurrentDashboard: () => promiseDispatcher(dispatch, clearCurrentDashboard)
   }
 }

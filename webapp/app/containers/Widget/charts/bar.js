@@ -62,7 +62,11 @@ export default function (dataSource, flatInfo, chartParams) {
   // x轴数据
   xAxisOptions = xAxis && {
     xAxis: {
-      data: dataSource.map(d => d[xAxis])
+      data: dataSource.map(d => d[xAxis]),
+      axisLabel: {
+        interval: 0,
+        rotate: 45
+      }
     }
   }
 
@@ -108,7 +112,7 @@ export default function (dataSource, flatInfo, chartParams) {
         : 40,
       left: 60,
       right: 60,
-      bottom: 30
+      bottom: 80
     }
   }
 

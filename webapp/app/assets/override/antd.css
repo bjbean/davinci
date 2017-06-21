@@ -122,3 +122,8 @@
 .ant-table-empty {
   margin-bottom: 20px;
 }
+
+/* 调整因字体大小造成的 RangePicker input 位置不对 */
+.ant-calendar-picker-input {
+  line-height: 1;
+}

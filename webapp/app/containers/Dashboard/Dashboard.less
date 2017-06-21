@@ -108,6 +108,17 @@
     bottom: 0;
     right: 0;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+
+    .chartBlock {
+      flex: 1;
+    }
+
+    .tableBlock {
+      padding: 0 16px;
+      flex: 1;
+    }
   }
 
   .move {
@@ -128,6 +139,21 @@
 
   .olapFilters {
     margin-bottom: 10px;
+  }
+}
+
+.dimension {
+  position: relative;
+  border-right: 2px solid transparent !important;
+
+  &:after {
+    background-image: linear-gradient(180deg, #1A237E, #4FC3F7, #FFB74D, #E65100);
+    position: absolute;
+    width: 2px;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    content: '';
   }
 }
 
