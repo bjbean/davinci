@@ -70,7 +70,7 @@ case class PutUserInfoSeq(payload: Seq[PutUserInfo])
 
 case class PutWidgetInfoSeq(payload: Seq[PutWidgetInfo])
 
-case class FlatTableResult(result: Seq[String] = null)
+case class FlatTableResult(result: Seq[String] = null,offset:Long,limit:Long,totalCount:Long)
 
 case class ResponsePayload(response: String)
 

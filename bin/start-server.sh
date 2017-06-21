@@ -1,2 +1,2 @@
 #!/bin/bash
-java -cp ./lib/davinci-server_2.11-1.0-SNAPSHOT.jar:./lib/* edp.davinci.Boot
+java -cp ../lib/davinci-server_2.11-1.0-SNAPSHOT.jar:../lib/* edp.davinci.Boot &
