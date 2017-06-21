@@ -3,7 +3,7 @@ package edp.davinci.rest
 import edp.davinci.persistence.entities._
 
 //token class
-case class LoginClass(username: String, password: String)
+case class LoginClass(username: String, pwd: String)
 
 case class LoginUserInfo(title: String, name: String)
 
@@ -70,7 +70,7 @@ case class PutUserInfoSeq(payload: Seq[PutUserInfo])
 
 case class PutWidgetInfoSeq(payload: Seq[PutWidgetInfo])
 
-case class FlatTableResult(result: Seq[String] = null)
+case class FlatTableResult(result: Seq[String] = null,offset:Long,limit:Long,totalCount:Long)
 
 case class ResponsePayload(response: String)
 

@@ -3,7 +3,6 @@ package edp.davinci.rest.flattable
 import java.io.ByteArrayOutputStream
 import java.sql.{Connection, Statement}
 import javax.ws.rs.Path
-
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.csv.CSVWriter
@@ -16,7 +15,6 @@ import edp.davinci.util.JsonProtocol._
 import edp.endurance.db.DbConnection
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
-
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
@@ -40,9 +38,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
 
 
   @ApiOperation(value = "get all flattables", notes = "", nickname = "", httpMethod = "GET")
-  @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "active", value = "true or false", required = false, dataType = "boolean", paramType = "query")
-  ))
+  @ApiImplicitParams(Array(new ApiImplicitParam(name = "active", value = "true or false", required = false, dataType = "boolean", paramType = "query")))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -70,9 +66,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
 
 
   @ApiOperation(value = "Add new flattables to the system", notes = "", nickname = "", httpMethod = "POST")
-  @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "flattables", value = "FlatTable objects to be added", required = true, dataType = "edp.davinci.rest.PostFlatTableInfoSeq", paramType = "body")
-  ))
+  @ApiImplicitParams(Array(new ApiImplicitParam(name = "flattables", value = "FlatTable objects to be added", required = true, dataType = "edp.davinci.rest.PostFlatTableInfoSeq", paramType = "body")))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -112,9 +106,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
 
 
   @ApiOperation(value = "update flattables in the system", notes = "", nickname = "", httpMethod = "PUT")
-  @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "flatTable", value = "FlatTable objects to be updated", required = true, dataType = "edp.davinci.rest.PutFlatTableInfoSeq", paramType = "body")
-  ))
+  @ApiImplicitParams(Array(new ApiImplicitParam(name = "flatTable", value = "FlatTable objects to be updated", required = true, dataType = "edp.davinci.rest.PutFlatTableInfoSeq", paramType = "body")))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "put success"),
     new ApiResponse(code = 401, message = "authorization error"),
@@ -153,9 +145,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   @Path("/{id}")
   @ApiOperation(value = "delete flat table by id", notes = "", nickname = "", httpMethod = "DELETE")
-  @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "id", value = "flat table id", required = true, dataType = "integer", paramType = "path")
-  ))
+  @ApiImplicitParams(Array(new ApiImplicitParam(name = "id", value = "flat table id", required = true, dataType = "integer", paramType = "path")))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "delete success"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -166,9 +156,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   @Path("/groups/{rel_id}")
   @ApiOperation(value = "delete flattable from group by rel id", notes = "", nickname = "", httpMethod = "DELETE")
-  @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "rel_id", value = "rel_id", required = true, dataType = "integer", paramType = "path")
-  ))
+  @ApiImplicitParams(Array(new ApiImplicitParam(name = "rel_id", value = "rel_id", required = true, dataType = "integer", paramType = "path")))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "delete success"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -185,9 +173,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   @Path("/{id}/groups")
   @ApiOperation(value = "get groups by flat table id", notes = "", nickname = "", httpMethod = "GET")
-  @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "id", value = "flat table id", required = true, dataType = "integer", paramType = "path")
-  ))
+  @ApiImplicitParams(Array(new ApiImplicitParam(name = "id", value = "flat table id", required = true, dataType = "integer", paramType = "path")))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "ok"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -216,7 +202,6 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiImplicitParam(name = "adhoc_sql", value = "adhoc_sql", required = false, dataType = "string", paramType = "body"),
     new ApiImplicitParam(name = "offset", value = "offset", required = false, dataType = "integer", paramType = "query"),
     new ApiImplicitParam(name = "limit", value = "limit", required = false, dataType = "integer", paramType = "query")
-
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "ok"),
@@ -240,7 +225,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   private def getResultSetComplete(session: SessionClass, bizId: Long, adHocSql: String, offset: Long, limit: Long) = {
     val paginateStr = s" limit $limit offset $offset"
-    println(paginateStr + "<<<<<<<<<<<<<<<<<<<<<<<<<")
+    logger.info(paginateStr + "<<<<<<<<<<<<<<<<<<<<<<<<<")
     val operation = for {
       a <- flatTableService.getSourceInfo(bizId)
       b <- flatTableService.getSqlTmpl(bizId)
@@ -255,17 +240,21 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
             val sqlParam = info._3
             val resultList = mutable.ListBuffer.empty[String]
             var count = 1
+            var totalCount = 0
             sqlParam.foreach(param => {
               val resultSql = getSqlArr(sqlTemp, param, tableName, adHocSql, paginateStr)
+              val countNum = getResult(connectionUrl, Array(resultSql.last))
+              if (countNum.size > 1)
+                totalCount = countNum.last.toInt
               if (null != resultSql) {
                 if (count > 1)
-                  getResult(connectionUrl, resultSql).drop(1).copyToBuffer(resultList)
+                  getResult(connectionUrl, resultSql.dropRight(1)).drop(1).copyToBuffer(resultList)
                 else
-                  getResult(connectionUrl, resultSql).copyToBuffer(resultList)
+                  getResult(connectionUrl, resultSql.dropRight(1)).copyToBuffer(resultList)
                 count += 1
               }
             })
-            complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(resultList)))
+            complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(resultList, offset, limit, totalCount)))
           } catch {
             case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }
@@ -298,7 +287,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
           val resultSet = statement.executeQuery(sql.last)
           val meta = resultSet.getMetaData
           for (i <- 1 to meta.getColumnCount)
-            columnList.append(meta.getColumnName(i))
+            columnList.append(meta.getColumnName(i) + ":" + meta.getColumnTypeName(i))
           resultList.append(covert2CSV(columnList))
           while (resultSet.next())
             resultList.append(covert2CSV(getRow(resultSet)))
@@ -343,10 +332,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
       val mixinSql = if (adHocSql != "{}") {
         try {
           val sqlArr = adHocSql.split(adHocTable)
-          if (sqlArr.size == 2)
-            sqlArr(0) + s" ($projectSql) as `$tableName` ${
-              sqlArr(1)
-            }"
+          if (sqlArr.size == 2) sqlArr(0) + s" ($projectSql) as `$tableName` ${sqlArr(1)}"
           else sqlArr(0) + s" ($projectSql) as `$tableName`"
         } catch {
           case e: Throwable => logger.error("adHoc sql is not in right format", e)
@@ -356,8 +342,9 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
         logger.info("adHoc sql is empty")
         projectSql
       }
-      s"SELECT * FROM ($mixinSql) AS PAGINATE $paginateStr"
+      s"SELECT * FROM ($mixinSql) AS PAGINATE $paginateStr" + s";SELECT COUNT(1) FROM ($mixinSql) AS COUNTSQL"
     }
+
 
     if (sqlTemp != "") {
       var sql = sqlTemp.trim
@@ -369,9 +356,8 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
 
       val semiIndex = sql.lastIndexOf(semiSeparator)
       val allSqlStr: String =
-        if (semiIndex < 0) {
+        if (semiIndex < 0)
           mixinAdHocSql(sql)
-        }
         else {
           if (semiIndex == sql.length - 1) {
             if (sql.substring(0, semiIndex).lastIndexOf(semiSeparator) < 0) {
@@ -381,7 +367,6 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
             else {
               val lastIndex = sql.substring(0, semiIndex).lastIndexOf(semiSeparator)
               logger.info("has the second last semicolon")
-
               val mixinSql = mixinAdHocSql(sql.substring(lastIndex + 1, semiIndex))
               sql.substring(0, semiIndex + 1) + mixinSql
             }
@@ -390,7 +375,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
             sql.substring(0, semiIndex + 1) + mixinSql
           }
         }
-      println(allSqlStr + "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+      logger.info(allSqlStr + "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
       allSqlStr.split(semiSeparator)
     } else {
       logger.info("there is no sql template")
