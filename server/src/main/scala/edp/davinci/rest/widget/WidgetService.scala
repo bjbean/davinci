@@ -1,10 +1,11 @@
 package edp.davinci.rest.widget
 
+import edp.davinci.common.ResponseUtils
 import edp.davinci.module._
 import edp.davinci.persistence.entities.PutWidgetInfo
 import edp.davinci.rest.SessionClass
-import edp.davinci.util.CommonUtils
 import slick.jdbc.MySQLProfile.api._
+
 import scala.concurrent.Future
 
 class WidgetService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
@@ -33,7 +34,7 @@ class WidgetService(modules: ConfigurationModule with PersistenceModule with Bus
   def update(widgetSeq: Seq[PutWidgetInfo], session: SessionClass): Future[Unit] = {
     val query = DBIO.seq(widgetSeq.map(r => {
       widgetTQ.filter(_.id === r.id).map(widget => (widget.flatTable_id, widget.widgetlib_id, widget.name, widget.olap_sql, widget.desc, widget.chart_params, widget.publish,widget.active, widget.update_by, widget.update_time))
-        .update(r.flatTable_id, r.widgetlib_id, r.name, Some(r.olap_sql), r.desc, Some(r.chart_params), r.publish,r.active.getOrElse(true), session.userId, CommonUtils.currentTime)
+        .update(r.flatTable_id, r.widgetlib_id, r.name, Some(r.olap_sql), r.desc, Some(r.chart_params), r.publish,r.active.getOrElse(true), session.userId, ResponseUtils.currentTime)
     }): _*)
     db.run(query)
   }

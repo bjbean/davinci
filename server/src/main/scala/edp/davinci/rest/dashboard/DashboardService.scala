@@ -1,9 +1,9 @@
 package edp.davinci.rest.dashboard
 
+import edp.davinci.common.ResponseUtils
 import edp.davinci.module._
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
-import edp.davinci.util.CommonUtils
 import slick.jdbc.MySQLProfile.api._
 
 import scala.concurrent.Future
@@ -44,7 +44,7 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
 
   def update(session: SessionClass, dashboardSeq: Seq[PutDashboardInfo]): Future[Unit] = {
     val query = DBIO.seq(dashboardSeq.map(r => {
-      dashboardTQ.filter(obj => obj.id === r.id).map(dashboard => (dashboard.name, dashboard.desc, dashboard.publish, dashboard.active, dashboard.update_by, dashboard.update_time)).update(r.name, r.desc, r.publish, r.active.getOrElse(true), session.userId, CommonUtils.currentTime)
+      dashboardTQ.filter(obj => obj.id === r.id).map(dashboard => (dashboard.name, dashboard.desc, dashboard.publish, dashboard.active, dashboard.update_by, dashboard.update_time)).update(r.name, r.desc, r.publish, r.active.getOrElse(true), session.userId, ResponseUtils.currentTime)
     }): _*)
     db.run(query)
   }
@@ -52,7 +52,7 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
   def updateRelDashboardWidget(session: SessionClass, relSeq: Seq[PutRelDashboardWidget]): Future[Unit] = {
     val query = DBIO.seq(relSeq.map(r => {
       relDWTQ.filter(obj => obj.id === r.id).map(rel => (rel.dashboard_id, rel.widget_id, rel.position_x, rel.position_y, rel.width, rel.length, rel.trigger_type, rel.trigger_params, rel.update_by, rel.update_time))
-        .update(r.dashboard_id, r.widget_id, r.position_x, r.position_y, r.width, r.length, r.trigger_type, r.trigger_params, session.userId, CommonUtils.currentTime)
+        .update(r.dashboard_id, r.widget_id, r.position_x, r.position_y, r.width, r.length, r.trigger_type, r.trigger_params, session.userId, ResponseUtils.currentTime)
     }): _*)
     db.run(query)
   }

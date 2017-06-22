@@ -1,20 +1,22 @@
 package edp.davinci.rest.flattable
 
 import java.io.ByteArrayOutputStream
-import java.sql.{Connection, Statement}
+import java.sql.{Connection, ResultSet, Statement}
 import javax.ws.rs.Path
+
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
+import edp.davinci.common.DbConnection
+import edp.davinci.common.ResponseUtils._
 import edp.davinci.csv.CSVWriter
 import edp.davinci.module.{ConfigurationModule, PersistenceModule, _}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.util.CommonUtils._
 import edp.davinci.util.JsonProtocol._
-import edp.endurance.db.DbConnection
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
+
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
@@ -383,6 +385,29 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
     }
 
   }
+
+
+  private def getRow(rs: ResultSet): Seq[String] = {
+    val meta = rs.getMetaData
+    val columnNum = meta.getColumnCount
+    (1 to columnNum).map(columnIndex => {
+      val fieldValue = meta.getColumnType(columnIndex) match {
+        case java.sql.Types.VARCHAR => rs.getString(columnIndex)
+        case java.sql.Types.INTEGER => rs.getInt(columnIndex)
+        case java.sql.Types.BIGINT => rs.getLong(columnIndex)
+        case java.sql.Types.FLOAT => rs.getFloat(columnIndex)
+        case java.sql.Types.DOUBLE => rs.getDouble(columnIndex)
+        case java.sql.Types.BOOLEAN => rs.getBoolean(columnIndex)
+        case java.sql.Types.DATE => rs.getDate(columnIndex)
+        case java.sql.Types.TIMESTAMP => rs.getTimestamp(columnIndex)
+        case java.sql.Types.DECIMAL => rs.getBigDecimal(columnIndex)
+        case _ => println("not supported java sql type")
+      }
+      if (fieldValue == null) null.asInstanceOf[String]
+      else fieldValue.toString
+    })
+  }
+
 
 }
 

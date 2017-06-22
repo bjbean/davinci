@@ -1,10 +1,11 @@
 package edp.davinci.rest.group
 
+import edp.davinci.common.ResponseUtils
 import edp.davinci.module._
 import edp.davinci.persistence.entities.PutGroupInfo
 import edp.davinci.rest.SessionClass
-import edp.davinci.util.CommonUtils
 import slick.jdbc.MySQLProfile.api._
+
 import scala.concurrent.Future
 
 
@@ -30,7 +31,7 @@ class GroupService(modules: ConfigurationModule with PersistenceModule with Busi
   def update(groupSeq: Seq[PutGroupInfo], session: SessionClass): Future[Unit] = {
     val groupTQ = gDal.getTableQuery
     val query = DBIO.seq(groupSeq.map(r => {
-      groupTQ.filter(_.id === r.id).map(group => (group.name, group.desc,group.active, group.update_by, group.update_time)).update(r.name, Some(r.desc),r.active.getOrElse(true), session.userId, CommonUtils.currentTime)
+      groupTQ.filter(_.id === r.id).map(group => (group.name, group.desc,group.active, group.update_by, group.update_time)).update(r.name, Some(r.desc),r.active.getOrElse(true), session.userId, ResponseUtils.currentTime)
     }): _*)
     gDal.getDB.run(query)
   }

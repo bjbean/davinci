@@ -8,7 +8,7 @@ import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModul
 import edp.davinci.persistence.entities.{PostWidgetInfo, PutWidgetInfo, Widget}
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.util.CommonUtils._
+import edp.davinci.common.ResponseUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
@@ -161,20 +161,10 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     }
   }
 
-  //  private def postWidget(session: SessionClass, postWidgetSeq: Seq[PostWidgetInfo]): Route = {
-  //    if (session.admin) {
-  //      val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.bizlogic_id, post.name, Some(post.olap_sql), post.desc, post.trigger_type, post.trigger_params, post.publish, active = true, null, session.userId, null, session.userId))
-  //      onComplete(modules.widgetDal.insert(widgetSeq)) {
-  //        case Success(widgetWithIdSeq) =>
-  //          val responseWidget: Seq[PutWidgetInfo] = widgetWithIdSeq
-  //            .map(widget =>
-  //
-  //              PutWidgetInfo(widget.id, widget.widgetlib_id, widget.bizlogic_id, widget.name, widget.olap_sql.orNull, widget.desc, widget.trigger_type, widget.trigger_params, widget.publish))
-  //          complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session), responseWidget))
-  //        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-  //      }
-  //    } else complete(Forbidden, getHeader(403, session))
-  //  }
+  def formatSql(sqlInfo: (String, String, String)): Array[String] = {
+    val (olapSql, sqlTmpl, _) = sqlInfo
+    (sqlTmpl + ";" + olapSql).split(";")
+  }
 
 
 }

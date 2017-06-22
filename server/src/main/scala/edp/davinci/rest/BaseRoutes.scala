@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.persistence.base._
 import edp.davinci.persistence.entities._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.util.CommonUtils._
+import edp.davinci.common.ResponseUtils._
 import edp.davinci.util.JsonProtocol._
 import slick.jdbc.MySQLProfile.api._
 import scala.concurrent.Future

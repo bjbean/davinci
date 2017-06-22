@@ -1,10 +1,10 @@
 package edp.davinci.util
 
-import edp.common.util.JsonUtils._
 import edp.davinci.module.ConfigurationModuleImpl
 import edp.davinci.rest.SessionClass
 import pdi.jwt.algorithms.JwtHmacAlgorithm
 import pdi.jwt.{Jwt, JwtAlgorithm, JwtClaim, JwtHeader}
+import edp.davinci.common.JsonUtils._
 
 import scala.util.Try
 
