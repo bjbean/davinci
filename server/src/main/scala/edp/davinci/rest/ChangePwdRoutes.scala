@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule}
 import edp.davinci.persistence.entities.User
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.util.CommonUtils._
+import edp.davinci.common.ResponseUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
@@ -22,9 +22,9 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   @Path("/login")
-  @ApiOperation(value = "change login user's password", notes = "", nickname = "", httpMethod = "POST")
+  @ApiOperation(value = "change login user's pwd", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "changePwd", value = "change password information", required = true, dataType = "edp.davinci.rest.ChangePwdClass", paramType = "body")
+    new ApiImplicitParam(name = "changePwd", value = "change pwd information", required = true, dataType = "edp.davinci.rest.ChangePwdClass", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
@@ -41,12 +41,12 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
             onComplete(modules.userDal.findById(session.userId).mapTo[Option[User]]) {
               case Success(userOpt) => userOpt match {
                 case Some(user) =>
-                  if (user.password == changePwd.oldPass) {
+                  if (user.pwd == changePwd.oldPass) {
                     onComplete(modules.userDal.update(updatePass(user, changePwd.newPass)).mapTo[Int]) {
                       case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session),r))
                       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session),""))
                     }
-                  } else complete(BadRequest, ResponseJson[String](getHeader(400, "old password is wrong", session),""))
+                  } else complete(BadRequest, ResponseJson[String](getHeader(400, "old pwd is wrong", session),""))
                 case None => complete(BadRequest, ResponseJson[String](getHeader(400, session),""))
               }
               case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session),""))
@@ -57,9 +57,9 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
   }
 
   @Path("/users")
-  @ApiOperation(value = "change user's password", notes = "", nickname = "", httpMethod = "POST")
+  @ApiOperation(value = "change user's pwd", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "changePwd", value = "change password information", required = true, dataType = "edp.davinci.rest.ChangeUserPwdClass", paramType = "body")
+    new ApiImplicitParam(name = "changePwd", value = "change pwd information", required = true, dataType = "edp.davinci.rest.ChangeUserPwdClass", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
@@ -76,12 +76,12 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
             onComplete(modules.userDal.findById(changePwd.id).mapTo[Option[User]]) {
               case Success(userOpt) => userOpt match {
                 case Some(user) =>
-                  if (user.password == changePwd.oldPass) {
+                  if (user.pwd == changePwd.oldPass) {
                     onComplete(modules.userDal.update(updatePass(user, changePwd.newPass)).mapTo[Int]) {
                       case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session),r))
                       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session),""))
                     }
-                  } else complete(BadRequest, ResponseJson[String](getHeader(400, "old password is wrong", session),""))
+                  } else complete(BadRequest, ResponseJson[String](getHeader(400, "old pwd is wrong", session),""))
                 case None => complete(BadRequest, ResponseJson[String](getHeader(400, "not found",session),""))
               }
               case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session),""))
@@ -92,8 +92,8 @@ class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   }
 
-  private def updatePass(user: User, password: String): User = {
-    User(user.id, user.email, password, user.title, user.name, user.admin,
+  private def updatePass(user: User, pwd: String): User = {
+    User(user.id, user.email, pwd, user.title, user.name, user.admin,
       user.active, user.create_time, user.create_by, user.update_time, user.update_by)
   }
 

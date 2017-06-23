@@ -1,10 +1,11 @@
 package edp.davinci.rest.user
 
+import edp.davinci.common.ResponseUtils
 import edp.davinci.module._
 import edp.davinci.persistence.entities._
 import edp.davinci.rest.{LoginUserInfo, SessionClass}
-import edp.davinci.util.CommonUtils
 import slick.jdbc.MySQLProfile.api._
+
 import scala.concurrent.Future
 
 class UserService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
@@ -24,13 +25,13 @@ class UserService(modules: ConfigurationModule with PersistenceModule with Busin
 
   def update(userSeq: Seq[PutUserInfo], session: SessionClass): Future[Unit] = {
     val query = DBIO.seq(userSeq.map(r => {
-      userTQ.filter(_.id === r.id).map(user => (user.admin, user.name, user.email, user.title, user.active, user.update_by, user.update_time)).update(r.admin, r.name, r.email, r.title, r.active.getOrElse(true), session.userId, CommonUtils.currentTime)
+      userTQ.filter(_.id === r.id).map(user => (user.admin, user.name, user.email, user.title, user.active, user.update_by, user.update_time)).update(r.admin, r.name, r.email, r.title, r.active.getOrElse(true), session.userId, ResponseUtils.currentTime)
     }): _*)
     db.run(query)
   }
 
   def updateLoginUser(loginUser: LoginUserInfo, session: SessionClass): Future[Int] = {
-    db.run(userTQ.filter(_.id === session.userId).map(user => (user.name, user.title, user.update_by, user.update_time)).update(loginUser.name, loginUser.title, session.userId, CommonUtils.currentTime))
+    db.run(userTQ.filter(_.id === session.userId).map(user => (user.name, user.title, user.update_by, user.update_time)).update(loginUser.name, loginUser.title, session.userId, ResponseUtils.currentTime))
   }
 
   def getAllGroups(userId: Long): Future[Seq[PutRelUserGroup]] = {

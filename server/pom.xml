@@ -6,71 +6,64 @@
     <parent>
         <groupId>edp.davinci</groupId>
         <artifactId>davinci-parent_2.11</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>0.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>davinci-server_2.11</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
 
     <dependencies>
+        <!-- joda time -->
         <dependency>
-            <groupId>edp</groupId>
-            <artifactId>common</artifactId>
-            <version>1.1.0-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>2.4</version>
+        </dependency>
+        <!-- json -->
+        <dependency>
+            <groupId>org.json4s</groupId>
+            <artifactId>json4s-jackson_${scala.library}</artifactId>
+            <version>${json4s.version}</version>
         </dependency>
         <dependency>
-            <groupId>edp</groupId>
-            <artifactId>endurance-db</artifactId>
-            <version>1.1.0-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.json4s</groupId>
+            <artifactId>json4s-ext_${scala.library}</artifactId>
+            <version>${json4s.version}</version>
         </dependency>
-        <dependency>
-            <groupId>edp.moonbox</groupId>
-            <artifactId>moonbox-grid_${scala.library}</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>edp.moonbox</groupId>
-                    <artifactId>moonbox-core_2.11</artifactId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>netty</artifactId>
-                    <groupId>io.netty</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>netty-all</artifactId>
-                    <groupId>io.netty</groupId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId> com.typesafe.akka</groupId>
-                    <artifactId>akka-actor_${scala.library}</artifactId>
-                </exclusion>
 
-            </exclusions>
-        </dependency>
+
+        <!--<dependency>-->
+            <!--<groupId>edp.moonbox</groupId>-->
+            <!--<artifactId>moonbox-grid_${scala.library}</artifactId>-->
+            <!--<version>${project.version}</version>-->
+            <!--<exclusions>-->
+                <!--<exclusion>-->
+                    <!--<groupId>edp.moonbox</groupId>-->
+                    <!--<artifactId>moonbox-core_2.11</artifactId>-->
+                <!--</exclusion>-->
+                <!--<exclusion>-->
+                    <!--<artifactId>netty</artifactId>-->
+                    <!--<groupId>io.netty</groupId>-->
+                <!--</exclusion>-->
+                <!--<exclusion>-->
+                    <!--<artifactId>netty-all</artifactId>-->
+                    <!--<groupId>io.netty</groupId>-->
+                <!--</exclusion>-->
+                <!--<exclusion>-->
+                    <!--<groupId>org.slf4j</groupId>-->
+                    <!--<artifactId>slf4j-log4j12</artifactId>-->
+                <!--</exclusion>-->
+                <!--<exclusion>-->
+                    <!--<groupId> com.typesafe.akka</groupId>-->
+                    <!--<artifactId>akka-actor_${scala.library}</artifactId>-->
+                <!--</exclusion>-->
+
+            <!--</exclusions>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>edp.davinci</groupId>
             <artifactId>davinci-akcro_${scala.library}</artifactId>

@@ -1,10 +1,11 @@
 package edp.davinci.rest.flattable
 
+import edp.davinci.common.ResponseUtils
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest.SessionClass
-import edp.davinci.util.CommonUtils
 import slick.jdbc.MySQLProfile.api._
+
 import scala.concurrent.Future
 
 class FlatTableService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
@@ -25,7 +26,7 @@ class FlatTableService(modules: ConfigurationModule with PersistenceModule with 
   def updateFlatTbl(flatTableSeq: Seq[PutFlatTableInfo], session: SessionClass): Future[Unit] = {
     val query = DBIO.seq(flatTableSeq.map(r => {
       flatTableTQ.filter(obj => obj.id === r.id).map(flatTable => (flatTable.name, flatTable.source_id, flatTable.sql_tmpl, flatTable.desc, flatTable.trigger_type, flatTable.frequency, flatTable.`catch`, flatTable.active, flatTable.update_by, flatTable.update_time))
-        .update(r.name, r.source_id, r.sql_tmpl, Some(r.desc), r.trigger_type, r.frequency, r.`catch`, r.active.getOrElse(true), session.userId, CommonUtils.currentTime)
+        .update(r.name, r.source_id, r.sql_tmpl, Some(r.desc), r.trigger_type, r.frequency, r.`catch`, r.active.getOrElse(true), session.userId, ResponseUtils.currentTime)
     }): _*)
     db.run(query)
   }

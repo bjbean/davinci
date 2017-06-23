@@ -8,7 +8,7 @@ import edp.davinci.module._
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.util.CommonUtils.getHeader
+import edp.davinci.common.ResponseUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
@@ -83,7 +83,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
 
   private def postUserComplete(session: SessionClass, userSeq: Seq[PostUserInfo]): Route = {
     if (session.admin) {
-      val userEntity = userSeq.map(postUser => User(0, postUser.email, postUser.password, postUser.title, postUser.name, postUser.admin, active = true, null, session.userId, null, session.userId))
+      val userEntity = userSeq.map(postUser => User(0, postUser.email, postUser.pwd, postUser.title, postUser.name, postUser.admin, active = true, null, session.userId, null, session.userId))
       val operation = for {
         users <- modules.userDal.insert(userEntity)
         _ <- {

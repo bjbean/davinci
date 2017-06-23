@@ -12,7 +12,7 @@ import edp.davinci.persistence.entities.QueryLibWidget
 import edp.davinci.rest.{ResponseJson, ResponseSeqJson, SessionClass}
 import edp.davinci.util.AuthorizationProvider
 import io.swagger.annotations._
-import edp.davinci.util.CommonUtils._
+import edp.davinci.common.ResponseUtils._
 import org.slf4j.LoggerFactory
 
 @Api(value = "/libwidgets", consumes = "application/json", produces = "application/json")
