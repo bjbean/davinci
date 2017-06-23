@@ -8,7 +8,7 @@ import edp.davinci.module._
 import edp.davinci.persistence.entities.{PostGroupInfo, PutGroupInfo, UserGroup}
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.common.ResponseUtils.getHeader
+import edp.davinci.util.ResponseUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory

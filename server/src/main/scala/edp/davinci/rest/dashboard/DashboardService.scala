@@ -1,6 +1,6 @@
 package edp.davinci.rest.dashboard
 
-import edp.davinci.common.ResponseUtils
+import edp.davinci.util.ResponseUtils
 import edp.davinci.module._
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._

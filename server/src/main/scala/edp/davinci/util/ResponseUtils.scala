@@ -1,11 +1,10 @@
-package edp.davinci.common
+package edp.davinci.util
 
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directive0
 import akka.http.scaladsl.server.directives.RespondWithDirectives._
-import edp.davinci.common.DateUtils.yyyyMMddHHmmssToString
+import edp.davinci.util.DateUtils.yyyyMMddHHmmssToString
 import edp.davinci.rest.{ResponseHeader, SessionClass}
-import edp.davinci.util.JwtSupport
 import edp.davinci.util.JwtSupport._
 
 object ResponseUtils {

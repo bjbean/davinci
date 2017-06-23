@@ -1,13 +1,12 @@
-package edp.davinci.common
+package edp.davinci.util
 
 import java.sql.{Timestamp, Date => SqlDate}
 import java.text.SimpleDateFormat
 import java.util.Date
-import edp.davinci.common.EdpDefault._
-import edp.davinci.common.DtFormat.DtFormat
+import edp.davinci.util.EdpDefault._
+import edp.davinci.util.DtFormat.DtFormat
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
-
 import scala.util.matching.Regex
 
 /*

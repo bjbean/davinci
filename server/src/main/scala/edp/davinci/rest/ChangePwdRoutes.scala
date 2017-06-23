@@ -7,7 +7,7 @@ import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule}
 import edp.davinci.persistence.entities.User
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.common.ResponseUtils._
+import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory

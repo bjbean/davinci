@@ -2,6 +2,7 @@ package edp.davinci.persistence.entities
 
 import edp.davinci.persistence.base.{BaseEntity, BaseTable, SimpleBaseEntity}
 import slick.jdbc.H2Profile.api._
+import slick.lifted.ProvenShape
 
 case class User(id: Long,
                 email: String,
@@ -56,5 +57,5 @@ class UserTable(tag: Tag) extends BaseTable[User](tag, "user") {
 
   def update_by = column[Long]("update_by")
 
-  def * = (id, email, pwd, title, name, admin, active, create_time, create_by, update_time, update_by) <> (User.tupled, User.unapply)
+  def * : ProvenShape[User] = (id, email, pwd, title, name, admin, active, create_time, create_by, update_time, update_by) <> (User.tupled, User.unapply)
 }

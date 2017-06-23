@@ -1,27 +1,17 @@
 package edp.davinci.rest.flattable
 
-import java.io.ByteArrayOutputStream
-import java.sql.{Connection, ResultSet, Statement}
 import javax.ws.rs.Path
-
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
-import edp.davinci.common.DbConnection
-import edp.davinci.common.ResponseUtils._
-import edp.davinci.csv.CSVWriter
 import edp.davinci.module.{ConfigurationModule, PersistenceModule, _}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
-import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.JsonProtocol._
+import edp.davinci.util.ResponseUtils._
+import edp.davinci.util.{AuthorizationProvider, SqlProcessor}
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
-
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 @Api(value = "/flattables", consumes = "application/json", produces = "application/json")
@@ -31,12 +21,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
   val routes: Route = postFlatTableRoute ~ putFlatTableRoute ~ getFlatTableByAllRoute ~ deleteFlatTableByIdRoute ~ getGroupsByFlatIdRoute ~ getCalculationResRoute ~ deleteRelGFById
   private lazy val flatTableService = new FlatTableService(modules)
   private lazy val logger = LoggerFactory.getLogger(this.getClass)
-
   private lazy val adHocTable = "table"
-  private lazy val semiSeparator = ";"
-  private lazy val urlSep = "<:>"
-  private lazy val defaultEncode = "UTF-8"
-  private lazy val paramSep = "\\?"
 
 
   @ApiOperation(value = "get all flattables", notes = "", nickname = "", httpMethod = "GET")
@@ -128,19 +113,18 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
   }
 
   private def putFlatTableComplete(session: SessionClass, flatTableSeq: Seq[PutFlatTableInfo]): Route = {
-    try {
-      val updateBizFuture = flatTableService.updateFlatTbl(flatTableSeq, session)
-      Await.result(updateBizFuture, Duration.Inf)
-      val deleteRelFuture = flatTableService.deleteByFlatId(flatTableSeq)
-      Await.result(deleteRelFuture, Duration.Inf)
-      val relSeq = for {rel <- flatTableSeq.head.relBG
+    val operation = for {
+      updateOP <- flatTableService.updateFlatTbl(flatTableSeq, session)
+      deleteOp <- flatTableService.deleteByFlatId(flatTableSeq)
+    } yield (updateOP, deleteOp)
+    onComplete(operation) {
+      case Success(_) => val relSeq = for {rel <- flatTableSeq.head.relBG
       } yield RelGroupFlatTable(0, rel.group_id, flatTableSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
-      onComplete(modules.relGroupFlatTableDal.insert(relSeq)) {
-        case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
-        case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
-      }
-    } catch {
-      case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        onComplete(modules.relGroupFlatTableDal.insert(relSeq)) {
+          case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
+          case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+        }
+      case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
   }
 
@@ -225,37 +209,16 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
   }
 
 
-  private def getResultSetComplete(session: SessionClass, bizId: Long, adHocSql: String, offset: Long, limit: Long) = {
+  private def getResultSetComplete(session: SessionClass, flatTableId: Long, adHocSql: String, offset: Long, limit: Long) = {
     val paginateStr = s" limit $limit offset $offset"
     logger.info(paginateStr + "<<<<<<<<<<<<<<<<<<<<<<<<<")
-    val operation = for {
-      a <- flatTableService.getSourceInfo(bizId)
-      b <- flatTableService.getSqlTmpl(bizId)
-      c <- flatTableService.getSqlParam(bizId, session)
-    } yield (a, b, c)
-    onComplete(operation) {
+    onComplete(flatTableService.getSourceInfo(flatTableId, session)) {
       case Success(info) =>
-        if (info._1.nonEmpty) {
+        if (info.nonEmpty) {
           try {
-            val (connectionUrl, _) = info._1.head
-            val (sqlTemp, tableName) = info._2.getOrElse(("", ""))
-            val sqlParam = info._3
-            val resultList = mutable.ListBuffer.empty[String]
-            var count = 1
-            var totalCount = 0
-            sqlParam.foreach(param => {
-              val resultSql = getSqlArr(sqlTemp, param, tableName, adHocSql, paginateStr)
-              val countNum = getResult(connectionUrl, Array(resultSql.last))
-              if (countNum.size > 1)
-                totalCount = countNum.last.toInt
-              if (null != resultSql) {
-                if (count > 1)
-                  getResult(connectionUrl, resultSql.dropRight(1)).drop(1).copyToBuffer(resultList)
-                else
-                  getResult(connectionUrl, resultSql.dropRight(1)).copyToBuffer(resultList)
-                count += 1
-              }
-            })
+            val (sqlTemp, tableName, connectionUrl, _) = info.head
+            val sqlParam = info.map(_._4)
+            val (resultList, totalCount) = SqlProcessor.sqlExecute(sqlParam, sqlTemp, tableName, adHocSql, paginateStr, connectionUrl)
             complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(resultList, offset, limit, totalCount)))
           } catch {
             case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -263,149 +226,8 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
         }
         else
           complete(OK, ResponseJson[String](getHeader(200, "source info is empty", session), ""))
-      case Failure(ex)
-      => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+      case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
-  }
-
-
-  private def getResult(connectionUrl: String, sql: Array[String]): List[String] = {
-    val resultList = new ListBuffer[String]
-    val columnList = new ListBuffer[String]
-    var dbConnection: Connection = null
-    var statement: Statement = null
-    if (connectionUrl != null) {
-      val connectionInfo = connectionUrl.split(urlSep)
-      if (connectionInfo.size != 3) {
-        logger.info("connection is not in right format")
-        throw new Exception("connection is not in right format:" + connectionUrl)
-      }
-      else {
-        try {
-          dbConnection = DbConnection.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
-          statement = dbConnection.createStatement()
-          if (sql.length > 1)
-            for (elem <- sql.dropRight(1)) statement.execute(elem)
-          val resultSet = statement.executeQuery(sql.last)
-          val meta = resultSet.getMetaData
-          for (i <- 1 to meta.getColumnCount)
-            columnList.append(meta.getColumnName(i) + ":" + meta.getColumnTypeName(i))
-          resultList.append(covert2CSV(columnList))
-          while (resultSet.next())
-            resultList.append(covert2CSV(getRow(resultSet)))
-          resultList.toList
-        } catch {
-          case e: Throwable => logger.error("get result exception", e)
-            throw e
-        } finally {
-          if (statement != null) statement.close()
-          if (dbConnection != null) dbConnection.close()
-        }
-      }
-    } else {
-      logger.info("connection is not given or is null")
-      List("")
-    }
-  }
-
-  /**
-    *
-    * @param row a row in DB represent by string
-    * @return a CSV String
-    */
-  private def covert2CSV(row: Seq[String]): String = {
-    val byteArrOS = new ByteArrayOutputStream()
-    val writer = CSVWriter.open(byteArrOS)
-    writer.writeRow(row)
-    val CSVStr = byteArrOS.toString(defaultEncode)
-    byteArrOS.close()
-    writer.close()
-    CSVStr
-  }
-
-  private def getSqlArr(sqlTemp: String, param: String, tableName: String, adHocSql: String, paginateStr: String) = {
-    /**
-      *
-      * @param projectSql a SQL string; eg. SELECT * FROM Table
-      * @return SQL string mixing AdHoc SQL
-      */
-
-    def mixinAdHocSql(projectSql: String) = {
-      val mixinSql = if (adHocSql != "{}") {
-        try {
-          val sqlArr = adHocSql.split(adHocTable)
-          if (sqlArr.size == 2) sqlArr(0) + s" ($projectSql) as `$tableName` ${sqlArr(1)}"
-          else sqlArr(0) + s" ($projectSql) as `$tableName`"
-        } catch {
-          case e: Throwable => logger.error("adHoc sql is not in right format", e)
-            throw e
-        }
-      } else {
-        logger.info("adHoc sql is empty")
-        projectSql
-      }
-      s"SELECT * FROM ($mixinSql) AS PAGINATE $paginateStr" + s";SELECT COUNT(1) FROM ($mixinSql) AS COUNTSQL"
-    }
-
-
-    if (sqlTemp != "") {
-      var sql = sqlTemp.trim
-      logger.info("the initial sql template:" + sqlTemp)
-
-      val paramArr = param.split(paramSep)
-      paramArr.foreach(p => sql = sql.replaceFirst(paramSep, s"'$p'"))
-      logger.info("sql template after the replacement:" + sql)
-
-      val semiIndex = sql.lastIndexOf(semiSeparator)
-      val allSqlStr: String =
-        if (semiIndex < 0)
-          mixinAdHocSql(sql)
-        else {
-          if (semiIndex == sql.length - 1) {
-            if (sql.substring(0, semiIndex).lastIndexOf(semiSeparator) < 0) {
-              logger.info("only the last char is semicolon")
-              mixinAdHocSql(sql.substring(0, semiIndex))
-            }
-            else {
-              val lastIndex = sql.substring(0, semiIndex).lastIndexOf(semiSeparator)
-              logger.info("has the second last semicolon")
-              val mixinSql = mixinAdHocSql(sql.substring(lastIndex + 1, semiIndex))
-              sql.substring(0, semiIndex + 1) + mixinSql
-            }
-          } else {
-            val mixinSql = mixinAdHocSql(sql.substring(semiIndex + 1))
-            sql.substring(0, semiIndex + 1) + mixinSql
-          }
-        }
-      logger.info(allSqlStr + "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-      allSqlStr.split(semiSeparator)
-    } else {
-      logger.info("there is no sql template")
-      null.asInstanceOf[Array[String]]
-    }
-
-  }
-
-
-  private def getRow(rs: ResultSet): Seq[String] = {
-    val meta = rs.getMetaData
-    val columnNum = meta.getColumnCount
-    (1 to columnNum).map(columnIndex => {
-      val fieldValue = meta.getColumnType(columnIndex) match {
-        case java.sql.Types.VARCHAR => rs.getString(columnIndex)
-        case java.sql.Types.INTEGER => rs.getInt(columnIndex)
-        case java.sql.Types.BIGINT => rs.getLong(columnIndex)
-        case java.sql.Types.FLOAT => rs.getFloat(columnIndex)
-        case java.sql.Types.DOUBLE => rs.getDouble(columnIndex)
-        case java.sql.Types.BOOLEAN => rs.getBoolean(columnIndex)
-        case java.sql.Types.DATE => rs.getDate(columnIndex)
-        case java.sql.Types.TIMESTAMP => rs.getTimestamp(columnIndex)
-        case java.sql.Types.DECIMAL => rs.getBigDecimal(columnIndex)
-        case _ => println("not supported java sql type")
-      }
-      if (fieldValue == null) null.asInstanceOf[String]
-      else fieldValue.toString
-    })
   }
 
 

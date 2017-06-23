@@ -1,6 +1,6 @@
 package edp.davinci.rest.flattable
 
-import edp.davinci.common.ResponseUtils
+import edp.davinci.util.ResponseUtils
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest.SessionClass
@@ -43,19 +43,12 @@ class FlatTableService(modules: ConfigurationModule with PersistenceModule with 
   }
 
 
-  def getSourceInfo(flatTableId: Long): Future[Seq[(String, String)]] = {
-    val query = (flatTableTQ.filter(obj => obj.id === flatTableId) join sourceTQ on (_.source_id === _.id))
-      .map { case (_, s) => (s.connection_url, s.config) }.result
-    db.run(query)
-  }
-
-  def getSqlTmpl(flatTableId: Long): Future[Option[(String, String)]] = {
-    val query = flatTableTQ.filter(obj => obj.id === flatTableId).map(b => (b.sql_tmpl, b.result_table)).result.headOption
-    db.run(query)
-  }
-
-  def getSqlParam(flatTableId: Long, session: SessionClass): Future[Seq[String]] = {
-    val query = relGFTQ.filter(_.flatTable_id === flatTableId).filter(_.group_id inSet session.groupIdList).map(_.sql_params).result
+  def getSourceInfo(flatTableId: Long, session: SessionClass): Future[Seq[(String, String, String, String)]] = {
+    val query = (flatTableTQ.filter(obj => obj.id === flatTableId) join sourceTQ on (_.source_id === _.id) join
+      relGFTQ.filter(_.flatTable_id === flatTableId).filter(_.group_id inSet session.groupIdList) on (_._1.id === _.flatTable_id))
+      .map {
+        case (fs, r) => (fs._1.sql_tmpl, fs._1.result_table, fs._2.connection_url, r.sql_params)
+      }.result
     db.run(query)
   }
 }

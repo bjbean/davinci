@@ -8,7 +8,7 @@ import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModul
 import edp.davinci.persistence.entities.SqlLog
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.common.ResponseUtils.getHeader
+import edp.davinci.util.ResponseUtils.getHeader
 import io.swagger.annotations._
 import edp.davinci.util.JsonProtocol._
 import org.slf4j.LoggerFactory
