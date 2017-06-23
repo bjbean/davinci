@@ -6,7 +6,7 @@ import slick.lifted.ProvenShape
 
 case class User(id: Long,
                 email: String,
-                pwd: String,
+                password: String,
                 title: String,
                 name: String,
                 admin: Boolean,
@@ -17,7 +17,7 @@ case class User(id: Long,
                 update_by: Long) extends BaseEntity
 
 case class PostUserInfo(email: String,
-                        pwd: String,
+                        password: String,
                         title: String,
                         name: String,
                         admin: Boolean,
@@ -41,7 +41,7 @@ case class QueryUserInfo(id: Long,
 
 class UserTable(tag: Tag) extends BaseTable[User](tag, "user") {
 
-  def pwd = column[String]("pwd")
+  def password = column[String]("password")
 
   def title = column[String]("title")
 
@@ -57,5 +57,5 @@ class UserTable(tag: Tag) extends BaseTable[User](tag, "user") {
 
   def update_by = column[Long]("update_by")
 
-  def * : ProvenShape[User] = (id, email, pwd, title, name, admin, active, create_time, create_by, update_time, update_by) <> (User.tupled, User.unapply)
+  def * : ProvenShape[User] = (id, email, password, title, name, admin, active, create_time, create_by, update_time, update_by) <> (User.tupled, User.unapply)
 }

@@ -3,7 +3,7 @@ package edp.davinci.rest
 import edp.davinci.persistence.entities._
 
 //token class
-case class LoginClass(username: String, pwd: String)
+case class LoginClass(username: String, password: String)
 
 case class LoginUserInfo(title: String, name: String)
 
@@ -18,7 +18,9 @@ case class BaseInfo(id: Long, name: String)
 
 case class SqlInfo(sqls: Array[String])
 
-case class OlapSql(payload: String)
+case class adHocSql(payload: String)
+
+case class Identifier(payload:String)
 
 case class WidgetInfo(id: Long, widget_id: Long, flatTableId: Long, position_x: Int, position_y: Int, width: Int, length: Int, trigger_type:String, trigger_params:String)
 

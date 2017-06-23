@@ -83,7 +83,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
 
   private def postUserComplete(session: SessionClass, userSeq: Seq[PostUserInfo]): Route = {
     if (session.admin) {
-      val userEntity = userSeq.map(postUser => User(0, postUser.email, postUser.pwd, postUser.title, postUser.name, postUser.admin, active = true, null, session.userId, null, session.userId))
+      val userEntity = userSeq.map(postUser => User(0, postUser.email, postUser.password, postUser.title, postUser.name, postUser.admin, active = true, null, session.userId, null, session.userId))
       val operation = for {
         users <- modules.userDal.insert(userEntity)
         _ <- {

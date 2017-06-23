@@ -63,7 +63,7 @@ object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceMod
         println(userSeq.headOption)
         userSeq.headOption match {
           case Some(user) =>
-            if (verifyPwd(user.pwd, login.pwd)) user
+            if (verifyPwd(user.password, login.password)) user
             else throw new PWDError()
           case None =>
             println("not found")
