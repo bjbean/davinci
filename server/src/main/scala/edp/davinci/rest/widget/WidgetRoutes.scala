@@ -80,7 +80,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.flatTable_id, post.name, Some(post.adhoc_sql), post.desc, Some(post.chart_params), post.publish, active = true, null, session.userId, null, session.userId))
       onComplete(modules.widgetDal.insert(widgetSeq)) {
         case Success(widgets) =>
-          val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.flatTable_id, w.name, w.olap_sql.getOrElse(""), w.desc, w.chart_params.getOrElse(""), w.publish, Some(w.active)))
+          val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql.getOrElse(""), w.desc, w.chart_params.getOrElse(""), w.publish, Some(w.active)))
           complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session), putWidgets))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
