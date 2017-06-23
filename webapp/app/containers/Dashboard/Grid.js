@@ -18,14 +18,10 @@ import Modal from 'antd/lib/modal'
 import Popconfirm from 'antd/lib/popconfirm'
 import Breadcrumb from 'antd/lib/breadcrumb'
 import Form from 'antd/lib/form'
-// import Input from 'antd/lib/input'
 import InputNumber from 'antd/lib/input-number'
 import Select from 'antd/lib/select'
-// import DatePicker from 'antd/lib/date-picker'
 const FormItem = Form.Item
-// const InputGroup = Input.Group
 const Option = Select.Option
-// const RangePicker = DatePicker.RangePicker
 
 import { promiseDispatcher } from '../../utils/reduxPromisation'
 import { loadDashboardDetail, addDashboardItem, editDashboardItem, editDashboardItems, deleteDashboardItem, clearCurrentDashboard } from './actions'
@@ -51,7 +47,8 @@ export class Grid extends React.Component {
       cols: { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 },
       mounted: false,
 
-      widgetItems: false,
+      currentItemsByUserRole: [],
+      modifiedItems: false,
       formType: '',
       formVisible: false,
       modalLoading: false,
@@ -103,11 +100,14 @@ export class Grid extends React.Component {
   }
 
   componentWillReceiveProps (props) {
-    const currentItems = props.currentItems
+    const { loginUser, currentDashboard, currentItems } = props
+    const { modifiedItems } = this.state
     if (currentItems) {
-      const widgetItems = initializePosition(props.loginUser.id, props.currentDashboard.id, currentItems)
-      this.state.widgetItems = widgetItems
-      this.state.editPositionSign = diffPosition(currentItems, widgetItems)
+      const currentItemsByUserRole = initializePosition(loginUser, currentDashboard, currentItems)
+      if (!modifiedItems) {
+        this.state.modifiedItems = currentItemsByUserRole.map(item => Object.assign({}, item))
+      }
+      this.state.currentItemsByUserRole = currentItemsByUserRole
     }
   }
 
@@ -181,7 +181,7 @@ export class Grid extends React.Component {
 
   setFrequent = (id, widgetId) => {
     const { currentItems } = this.props
-    const widgetItem = currentItems.find(ci => ci.id === Number(id))
+    const dashboardItem = currentItems.find(ci => ci.id === Number(id))
 
     let intervalId = `widget_${id}`
     let currentFrequent = this.frequent[intervalId]
@@ -190,10 +190,10 @@ export class Grid extends React.Component {
       clearInterval(currentFrequent)
     }
 
-    if (widgetItem.trigger_type === 'frequent') {
+    if (dashboardItem.trigger_type === 'frequent') {
       currentFrequent = setInterval(() => {
         this.renderChart(id, widgetId)
-      }, Number(widgetItem.trigger_params) * 1000)
+      }, Number(dashboardItem.trigger_params) * 1000)
 
       this.frequent[intervalId] = currentFrequent
     }
@@ -202,17 +202,15 @@ export class Grid extends React.Component {
   onLayoutChange = (layout, layouts) => {
     // setTimtout 中 setState 会被同步执行
     setTimeout(() => {
-      const { loginUser, currentDashboard, currentItems } = this.props
-      const { widgetItems } = this.state
-
-      const newWidgetItems = changePosition(loginUser.id, currentDashboard.id, widgetItems, layout, (item) => {
+      const { currentItemsByUserRole, modifiedItems } = this.state
+      const newModifiedItems = changePosition(modifiedItems, layout, (item) => {
         this.renderChart(item.i, item.widget_id)
         this.setFrequent(item.i, item.widget_id)
       })
 
       this.setState({
-        widgetItems: newWidgetItems,
-        editPositionSign: diffPosition(currentItems, newWidgetItems)
+        modifiedItems: newModifiedItems,
+        editPositionSign: diffPosition(currentItemsByUserRole, newModifiedItems)
       })
     })
   }
@@ -238,17 +236,17 @@ export class Grid extends React.Component {
   }
 
   showEdit = (id) => () => {
-    const originItem = this.props.currentItems.find(c => c.id === Number(id))
+    const dashboardItem = this.props.currentItems.find(c => c.id === Number(id))
     this.setState({
       formType: 'edit',
       formVisible: true,
-      selectedWidget: originItem.widget_id,
-      triggerType: originItem.trigger_type
+      selectedWidget: dashboardItem.widget_id,
+      triggerType: dashboardItem.trigger_type
     }, () => {
       this.widgetForm.setFieldsValue({
-        id: originItem.id,
-        trigger_type: originItem.trigger_type,
-        trigger_params: originItem.trigger_params
+        id: dashboardItem.id,
+        trigger_type: dashboardItem.trigger_type,
+        trigger_params: dashboardItem.trigger_params
       })
     })
   }
@@ -286,11 +284,11 @@ export class Grid extends React.Component {
 
   onModalOk = () => {
     const { currentDashboard } = this.props
-    const { widgetItems, selectedWidget, formType } = this.state
+    const { modifiedItems, selectedWidget, formType } = this.state
 
     const formdata = this.widgetForm.getFieldsValue()
 
-    const predictPosYArr = widgetItems.map(wi => wi.y + wi.h)
+    const predictPosYArr = modifiedItems.map(wi => wi.y + wi.h)
 
     const item = {
       widget_id: selectedWidget,
@@ -307,9 +305,17 @@ export class Grid extends React.Component {
 
     if (formType === 'add') {
       this.props.onAddDashboardItem(currentDashboard.id, item)
-        .then(widgetItem => {
-          this.renderChart(widgetItem.id, widgetItem.widget_id)
-          this.setFrequent(widgetItem.id, widgetItem.widget_id)
+        .then(dashboardItem => {
+          modifiedItems.push({
+            x: dashboardItem.position_x,
+            y: dashboardItem.position_y,
+            w: dashboardItem.width,
+            h: dashboardItem.length,
+            i: `${dashboardItem.id}`,
+            widget_id: dashboardItem.widget_id
+          })
+          this.renderChart(dashboardItem.id, dashboardItem.widget_id)
+          this.setFrequent(dashboardItem.id, dashboardItem.widget_id)
           this.hideWidgetForm()
         })
     } else {
@@ -329,59 +335,72 @@ export class Grid extends React.Component {
 
   editDashboardItems = () => {
     const {
+      loginUser,
       currentDashboard,
       currentItems,
       onEditDashboardItems
     } = this.props
-    const { widgetItems } = this.state
+    const { modifiedItems } = this.state
 
     const changedItems = currentItems.map((item, index) => {
-      const widgetItem = widgetItems[index]
+      const modifiedItem = modifiedItems[index]
       return {
         id: item.id,
         widget_id: item.widget_id,
         dashboard_id: currentDashboard.id,
-        position_x: widgetItem.x,
-        position_y: widgetItem.y,
-        width: widgetItem.w,
-        length: widgetItem.h,
+        position_x: modifiedItem.x,
+        position_y: modifiedItem.y,
+        width: modifiedItem.w,
+        length: modifiedItem.h,
         trigger_type: item.trigger_type,
         trigger_params: item.trigger_params
       }
     })
 
-    onEditDashboardItems(currentDashboard.id, changedItems)
+    if (loginUser.admin) {
+      onEditDashboardItems(currentDashboard.id, changedItems)
+        .then(() => {
+          this.setState({ editPositionSign: false })
+        })
+    } else {
+      localStorage.setItem(`${loginUser.id}_${currentDashboard.id}_position`, JSON.stringify(modifiedItems))
+      this.setState({ editPositionSign: false })
+    }
   }
 
   deleteDashboardItem = (id) => () => {
     this.props.onDeleteDashboardItem(Number(id))
       .then(() => {
-        this.charts[`widget_${id}`].dispose()
+        const { modifiedItems } = this.state
+        modifiedItems.splice(modifiedItems.findIndex(mi => mi.id === id), 1)
+        if (this.charts[`widget_${id}`]) {
+          this.charts[`widget_${id}`].dispose()
+        }
       })
   }
 
-  showWorkbench = (widgetItem) => () => {
-    const widget = this.props.widgets.find(w => w.id === widgetItem.widget_id)
+  showWorkbench = (dashboardItemByUserRole) => () => {
+    const widget = this.props.widgets.find(w => w.id === dashboardItemByUserRole.widget_id)
     this.setState({
-      workbenchWidgetItem: widgetItem.i,
+      workbenchmodifiedItem: dashboardItemByUserRole.i,
       workbenchWidget: widget,
       workbenchVisible: true
     })
   }
 
   hideWorkbench = () => {
-    const { widgetItems, workbenchWidgetItem } = this.state
-    const item = widgetItems.find(wi => wi.i === workbenchWidgetItem)
+    const { modifiedItems, workbenchWidgetItem } = this.state
+    const item = modifiedItems.find(wi => wi.i === workbenchWidgetItem)
     this.renderChart(item.i, item.widget_id)
     this.setFrequent(item.i, item.widget_id)
     this.hideWidgetForm()
   }
 
-  syncBizdatas = (widgetItem) => () => {
-    this.renderChart(widgetItem.i, widgetItem.widget_id)
+  syncBizdatas = (dashboardItemByUserRole) => () => {
+    this.renderChart(dashboardItemByUserRole.i, dashboardItemByUserRole.widget_id)
   }
 
-  showOlapForm = (widgetItem) => () => {
+  showOlapForm = (dashboardItem) => () => {
     this.setState({
       olapVisible: true
     })
@@ -406,7 +425,7 @@ export class Grid extends React.Component {
     const {
       cols,
       mounted,
-      widgetItems,
+      currentItemsByUserRole,
       formType,
       formVisible,
       modalLoading,
@@ -422,13 +441,13 @@ export class Grid extends React.Component {
 
     let grids
 
-    if (widgetItems && widgets && widgetlibs) {
+    if (widgets && widgetlibs) {
       let layouts = {
         lg: []
       }
       let itemblocks = []
 
-      widgetItems.forEach(item => {
+      currentItemsByUserRole.forEach(item => {
         const widget = widgets.find(w => w.id === item.widget_id)
         const widgetlib = widgetlibs.find(wl => wl.id === widget.widgetlib_id)
 
@@ -564,18 +583,19 @@ export class Grid extends React.Component {
     let savePosButton = ''
     let addButton = ''
 
+    if (editPositionSign) {
+      savePosButton = (
+        <Button
+          size="large"
+          style={{marginRight: '5px'}}
+          onClick={this.editDashboardItems}
+        >
+          保存位置修改
+        </Button>
+      )
+    }
+
     if (loginUser.admin) {
-      if (editPositionSign) {
-        savePosButton = (
-          <Button
-            size="large"
-            style={{marginRight: '5px'}}
-            onClick={this.editDashboardItems}
-          >
-            保存位置修改
-          </Button>
-        )
-      }
       addButton = (
         <Button
           size="large"

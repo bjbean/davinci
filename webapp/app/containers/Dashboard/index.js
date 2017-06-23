@@ -122,7 +122,7 @@ export class Dashboard extends React.Component {
         }
 
         const itemClass = classnames({
-          [styles.dashboardItem]: true,
+          [styles.unit]: true,
           [styles.editing]: !d.publish
         })
 
