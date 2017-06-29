@@ -1,6 +1,7 @@
 package edp.davinci.rest.shareinfo
 
 import javax.ws.rs.Path
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpCharsets, HttpEntity, MediaTypes}
@@ -13,6 +14,7 @@ import edp.davinci.util.JsonUtils.{caseClass2json, json2caseClass}
 import edp.davinci.util.ResponseUtils.getHeader
 import edp.davinci.util.{AesUtils, AuthorizationProvider, MD5Utils, SqlUtils}
 import io.swagger.annotations._
+import org.clapper.scalasti.{Constants, STGroupFile}
 import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success}
@@ -25,7 +27,6 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   private val logger = LoggerFactory.getLogger(this.getClass)
   private lazy val routeName = "share"
   private lazy val aesPassword = modules.config.getString("aes.password")
-  private lazy val htmlPath = modules.config.getString("htmlpath.path")
 
   @Path("/widget/{widget_id}")
   @ApiOperation(value = "get the widget share url", notes = "", nickname = "", httpMethod = "GET")
@@ -73,16 +74,14 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       val shareInfo: ShareInfo = json2caseClass[ShareInfo](jsonShareInfo)
       val (userId, infoId) = (shareInfo.userId, shareInfo.infoId)
       val MD5Info = MD5Utils.getMD5(caseClass2json(ShareQueryInfo(userId, infoId)))
-      println("hahahhahah~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-      if (MD5Info == shareInfo.md5) {
-        println("whyyyyy           yyyyyyyyyyyyyyyyyyyyy")
+      if (MD5Info == shareInfo.md5)
         getHtmlComplete(userId, infoId)
-      }
       else complete(HttpEntity(MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`, "".getBytes("UTF-8")))
     }
   }
 
   private def getHtmlComplete(userId: Long, widgetId: Long) = {
+    val httpEntity = HttpEntity(MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`, "".getBytes("UTF-8"))
     val operation = for {
       widget <- shareService.getWidgetById(widgetId)
       group <- shareService.getUserGroup(userId)
@@ -98,39 +97,46 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
                 val (sqlTemp, tableName, connectionUrl, _) = sourceInfo.head
                 val sqlParam = sourceInfo.map(_._4)
                 val resultList = sqlExecute(sqlParam, sqlTemp, tableName, putWidgetInfo.adhoc_sql, "", connectionUrl)
-                val htmlStr = htmlTableGenerator(resultList._1)
-                println("in source ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                resultList._1.prepend(Seq(s"$tableName"))
+                val htmlStr = emailHtmlStr(Seq(resultList._1))
                 val responseEntity = HttpEntity(MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`, htmlStr)
                 complete(OK, responseEntity)
               }
               catch {
-                case _: Throwable => complete(HttpEntity(MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`, ""))
+                case _: Throwable => complete(BadRequest, httpEntity)
               }
             }
-            else complete(HttpEntity(MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`, ""))
+            else complete(httpEntity)
 
-          case Failure(_) => complete(HttpEntity(MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`, ""))
+          case Failure(_) => complete(BadRequest, httpEntity)
         }
-      case Failure(_) => complete(HttpEntity(MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`, ""))
+      case Failure(_) => complete(BadRequest, httpEntity)
     }
   }
 
-  private def htmlTableGenerator(result: List[Seq[String]]): String = {
-    if (result.nonEmpty && result.size > 1) {
-      val columns = result.head.map(r => r.split(":")(0))
-      val columnNames = columns.mkString("""<tr><th style="border:1px solid black;">""","""</th><th style="border:1px solid black;">""","""</th></tr>""")
-      val rows = for (i <- 1 until result.size) yield {
-        result(i).mkString("""<tr><td  style="border:1px solid black;" align="left">""","""</td><td  style="border:1px solid black;" align="left">""","""</td></tr>""")
-      }
-      val formatRows = rows.mkString("")
-      val resultHtml: String = s"""<html><body><table style="border:1px solid black;border-collapse:collapse;" cellspacing="10">""" + s"$columnNames $formatRows" +"""</table></body></html>"""
-      //      logInfo(resultHtml)
-      resultHtml
-    } else {
-      logger.info("has no info")
-      ""
-    }
-  }
+//  private def htmlTableGenerator(result: List[Seq[String]]): String = {
+//    if (result.nonEmpty && result.size > 1) {
+//      val columns = result.head.map(r => r.split(":")(0))
+//      val columnNames = columns.mkString("""<tr><th style="border:1px solid black;">""","""</th><th style="border:1px solid black;">""","""</th></tr>""")
+//      val rows = for (i <- 1 until result.size) yield {
+//        result(i).mkString("""<tr><td  style="border:1px solid black;" align="left">""","""</td><td  style="border:1px solid black;" align="left">""","""</td></tr>""")
+//      }
+//      val formatRows = rows.mkString("")
+//      val resultHtml: String = s"""<html><body><table style="border:1px solid black;border-collapse:collapse;" cellspacing="10">""" + s"$columnNames $formatRows" +"""</table></body></html>"""
+//      //      logInfo(resultHtml)
+//      resultHtml
+//    } else {
+//      logger.info("has no info")
+//      ""
+//    }
+//  }
+
+  def emailHtmlStr(tables: Seq[Seq[Seq[String]]], stgPath: String = "stg/tmpl.stg"): String =
+    STGroupFile(stgPath, Constants.DefaultEncoding, '$', '$').instanceOf("email_html")
+      .map(_.add("tables", tables).render().get)
+      .recover {
+        case e: Exception => s"ST Error: $e"
+      }.getOrElse("")
 
 }
 

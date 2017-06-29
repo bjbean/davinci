@@ -44,8 +44,9 @@ class FlatTableService(modules: ConfigurationModule with PersistenceModule with 
 
 
   def getSourceInfo(flatTableId: Long, session: SessionClass): Future[Seq[(String, String, String, String)]] = {
+    val rel = if (session.admin) relGFTQ.filter(_.flatTable_id === flatTableId) else relGFTQ.filter(_.flatTable_id === flatTableId).filter(_.group_id inSet session.groupIdList)
     val query = (flatTableTQ.filter(obj => obj.id === flatTableId) join sourceTQ on (_.source_id === _.id) join
-      relGFTQ.filter(_.flatTable_id === flatTableId).filter(_.group_id inSet session.groupIdList) on (_._1.id === _.flatTable_id))
+      rel on (_._1.id === _.flatTable_id))
       .map {
         case (fs, r) => (fs._1.sql_tmpl, fs._1.result_table, fs._2.connection_url, r.sql_params)
       }.result

@@ -93,7 +93,7 @@ trait SqlUtils extends Serializable {
   }
 
 
-  def sqlExecute(sqlParam: Seq[String], sqlTemp: String, tableName: String, adHocSql: String, paginateStr: String, connectionUrl: String): (List[Seq[String]], Long) = {
+  def sqlExecute(sqlParam: Seq[String], sqlTemp: String, tableName: String, adHocSql: String, paginateStr: String, connectionUrl: String): (ListBuffer[Seq[String]], Long) = {
     val resultList = mutable.ListBuffer.empty[Seq[String]]
     var count = 1
     var totalCount: Long = 0
@@ -110,7 +110,7 @@ trait SqlUtils extends Serializable {
         count += 1
       }
     })
-    (resultList.toList, totalCount)
+    (resultList, totalCount)
   }
 
 
