@@ -9,9 +9,9 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 
-object SqlProcessor extends SqlProcessor
+object SqlUtils extends SqlUtils
 
-trait SqlProcessor extends Serializable {
+trait SqlUtils extends Serializable {
   lazy val datasourceMap: mutable.HashMap[String, HikariDataSource] = new mutable.HashMap[String, HikariDataSource]
   private val logger = LoggerFactory.getLogger(this.getClass)
   private lazy val adHocTable = "table"
@@ -93,15 +93,15 @@ trait SqlProcessor extends Serializable {
   }
 
 
-  def sqlExecute(sqlParam:Seq[String],sqlTemp:String,tableName:String,adHocSql:String,paginateStr:String,connectionUrl:String): (ListBuffer[String], Int) ={
-    val resultList = mutable.ListBuffer.empty[String]
+  def sqlExecute(sqlParam: Seq[String], sqlTemp: String, tableName: String, adHocSql: String, paginateStr: String, connectionUrl: String): (List[Seq[String]], Long) = {
+    val resultList = mutable.ListBuffer.empty[Seq[String]]
     var count = 1
-    var totalCount = 0
+    var totalCount: Long = 0
     sqlParam.foreach(param => {
       val resultSql = getSqlArr(sqlTemp, param, tableName, adHocSql, paginateStr)
       val countNum = getResult(connectionUrl, Array(resultSql.last))
       if (countNum.size > 1)
-        totalCount = countNum.last.toInt
+        totalCount = countNum.last.last.toLong
       if (null != resultSql) {
         if (count > 1)
           getResult(connectionUrl, resultSql.dropRight(1)).drop(1).copyToBuffer(resultList)
@@ -110,12 +110,12 @@ trait SqlProcessor extends Serializable {
         count += 1
       }
     })
-    (resultList,totalCount)
+    (resultList.toList, totalCount)
   }
 
 
-  def getResult(connectionUrl: String, sql: Array[String]): List[String] = {
-    val resultList = new ListBuffer[String]
+  def getResult(connectionUrl: String, sql: Array[String]): Seq[Seq[String]] = {
+    val resultList = new ListBuffer[Seq[String]]
     val columnList = new ListBuffer[String]
     var dbConnection: Connection = null
     var statement: Statement = null
@@ -127,7 +127,7 @@ trait SqlProcessor extends Serializable {
       }
       else {
         try {
-          dbConnection = SqlProcessor.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
+          dbConnection = SqlUtils.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
           statement = dbConnection.createStatement()
           if (sql.length > 1)
             for (elem <- sql.dropRight(1)) statement.execute(elem)
@@ -135,9 +135,9 @@ trait SqlProcessor extends Serializable {
           val meta = resultSet.getMetaData
           for (i <- 1 to meta.getColumnCount)
             columnList.append(meta.getColumnName(i) + ":" + meta.getColumnTypeName(i))
-          resultList.append(covert2CSV(columnList))
+          resultList.append(columnList)
           while (resultSet.next())
-            resultList.append(covert2CSV(getRow(resultSet)))
+            resultList.append(getRow(resultSet))
           resultList.toList
         } catch {
           case e: Throwable => logger.error("get result exception", e)
@@ -149,7 +149,7 @@ trait SqlProcessor extends Serializable {
       }
     } else {
       logger.info("connection is not given or is null")
-      List("")
+      List(Seq(""))
     }
   }
 
@@ -168,7 +168,7 @@ trait SqlProcessor extends Serializable {
     CSVStr
   }
 
-  def getSqlArr(sqlTemp: String, param: String, tableName: String, adHocSql: String, paginateStr: String=""): Array[String] = {
+  def getSqlArr(sqlTemp: String, param: String, tableName: String, adHocSql: String, paginateStr: String = ""): Array[String] = {
     /**
       *
       * @param projectSql a SQL string; eg. SELECT * FROM Table

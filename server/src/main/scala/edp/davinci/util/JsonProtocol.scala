@@ -103,6 +103,7 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatIdentifier: RootJsonFormat[Identifier] = jsonFormat1(Identifier)
 
+  implicit val formatShareResult: RootJsonFormat[ShareResult] = jsonFormat2(ShareResult)
   //  implicit val formatOlapSql: Unmarshaller[HttpRequest, Option[OlapSql]] = targetOptionUnmarshaller[HttpRequest, OlapSql]
 
   implicit def formatRequestJson[A: JsonFormat]: RootJsonFormat[RequestJson[A]] = jsonFormat1(RequestJson.apply[A])

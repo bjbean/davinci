@@ -11,8 +11,8 @@ case class ShareInfo(id: Long,
                      widget: String,
                      connection_url: String,
                      create_time: String,
-                     create_by: Long,
-                     expiration: Long) extends BaseEntity
+                     create_by: Long
+                     ) extends BaseEntity
 
 class ShareInfoTable(tag: Tag) extends BaseTable[ShareInfo](tag, "share_info") {
 
@@ -28,7 +28,6 @@ class ShareInfoTable(tag: Tag) extends BaseTable[ShareInfo](tag, "share_info") {
 
   def connection_url = column[String]("connection_url")
 
-  def expiration = column[Long]("expiration")
 
-  def * : ProvenShape[ShareInfo] = (id, identifier, widget_sql, widget, connection_url, create_time, create_by, expiration) <> (ShareInfo.tupled, ShareInfo.unapply)
+  def * : ProvenShape[ShareInfo] = (id, identifier, widget_sql, widget, connection_url, create_time, create_by) <> (ShareInfo.tupled, ShareInfo.unapply)
 }
