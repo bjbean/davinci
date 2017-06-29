@@ -8,7 +8,7 @@ import edp.davinci.persistence.entities._
 import edp.davinci.rest._
 import edp.davinci.util.JsonProtocol._
 import edp.davinci.util.ResponseUtils._
-import edp.davinci.util.{AuthorizationProvider, SqlProcessor}
+import edp.davinci.util.{AuthorizationProvider, SqlUtils}
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -218,8 +218,9 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
           try {
             val (sqlTemp, tableName, connectionUrl, _) = info.head
             val sqlParam = info.map(_._4)
-            val (resultList, totalCount) = SqlProcessor.sqlExecute(sqlParam, sqlTemp, tableName, adHocSql, paginateStr, connectionUrl)
-            complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(resultList, offset, limit, totalCount)))
+            val (resultList, totalCount) = SqlUtils.sqlExecute(sqlParam, sqlTemp, tableName, adHocSql, paginateStr, connectionUrl)
+            val CSVResult = resultList.map(SqlUtils.covert2CSV)
+            complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(CSVResult, offset, limit, totalCount)))
           } catch {
             case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }

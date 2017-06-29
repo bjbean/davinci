@@ -9,6 +9,7 @@ import edp.davinci.rest.flattable.FlatTableRoutes
 import edp.davinci.rest.dashboard.DashboardRoutes
 import edp.davinci.rest.group.GroupRoutes
 import edp.davinci.rest.libwidget.LibWidgetRoutes
+import edp.davinci.rest.shareinfo.ShareRoutes
 import edp.davinci.rest.source.SourceRoutes
 import edp.davinci.rest.sqllog.SqlLogRoutes
 import edp.davinci.rest.user.UserRoutes
@@ -29,7 +30,8 @@ class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
     typeOf[SourceRoutes],
     typeOf[LibWidgetRoutes],
     typeOf[GroupRoutes],
-    typeOf[SqlLogRoutes]
+    typeOf[SqlLogRoutes],
+    typeOf[ShareRoutes]
   )
 
   override val host: String = Boot.host + ":" + Boot.port
