@@ -217,8 +217,8 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
         if (info.nonEmpty) {
           try {
             val (sqlTemp, tableName, connectionUrl, _) = info.head
-            val sqlParam = info.map(_._4)
-            val (resultList, totalCount) = SqlUtils.sqlExecute(sqlParam, sqlTemp, tableName, adHocSql, paginateStr, connectionUrl)
+            val flatTablesFilters = info.map(_._4).map(p => if (p.trim != "") p.mkString("(", "", ")") else p.trim).filter(_ == "").mkString("OR")
+            val (resultList, totalCount) = SqlUtils.sqlExecute(flatTablesFilters, sqlTemp, tableName, adHocSql, paginateStr, connectionUrl)
             val CSVResult = resultList.map(SqlUtils.covert2CSV)
             complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(CSVResult, offset, limit, totalCount)))
           } catch {

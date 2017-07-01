@@ -14,11 +14,11 @@ object SqlUtils extends SqlUtils
 trait SqlUtils extends Serializable {
   lazy val datasourceMap: mutable.HashMap[String, HikariDataSource] = new mutable.HashMap[String, HikariDataSource]
   private val logger = LoggerFactory.getLogger(this.getClass)
-  private lazy val adHocTable = "table"
-  private lazy val semiSeparator = ";"
-  private lazy val urlSep = "<:>"
+  private lazy val adHocTable = "flatTable".toUpperCase
+  private lazy val sqlSeparator = ";"
+  private lazy val sqlUrlSeparator = "<:>"
   private lazy val defaultEncode = "UTF-8"
-  private lazy val paramSep = "\\?"
+
 
   def getConnection(jdbcUrl: String, username: String, password: String, maxPoolSize: Int = 5): Connection = {
     val tmpJdbcUrl = jdbcUrl.toLowerCase
@@ -93,34 +93,54 @@ trait SqlUtils extends Serializable {
   }
 
 
-  def sqlExecute(sqlParam: Seq[String], sqlTemp: String, tableName: String, adHocSql: String, paginateStr: String, connectionUrl: String): (ListBuffer[Seq[String]], Long) = {
+  def sqlExecute(filters: String, sqlTemp: String, tableName: String, adHocSql: String, paginateStr: String, connectionUrl: String): (ListBuffer[Seq[String]], Long) = {
     val resultList = mutable.ListBuffer.empty[Seq[String]]
     var count = 1
     var totalCount: Long = 0
-    sqlParam.foreach(param => {
-      val resultSql = getSqlArr(sqlTemp, param, tableName, adHocSql, paginateStr)
-      val countNum = getResult(connectionUrl, Array(resultSql.last))
-      if (countNum.size > 1)
-        totalCount = countNum.last.last.toLong
-      if (null != resultSql) {
-        if (count > 1)
-          getResult(connectionUrl, resultSql.dropRight(1)).drop(1).copyToBuffer(resultList)
-        else
-          getResult(connectionUrl, resultSql.dropRight(1)).copyToBuffer(resultList)
-        count += 1
-      }
-    })
+    val resetSqlBuffer = sqlTemp.split(sqlSeparator).toBuffer
+    val projectSql = getProjectSql(resetSqlBuffer.last, filters, tableName, adHocSql, paginateStr)
+    resetSqlBuffer.remove(resetSqlBuffer.length - 1)
+    resetSqlBuffer.append(projectSql.split(sqlSeparator).head)
+    val resultSql = resetSqlBuffer.toArray
+    val countNum = getResult(connectionUrl, Array(projectSql.split(sqlSeparator).last))
+    if (countNum.size > 1)
+      totalCount = countNum.last.last.toLong
+    if (null != resultSql) {
+      if (count > 1)
+        getResult(connectionUrl, resultSql).drop(1).copyToBuffer(resultList)
+      else
+        getResult(connectionUrl, resultSql).copyToBuffer(resultList)
+      count += 1
+    }
     (resultList, totalCount)
   }
 
 
-  def getResult(connectionUrl: String, sql: Array[String]): Seq[Seq[String]] = {
+  def getResultAndTotal(connectionUrl: String, resultSql: Array[String]): (ListBuffer[Seq[String]], Long) = {
+    val resultList = mutable.ListBuffer.empty[Seq[String]]
+    val countNum = getResult(connectionUrl, Array(resultSql.last))
+    var totalCount: Long = 0
+    var count = 1
+    if (countNum.size > 1)
+      totalCount = countNum.last.last.toLong
+    if (null != resultSql) {
+      if (count > 1)
+        getResult(connectionUrl, resultSql.dropRight(1)).drop(1).copyToBuffer(resultList)
+      else
+        getResult(connectionUrl, resultSql.dropRight(1)).copyToBuffer(resultList)
+      count += 1
+    }
+    (resultList, totalCount)
+  }
+
+
+  def getResult(connectionUrl: String, sql: Array[String]): ListBuffer[Seq[String]] = {
     val resultList = new ListBuffer[Seq[String]]
     val columnList = new ListBuffer[String]
     var dbConnection: Connection = null
     var statement: Statement = null
     if (connectionUrl != null) {
-      val connectionInfo = connectionUrl.split(urlSep)
+      val connectionInfo = connectionUrl.split(sqlUrlSeparator)
       if (connectionInfo.size != 3) {
         logger.info("connection is not in right format")
         throw new Exception("connection is not in right format:" + connectionUrl)
@@ -138,7 +158,7 @@ trait SqlUtils extends Serializable {
           resultList.append(columnList)
           while (resultSet.next())
             resultList.append(getRow(resultSet))
-          resultList.toList
+          resultList
         } catch {
           case e: Throwable => logger.error("get result exception", e)
             throw e
@@ -149,7 +169,7 @@ trait SqlUtils extends Serializable {
       }
     } else {
       logger.info("connection is not given or is null")
-      List(Seq(""))
+      ListBuffer(Seq(""))
     }
   }
 
@@ -168,67 +188,34 @@ trait SqlUtils extends Serializable {
     CSVStr
   }
 
-  def getSqlArr(sqlTemp: String, param: String, tableName: String, adHocSql: String, paginateStr: String = ""): Array[String] = {
-    /**
-      *
-      * @param projectSql a SQL string; eg. SELECT * FROM Table
-      * @return SQL string mixing AdHoc SQL
-      */
+  /**
+    *
+    * @param projectSql a SQL string; eg. SELECT * FROM Table
+    * @return SQL string mixing AdHoc SQL
+    */
 
-    def mixinAdHocSql(projectSql: String) = {
-      val mixinSql = if (adHocSql != "{}") {
-        try {
-          val sqlArr = adHocSql.split(adHocTable)
-          if (sqlArr.size == 2) sqlArr(0) + s" ($projectSql) as `$tableName` ${sqlArr(1)}"
-          else sqlArr(0) + s" ($projectSql) as `$tableName`"
-        } catch {
-          case e: Throwable => logger.error("adHoc sql is not in right format", e)
-            throw e
-        }
-      } else {
-        logger.info("adHoc sql is empty")
-        projectSql
+  def getProjectSql(projectSql: String, filters: String, tableName: String, adHocSql: String, paginateStr: String = ""): String = {
+    val projectSqlWithFilter = if (null != filters && filters != "")
+      s"SELECT * FROM ($projectSql) AS PROFILTER WHERE $filters"
+    else
+      projectSql
+    val mixinSql = if (adHocSql != "{}") {
+      try {
+        val sqlArr = adHocSql.toUpperCase.split(adHocTable)
+        if (sqlArr.size == 2) sqlArr(0) + s" ($projectSqlWithFilter) as `$tableName` ${sqlArr(1)}"
+        else sqlArr(0) + s" ($projectSqlWithFilter) as `$tableName`"
+      } catch {
+        case e: Throwable => logger.error("adHoc sql is not in right format", e)
+          throw e
       }
-      s"SELECT * FROM ($mixinSql) AS PAGINATE $paginateStr" + s";SELECT COUNT(1) FROM ($mixinSql) AS COUNTSQL"
-    }
-
-
-    if (sqlTemp != "") {
-      var sql = sqlTemp.trim
-      logger.info("the initial sql template:" + sqlTemp)
-
-      val paramArr = param.split(paramSep)
-      paramArr.foreach(p => sql = sql.replaceFirst(paramSep, s"'$p'"))
-      logger.info("sql template after the replacement:" + sql)
-
-      val semiIndex = sql.lastIndexOf(semiSeparator)
-      val allSqlStr: String =
-        if (semiIndex < 0)
-          mixinAdHocSql(sql)
-        else {
-          if (semiIndex == sql.length - 1) {
-            if (sql.substring(0, semiIndex).lastIndexOf(semiSeparator) < 0) {
-              logger.info("only the last char is semicolon")
-              mixinAdHocSql(sql.substring(0, semiIndex))
-            }
-            else {
-              val lastIndex = sql.substring(0, semiIndex).lastIndexOf(semiSeparator)
-              logger.info("has the second last semicolon")
-              val mixinSql = mixinAdHocSql(sql.substring(lastIndex + 1, semiIndex))
-              sql.substring(0, semiIndex + 1) + mixinSql
-            }
-          } else {
-            val mixinSql = mixinAdHocSql(sql.substring(semiIndex + 1))
-            sql.substring(0, semiIndex + 1) + mixinSql
-          }
-        }
-      logger.info(allSqlStr + "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-      allSqlStr.split(semiSeparator)
     } else {
-      logger.info("there is no sql template")
-      null.asInstanceOf[Array[String]]
+      logger.info("adHoc sql is empty")
+      projectSqlWithFilter
     }
-
+    if (paginateStr!= "")
+    s"SELECT * FROM ($mixinSql) AS PAGINATE $paginateStr" + s";SELECT COUNT(1) FROM ($mixinSql) AS COUNTSQL"
+    else
+     mixinSql + s";SELECT COUNT(1) FROM ($mixinSql) AS COUNTSQL"
   }
 
 
