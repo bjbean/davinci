@@ -191,6 +191,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
                     if (filters != null) {
                       if(flatTablesFilters != null) flatTablesFilters + s"AND ($filters)"  else filters}
                   else flatTablesFilters
+                  resetSqlBuffer.foreach(println)
                   val projectSql = getProjectSql(resetSqlBuffer.last, fullFilters, tableName, putWidgetInfo.adhoc_sql)
                   logger.info("project sql ^^^^^^^^^^^^^:" + projectSql)
                   resetSqlBuffer.remove(resetSqlBuffer.length - 1)
@@ -220,7 +221,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     val resetSql: mutable.Buffer[String] = sqlArr.map(sql => {
       val lowerCaseSql = sql.trim.toLowerCase
       if (lowerCaseSql.startsWith("set")) {
-        val setKey = lowerCaseSql.substring(lowerCaseSql.indexOf('@'), lowerCaseSql.indexOf('=')).trim
+        val setKey = lowerCaseSql.substring(lowerCaseSql.indexOf('@')+1, lowerCaseSql.indexOf('=')).trim
         if (paramMap.contains(setKey)) s"SET @$setKey = '${paramMap(setKey)}'" else sql
       } else sql
     }).toBuffer
