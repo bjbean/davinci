@@ -186,12 +186,13 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
                   if(filterList.nonEmpty) filterList.mkString("(","OR",")") else null
                 }
                 if (sqlTemp != "") {
-                  val resetSqlBuffer = if (paramSeq != null) resetSql(sqlTemp.split(sqlSeparator), paramSeq) else sqlTemp.split(s"$sqlSeparator").toBuffer
+                  val resetSqlBuffer = if (paramSeq != null) resetSql(sqlTemp.split(sqlSeparator), paramSeq) else sqlTemp.split(sqlSeparator).toBuffer
                   val fullFilters =
                     if (filters != null) {
                       if(flatTablesFilters != null) flatTablesFilters + s"AND ($filters)"  else filters}
                   else flatTablesFilters
                   val projectSql = getProjectSql(resetSqlBuffer.last, fullFilters, tableName, putWidgetInfo.adhoc_sql)
+                  logger.info("project sql ^^^^^^^^^^^^^:" + projectSql)
                   resetSqlBuffer.remove(resetSqlBuffer.length - 1)
                   resetSqlBuffer.append(projectSql.split(sqlSeparator).head)
                   val resultList = getResult(connectionUrl, resetSqlBuffer.toArray)

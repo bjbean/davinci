@@ -14,7 +14,7 @@ object SqlUtils extends SqlUtils
 trait SqlUtils extends Serializable {
   lazy val datasourceMap: mutable.HashMap[String, HikariDataSource] = new mutable.HashMap[String, HikariDataSource]
   private val logger = LoggerFactory.getLogger(this.getClass)
-  private lazy val adHocTable = "flatTable".toUpperCase
+  private lazy val adHocTable = "table"
   private lazy val sqlSeparator = ";"
   private lazy val sqlUrlSeparator = "<:>"
   private lazy val defaultEncode = "UTF-8"
@@ -97,8 +97,15 @@ trait SqlUtils extends Serializable {
     val resultList = mutable.ListBuffer.empty[Seq[String]]
     var count = 1
     var totalCount: Long = 0
-    val resetSqlBuffer = sqlTemp.split(sqlSeparator).toBuffer
+    val sqls = {
+      val trimSql = sqlTemp.trim
+      if (trimSql.lastIndexOf(sqlSeparator) == trimSql.length - 1) trimSql.dropRight(1) else trimSql
+    }
+    val resetSqlBuffer: mutable.Buffer[String] = sqls.split(sqlSeparator).toBuffer
+    resetSqlBuffer.foreach(println)
+    println(resetSqlBuffer.last+"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
     val projectSql = getProjectSql(resetSqlBuffer.last, filters, tableName, adHocSql, paginateStr)
+    logger.info("project sql ^^^^^^^^^^^^^:" + projectSql)
     resetSqlBuffer.remove(resetSqlBuffer.length - 1)
     resetSqlBuffer.append(projectSql.split(sqlSeparator).head)
     val resultSql = resetSqlBuffer.toArray
@@ -110,24 +117,6 @@ trait SqlUtils extends Serializable {
         getResult(connectionUrl, resultSql).drop(1).copyToBuffer(resultList)
       else
         getResult(connectionUrl, resultSql).copyToBuffer(resultList)
-      count += 1
-    }
-    (resultList, totalCount)
-  }
-
-
-  def getResultAndTotal(connectionUrl: String, resultSql: Array[String]): (ListBuffer[Seq[String]], Long) = {
-    val resultList = mutable.ListBuffer.empty[Seq[String]]
-    val countNum = getResult(connectionUrl, Array(resultSql.last))
-    var totalCount: Long = 0
-    var count = 1
-    if (countNum.size > 1)
-      totalCount = countNum.last.last.toLong
-    if (null != resultSql) {
-      if (count > 1)
-        getResult(connectionUrl, resultSql.dropRight(1)).drop(1).copyToBuffer(resultList)
-      else
-        getResult(connectionUrl, resultSql.dropRight(1)).copyToBuffer(resultList)
       count += 1
     }
     (resultList, totalCount)
@@ -195,13 +184,13 @@ trait SqlUtils extends Serializable {
     */
 
   def getProjectSql(projectSql: String, filters: String, tableName: String, adHocSql: String, paginateStr: String = ""): String = {
+    logger.info(projectSql + "the initial project sql ~~~~~~~~~~~~~~~")
     val projectSqlWithFilter = if (null != filters && filters != "")
       s"SELECT * FROM ($projectSql) AS PROFILTER WHERE $filters"
-    else
-      projectSql
-    val mixinSql = if (adHocSql != "{}") {
+    else projectSql
+    val mixinSql = if (adHocSql.trim != "{}" && adHocSql.trim != "") {
       try {
-        val sqlArr = adHocSql.toUpperCase.split(adHocTable)
+        val sqlArr = adHocSql.toLowerCase.split(adHocTable)
         if (sqlArr.size == 2) sqlArr(0) + s" ($projectSqlWithFilter) as `$tableName` ${sqlArr(1)}"
         else sqlArr(0) + s" ($projectSqlWithFilter) as `$tableName`"
       } catch {
@@ -212,10 +201,10 @@ trait SqlUtils extends Serializable {
       logger.info("adHoc sql is empty")
       projectSqlWithFilter
     }
-    if (paginateStr!= "")
-    s"SELECT * FROM ($mixinSql) AS PAGINATE $paginateStr" + s";SELECT COUNT(1) FROM ($mixinSql) AS COUNTSQL"
+    if (paginateStr != "")
+      s"SELECT * FROM ($mixinSql) AS PAGINATE $paginateStr" + s";SELECT COUNT(*) FROM ($mixinSql) AS COUNTSQL"
     else
-     mixinSql + s";SELECT COUNT(1) FROM ($mixinSql) AS COUNTSQL"
+      mixinSql + s";SELECT COUNT(*) FROM ($mixinSql) AS COUNTSQL"
   }
 
 
