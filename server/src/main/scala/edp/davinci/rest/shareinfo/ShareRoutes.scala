@@ -86,7 +86,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
         val paginationInfo = if (limit != -1) s" limit $limit offset $offset" else ""
         val sortInfo = if (sortby != "") "ORDER BY " + sortby.map(ch => if (ch == ':') ' ' else ch) else ""
         val paginateAndSort = sortInfo + paginationInfo
-        verifyAndGetResult(shareInfoStr, textCSV, paginateAndSort)
+        verifyAndGetResult(shareInfoStr, textHtml, paginateAndSort)
       }
     }
   }
@@ -166,7 +166,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
             val setParamAndFilter: URLHelper = json2caseClass[URLHelper](base64decode)
             getResultComplete(userId, infoId, contentType, setParamAndFilter.f_get, setParamAndFilter.p_get, paginateAndSort)
           } else
-            getResultComplete(userId, infoId, contentType, null, null, "")
+            getResultComplete(userId, infoId, contentType, null, null, paginateAndSort)
         }
         else complete(HttpEntity(contentType, "".getBytes("UTF-8")))
       } catch {

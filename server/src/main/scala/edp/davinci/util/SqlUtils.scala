@@ -17,7 +17,7 @@ object SqlUtils extends SqlUtils
 trait SqlUtils extends Serializable {
   lazy val datasourceMap: mutable.HashMap[String, HikariDataSource] = new mutable.HashMap[String, HikariDataSource]
   private val logger = LoggerFactory.getLogger(this.getClass)
-  private lazy val adHocTable = "table"
+  private lazy val flatTable = "table"
   private lazy val sqlSeparator = ";"
   private lazy val sqlUrlSeparator = "<:>"
   private lazy val defaultEncode = "UTF-8"
@@ -214,7 +214,7 @@ trait SqlUtils extends Serializable {
     else projectSql
     val mixinSql = if (adHocSql.trim != "{}" && adHocSql.trim != "") {
       try {
-        val sqlArr = adHocSql.toLowerCase.split(adHocTable)
+        val sqlArr = adHocSql.toLowerCase.split(flatTable)
         if (sqlArr.size == 2) sqlArr(0) + s" ($projectSqlWithFilter) as `$tableName` ${sqlArr(1)}"
         else sqlArr(0) + s" ($projectSqlWithFilter) as `$tableName`"
       } catch {
