@@ -35,6 +35,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   private lazy val textCSV = MediaTypes.`text/csv` withCharset HttpCharsets.`UTF-8`
   private lazy val conditionSeparator = ","
   private lazy val sqlSeparator = ";"
+  private lazy val sortSeparator = ":"
 
   @Path("/url/{id}")
   @ApiOperation(value = "get the share url", notes = "", nickname = "", httpMethod = "GET")
@@ -78,7 +79,12 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   ))
   def getHtmlRoute: Route = path(routeName / "html" / Segment) { shareInfoStr =>
     get {
-      verifyAndGetResult(shareInfoStr, textHtml)
+      parameters('offset.as[Int] ? 0, 'limit.as[Int] ? -1, 'sortby.as[String] ? "") { (offset, limit, sortby) =>
+        val paginationInfo = if (limit != -1) s" limit $limit offset $offset" else ""
+        val sortInfo = if (sortby != "") "ORDER BY " + sortby.map(ch => if (ch == ':') ' ' else ch) else ""
+        val paginateAndSort = sortInfo + paginationInfo
+        verifyAndGetResult(shareInfoStr, textCSV, paginateAndSort)
+      }
     }
   }
 
@@ -95,7 +101,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   ))
   def getCSVRoute: Route = path(routeName / "csv" / Segment) { shareInfoStr =>
     get {
-      verifyAndGetResult(shareInfoStr, textCSV)
+      verifyAndGetResult(shareInfoStr, textCSV,"")
     }
   }
 
@@ -103,7 +109,10 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   @Path("/widget/{share_info}")
   @ApiOperation(value = "get widget by share info", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "share_info", value = "share info value", required = true, dataType = "string", paramType = "path")))
+    new ApiImplicitParam(name = "share_info", value = "share info value", required = true, dataType = "string", paramType = "path"),
+    new ApiImplicitParam(name = "limit", value = "limit", required = false, dataType = "integer", paramType = "query"),
+    new ApiImplicitParam(name = "offset", value = "offset", required = false, dataType = "integer", paramType = "query"),
+    new ApiImplicitParam(name = "sortby", value = "sortby", required = false, dataType = "string", paramType = "query")))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -112,7 +121,12 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   ))
   def getShareWidgetRoute: Route = path(routeName / "widget" / Segment) { shareInfoStr =>
     get {
-      verifyAndGetResult(shareInfoStr, textCSV)
+      parameters('offset.as[Int] ? 0, 'limit.as[Int] ? -1, 'sortby.as[String] ? "") { (offset, limit, sortby) =>
+        val paginationInfo = if (limit != -1) s" limit $limit offset $offset" else ""
+        val sortInfo = if (sortby != "") "ORDER BY " + sortby.map(ch => if (ch == ':') ' ' else ch) else ""
+        val paginateAndSort = sortInfo + paginationInfo
+        verifyAndGetResult(shareInfoStr, textCSV, paginateAndSort)
+      }
     }
   }
 
@@ -129,43 +143,38 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   ))
   def getShareDashboardRoute: Route = path(routeName / "dashboard" / Segment) { shareInfoStr =>
     get {
-      verifyAndGetResult(shareInfoStr, textCSV)
+      verifyAndGetResult(shareInfoStr, textCSV, "")
     }
   }
 
 
-  private def verifyAndGetResult(shareInfoStr: String, contentType: ContentType.NonBinary): Route = {
+  private def verifyAndGetResult(shareInfoStr: String, contentType: ContentType.NonBinary, paginateAndSort: String): Route = {
     val infoArr: Array[String] = shareInfoStr.split(conditionSeparator.toString)
     if (infoArr.head.trim != "") {
-      val jsonShareInfo = AesUtils.decrypt(infoArr.head.trim, aesPassword)
-      val shareInfo: ShareInfo = json2caseClass[ShareInfo](jsonShareInfo)
-      val (userId, infoId) = (shareInfo.userId, shareInfo.infoId)
-      val MD5Info = MD5Utils.getMD5(caseClass2json(ShareQueryInfo(userId, infoId)))
-      if (MD5Info == shareInfo.md5) {
-        if (infoArr.length == 2) {
-          val base64decoder = new sun.misc.BASE64Decoder
-          val base64decode: String = new String(base64decoder.decodeBuffer(infoArr.last))
-          val setParamAndFilter: URLHelper = json2caseClass[URLHelper](base64decode)
-          getResultComplete(userId, infoId, contentType, setParamAndFilter.f, setParamAndFilter.p)
-        } else
-          getResultComplete(userId, infoId, contentType, null, null)
+      try {
+        val jsonShareInfo = AesUtils.decrypt(infoArr.head.trim, aesPassword)
+        val shareInfo: ShareInfo = json2caseClass[ShareInfo](jsonShareInfo)
+        val (userId, infoId) = (shareInfo.userId, shareInfo.infoId)
+        val MD5Info = MD5Utils.getMD5(caseClass2json(ShareQueryInfo(userId, infoId)))
+        if (MD5Info == shareInfo.md5) {
+          if (infoArr.length == 2) {
+            val base64decoder = new sun.misc.BASE64Decoder
+            val base64decode: String = new String(base64decoder.decodeBuffer(infoArr.last))
+            val setParamAndFilter: URLHelper = json2caseClass[URLHelper](base64decode)
+            getResultComplete(userId, infoId, contentType, setParamAndFilter.f_get, setParamAndFilter.p_get, paginateAndSort)
+          } else
+            getResultComplete(userId, infoId, contentType, null, null, "")
+        }
+        else complete(HttpEntity(contentType, "".getBytes("UTF-8")))
+      } catch {
+        case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
       }
-      else complete(HttpEntity(contentType, "".getBytes("UTF-8")))
     } else
       complete(HttpEntity(contentType, "User Authentication Failed".getBytes("UTF-8")))
   }
 
 
-  private def getHtmlStr(resultList: ListBuffer[Seq[String]]) = {
-    val columns = resultList.head.map(c => c.split(":").head)
-    resultList.remove(0)
-    resultList.prepend(columns)
-    resultList.prepend(Seq(""))
-    emailHtmlStr(Seq(resultList))
-  }
-
-
-  private def getResultComplete(userId: Long, widgetId: Long, contentType: ContentType.NonBinary, filters: String, paramSeq: Seq[KV]) = {
+  private def getResultComplete(userId: Long, widgetId: Long, contentType: ContentType.NonBinary, filters: String, paramSeq: Seq[KV], paginateAndSort: String) = {
     val httpEntity = HttpEntity(contentType, "".getBytes("UTF-8"))
     val operation = for {
       widget <- shareService.getWidgetById(widgetId)
@@ -183,22 +192,13 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
                 val (sqlTemp, tableName, connectionUrl, _) = sourceInfo.head
                 val flatTablesFilters = {
                   val filterList = sourceInfo.map(_._4).filter(_.trim != "").map(_.mkString("(", "", ")"))
-                  if(filterList.nonEmpty) filterList.mkString("(","OR",")") else null
+                  if (filterList.nonEmpty) filterList.mkString("(", "OR", ")") else null
                 }
-                if (sqlTemp != "") {
-                  val resetSqlBuffer = if (paramSeq != null) resetSql(sqlTemp.split(sqlSeparator), paramSeq) else sqlTemp.split(sqlSeparator).toBuffer
-                  val fullFilters =
-                    if (filters != null) {
-                      if(flatTablesFilters != null) flatTablesFilters + s"AND ($filters)"  else filters}
-                  else flatTablesFilters
-                  resetSqlBuffer.foreach(println)
-                  val projectSql = getProjectSql(resetSqlBuffer.last, fullFilters, tableName, putWidgetInfo.adhoc_sql)
-                  logger.info("project sql ^^^^^^^^^^^^^:" + projectSql)
-                  resetSqlBuffer.remove(resetSqlBuffer.length - 1)
-                  resetSqlBuffer.append(projectSql.split(sqlSeparator).head)
-                  val resultList = getResult(connectionUrl, resetSqlBuffer.toArray)
-                  val htmlORCSVStr = if (contentType == textHtml)
-                    getHtmlStr(resultList) else resultList.map(row => covert2CSV(row)).mkString("\n")
+                val fullFilters = if (filters != null) if (flatTablesFilters != null) flatTablesFilters + s"AND ($filters)" else filters else flatTablesFilters
+                if (sqlTemp.trim != "") {
+                  val resultList = sqlExecute(fullFilters, sqlTemp, tableName, putWidgetInfo.adhoc_sql, paginateAndSort, connectionUrl, paramSeq)
+                  val htmlORCSVStr = if (contentType == textHtml) getHtmlStr(resultList._1)
+                  else resultList._1.map(row => covert2CSV(row)).mkString("\n")
                   val responseEntity = HttpEntity(contentType, htmlORCSVStr)
                   complete(OK, responseEntity)
                 } else
@@ -207,25 +207,21 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
               catch {
                 case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
               }
-            } else complete(BadRequest, httpEntity)
-          case Failure(_) => complete(BadRequest, httpEntity)
+            } else complete(BadRequest, ResponseJson[String](getHeader(400, "", null), "source info is empty"))
+          case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
         }
-      case Failure(_) => complete(BadRequest, httpEntity)
+      case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
     }
   }
 
 
-  private def resetSql(sqlArr: Array[String], paramSeq: Seq[KV]) = {
-    val paramMap = mutable.HashMap.empty[String, String]
-    paramSeq.foreach(param => paramMap(param.k) = param.v)
-    val resetSql: mutable.Buffer[String] = sqlArr.map(sql => {
-      val lowerCaseSql = sql.trim.toLowerCase
-      if (lowerCaseSql.startsWith("set")) {
-        val setKey = lowerCaseSql.substring(lowerCaseSql.indexOf('@')+1, lowerCaseSql.indexOf('=')).trim
-        if (paramMap.contains(setKey)) s"SET @$setKey = '${paramMap(setKey)}'" else sql
-      } else sql
-    }).toBuffer
-    resetSql
+  private def getHtmlStr(resultList: ListBuffer[Seq[String]]) = {
+    val columns = resultList.head.map(c => c.split(":").head)
+    resultList.remove(0)
+    resultList.prepend(columns)
+    resultList.prepend(Seq(""))
+    val noNullResult = resultList.map(seq => seq.map(s => if (null == s) "" else s))
+    emailHtmlStr(Seq(noNullResult))
   }
 
 
@@ -233,9 +229,10 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     STGroupFile(stgPath, Constants.DefaultEncoding, '$', '$').instanceOf("email_html")
       .map(_.add("tables", tables).render().get)
       .recover {
-        case e: Exception => s"ST Error: $e"
+        case e: Exception =>
+          logger.info("render exception ", e)
+          s"ST Error: $e"
       }.getOrElse("")
-
 }
 
 

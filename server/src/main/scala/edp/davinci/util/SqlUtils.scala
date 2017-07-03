@@ -2,9 +2,12 @@ package edp.davinci.util
 
 import java.io.ByteArrayOutputStream
 import java.sql.{Connection, ResultSet, Statement}
+
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+import edp.davinci.KV
 import edp.davinci.csv.CSVWriter
 import org.slf4j.LoggerFactory
+
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -93,25 +96,31 @@ trait SqlUtils extends Serializable {
   }
 
 
-  def sqlExecute(filters: String, sqlTemp: String, tableName: String, adHocSql: String, paginateStr: String, connectionUrl: String): (ListBuffer[Seq[String]], Long) = {
+  def sqlExecute(filters: String,
+                 sqlTemp: String,
+                 tableName: String,
+                 adHocSql: String,
+                 paginateAndSort: String,
+                 connectionUrl: String,
+                 paramSeq: Seq[KV] = null): (ListBuffer[Seq[String]], Long) = {
     val resultList = mutable.ListBuffer.empty[Seq[String]]
     var count = 1
     var totalCount: Long = 0
-    val sqls = {
-      val trimSql = sqlTemp.trim
-      if (trimSql.lastIndexOf(sqlSeparator) == trimSql.length - 1) trimSql.dropRight(1) else trimSql
-    }
-    val resetSqlBuffer: mutable.Buffer[String] = sqls.split(sqlSeparator).toBuffer
+    val trimSql = sqlTemp.trim
+    logger.info(trimSql + "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sqlTemp")
+    val sqls = if (trimSql.lastIndexOf(sqlSeparator) == trimSql.length - 1) trimSql.dropRight(1).split(sqlSeparator) else trimSql.split(sqlSeparator)
+    val resetSqlBuffer: mutable.Buffer[String] = if (paramSeq != null) resetSql(sqls, paramSeq) else sqls.toBuffer
     resetSqlBuffer.foreach(println)
-    println(resetSqlBuffer.last+"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-    val projectSql = getProjectSql(resetSqlBuffer.last, filters, tableName, adHocSql, paginateStr)
-    logger.info("project sql ^^^^^^^^^^^^^:" + projectSql)
+    val projectSql = getProjectSql(resetSqlBuffer.last, filters, tableName, adHocSql, paginateAndSort)
+    logger.info(projectSql + "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^projectSql")
     resetSqlBuffer.remove(resetSqlBuffer.length - 1)
     resetSqlBuffer.append(projectSql.split(sqlSeparator).head)
     val resultSql = resetSqlBuffer.toArray
-    val countNum = getResult(connectionUrl, Array(projectSql.split(sqlSeparator).last))
-    if (countNum.size > 1)
-      totalCount = countNum.last.last.toLong
+    if (paramSeq != null) {
+      val countNum = getResult(connectionUrl, Array(projectSql.split(sqlSeparator).last))
+      if (countNum.size > 1)
+        totalCount = countNum.last.last.toLong
+    }
     if (null != resultSql) {
       if (count > 1)
         getResult(connectionUrl, resultSql).drop(1).copyToBuffer(resultList)
@@ -122,8 +131,24 @@ trait SqlUtils extends Serializable {
     (resultList, totalCount)
   }
 
+  private def resetSql(sqlArr: Array[String], paramSeq: Seq[KV]) = {
+    val paramMap = mutable.HashMap.empty[String, String]
+    paramSeq.foreach(param => paramMap(param.k.toLowerCase) = param.v)
+    val resetSqls: Array[String] = sqlArr.map(sql => {
+      val lowerCaseSql = sql.trim.toLowerCase
+      if (lowerCaseSql.startsWith("set")) {
+        val setKey = lowerCaseSql.substring(lowerCaseSql.indexOf('@') + 1, lowerCaseSql.indexOf('=')).trim
+        val setSql = if (paramMap.contains(setKey)) s"SET @$setKey = '${paramMap(setKey)}'" else sql
+        logger.info(setSql + "***********************setSql")
+        setSql
+      } else sql
+    })
+    resetSqls.toBuffer
+  }
 
   def getResult(connectionUrl: String, sql: Array[String]): ListBuffer[Seq[String]] = {
+    logger.info("the sql in getResult:")
+    sql.foreach(println)
     val resultList = new ListBuffer[Seq[String]]
     val columnList = new ListBuffer[String]
     var dbConnection: Connection = null
@@ -133,8 +158,7 @@ trait SqlUtils extends Serializable {
       if (connectionInfo.size != 3) {
         logger.info("connection is not in right format")
         throw new Exception("connection is not in right format:" + connectionUrl)
-      }
-      else {
+      } else {
         try {
           dbConnection = SqlUtils.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
           statement = dbConnection.createStatement()
