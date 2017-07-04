@@ -2,9 +2,9 @@ package edp.davinci.rest.shareinfo
 
 import javax.ws.rs.Path
 
-import org.apache.commons.lang3.StringEscapeUtils
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.{ContentType, HttpCharsets, HttpEntity, MediaTypes}
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.ContentDispositionTypes.attachment
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.{KV, URLHelper}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
@@ -17,11 +17,10 @@ import edp.davinci.util.{AesUtils, AuthorizationProvider, MD5Utils, SqlUtils}
 import io.swagger.annotations._
 import org.clapper.scalasti.{Constants, STGroupFile}
 import org.slf4j.LoggerFactory
-
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
+
 
 @Api(value = "/share", consumes = "application/json", produces = "application/json")
 @Path("/share")
@@ -34,13 +33,11 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   private lazy val textHtml = MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`
   private lazy val textCSV = MediaTypes.`text/csv` withCharset HttpCharsets.`UTF-8`
   private lazy val conditionSeparator = ","
-  private lazy val sqlSeparator = ";"
-  private lazy val sortSeparator = ":"
 
-  @Path("/url/{id}")
-  @ApiOperation(value = "get the share url", notes = "", nickname = "", httpMethod = "GET")
+  @Path("/html/{widget_id}")
+  @ApiOperation(value = "get the html share url", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "id", value = "the entity id to share", required = true, dataType = "integer", paramType = "path")
+    new ApiImplicitParam(name = "widget_id", value = "the entity id to share", required = true, dataType = "integer", paramType = "path")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
@@ -48,7 +45,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getShareURLRoute: Route = path(routeName / "url" / LongNumber) { id =>
+  def getShareURLRoute: Route = path(routeName / "widget" / LongNumber) { id =>
     get {
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session => getShareURL(session, id)
@@ -57,13 +54,14 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     }
   }
 
+
   private def getShareURL(session: SessionClass, widgetId: Long) = {
-    val shareInfo = ShareQueryInfo(session.userId, widgetId)
+    val shareInfo = ShareWidgetInfo(session.userId, widgetId)
     val MD5Info = MD5Utils.getMD5(caseClass2json(shareInfo))
     val shareQueryInfo = ShareInfo(session.userId, widgetId, MD5Info)
     val password = modules.config.getString("aes.password")
     val aesStr = AesUtils.encrypt(caseClass2json(shareQueryInfo), password)
-    complete(OK, ResponseJson[String](getHeader(200, "aes str", session), aesStr))
+    complete(OK, ResponseJson[String](getHeader(200, "url token", session), aesStr))
   }
 
 
@@ -104,7 +102,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   ))
   def getCSVRoute: Route = path(routeName / "csv" / Segment) { shareInfoStr =>
     get {
-      verifyAndGetResult(shareInfoStr, textCSV,"")
+      verifyAndGetResult(shareInfoStr, textCSV, "")
     }
   }
 
@@ -158,7 +156,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
         val jsonShareInfo = AesUtils.decrypt(infoArr.head.trim, aesPassword)
         val shareInfo: ShareInfo = json2caseClass[ShareInfo](jsonShareInfo)
         val (userId, infoId) = (shareInfo.userId, shareInfo.infoId)
-        val MD5Info = MD5Utils.getMD5(caseClass2json(ShareQueryInfo(userId, infoId)))
+        val MD5Info = MD5Utils.getMD5(caseClass2json(ShareWidgetInfo(userId, infoId)))
         if (MD5Info == shareInfo.md5) {
           if (infoArr.length == 2) {
             val base64decoder = new sun.misc.BASE64Decoder
@@ -177,7 +175,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   }
 
 
-  private def getResultComplete(userId: Long, widgetId: Long, contentType: ContentType.NonBinary, filters: String, paramSeq: Seq[KV], paginateAndSort: String) = {
+  private def getResultComplete(userId: Long, widgetId: Long, contentType: ContentType.NonBinary, urlfilters: String, paramSeq: Seq[KV], paginateAndSort: String) = {
     val httpEntity = HttpEntity(contentType, "".getBytes("UTF-8"))
     val operation = for {
       widget <- shareService.getWidgetById(widgetId)
@@ -197,13 +195,14 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
                   val filterList = sourceInfo.map(_._4).filter(_.trim != "").map(_.mkString("(", "", ")"))
                   if (filterList.nonEmpty) filterList.mkString("(", "OR", ")") else null
                 }
-                val fullFilters = if (filters != null) if (flatTablesFilters != null) flatTablesFilters + s"AND ($filters)" else filters else flatTablesFilters
+                val fullFilters = if (urlfilters != null) if (flatTablesFilters != null) flatTablesFilters + s"AND ($urlfilters)" else urlfilters else flatTablesFilters
                 if (sqlTemp.trim != "") {
                   val resultList = sqlExecute(fullFilters, sqlTemp, tableName, putWidgetInfo.adhoc_sql, paginateAndSort, connectionUrl, paramSeq)
                   val htmlORCSVStr = if (contentType == textHtml) getHtmlStr(resultList._1)
                   else resultList._1.map(row => covert2CSV(row)).mkString("\n")
                   val responseEntity = HttpEntity(contentType, htmlORCSVStr)
-                  complete(OK, responseEntity)
+                  val contentDisposition = headers.`Content-Disposition`(attachment, Map("filename" -> s"share.csv")).asInstanceOf[HttpHeader]
+                  complete(HttpResponse(headers = List(contentDisposition), entity = responseEntity))
                 } else
                   complete(BadRequest, httpEntity)
               }

@@ -13,16 +13,9 @@ case class ChangePwdClass(oldPass: String, newPass: String)
 
 case class ChangeUserPwdClass(id: Long, oldPass: String, newPass: String)
 
-//case class PaginationClass(pageIndex: Int, size: Int)
-case class BaseInfo(id: Long, name: String)
-
 case class SqlInfo(sqls: Array[String])
 
-case class adHocSql(payload: String)
-
-case class Identifier(payload:String)
-
-case class ShareQueryInfo(userId:Long, infoId:Long)
+case class ShareWidgetInfo(userId:Long, infoId:Long)
 
 case class ShareInfo(userId:Long, infoId:Long,md5:String)
 
