@@ -2,7 +2,6 @@ package edp.davinci.rest
 
 import edp.davinci.persistence.entities._
 
-//token class
 case class LoginClass(username: String, password: String)
 
 case class LoginUserInfo(title: String, name: String)
@@ -15,7 +14,13 @@ case class ChangeUserPwdClass(id: Long, oldPass: String, newPass: String)
 
 case class SqlInfo(sqls: Array[String])
 
+case class BaseInfo(id: Long, name: String)
+
+case class ManualInfo(adHoc:Option[String]=None,manualFilters:Option[String]=None)
+
 case class ShareWidgetInfo(userId:Long, infoId:Long)
+
+case class ShareDashboardInfo(userId:Long,dashboardId:Long)
 
 case class ShareInfo(userId:Long, infoId:Long,md5:String)
 
@@ -69,9 +74,9 @@ case class PutUserInfoSeq(payload: Seq[PutUserInfo])
 
 case class PutWidgetInfoSeq(payload: Seq[PutWidgetInfo])
 
-case class FlatTableResult(result: Seq[String] = null,offset:Long,limit:Long,totalCount:Long)
+case class FlatTableResult(result: Seq[String] = null,totalCount:Long)
 
-case class ShareResult(putWidgetInfo: PutWidgetInfo,flatTableResult: FlatTableResult)
+case class ShareResult(putWidgetInfo: PutWidgetInfo,result: Seq[String] = null,totalCount:Long)
 
 case class ResponsePayload(response: String)
 
