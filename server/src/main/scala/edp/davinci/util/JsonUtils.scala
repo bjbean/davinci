@@ -1,4 +1,4 @@
-package edp.davinci.common
+package edp.davinci.util
 
 import org.json4s.JsonAST.JNothing
 import org.json4s._

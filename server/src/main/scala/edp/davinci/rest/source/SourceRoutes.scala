@@ -4,15 +4,16 @@ import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
+import edp.davinci.DavinciConstants
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities.{PostSourceInfo, PutSourceInfo, Source}
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.common.ResponseUtils.getHeader
+import edp.davinci.util.ResponseUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
-
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 
@@ -56,19 +57,6 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
-
-  //  @Path("{page=\\d+&size=\\d+}")
-  //  @ApiOperation(value = "get sources with pagenifation", notes = "", nickname = "", httpMethod = "GET")
-  //  @ApiImplicitParams(Array(
-  //    new ApiImplicitParam(name = "pagenifation", value = "pagenifation information", required = true, dataType = "String", paramType = "path")
-  //  ))
-  //  @ApiResponses(Array(
-  //    new ApiResponse(code = 200, message = "OK"),
-  //    new ApiResponse(code = 403, message = "user is not admin"),
-  //    new ApiResponse(code = 401, message = "authorization error"),
-  //    new ApiResponse(code = 500, message = "internal server error")
-  //  ))
-  //  def getSourceByPageRoute: Route = modules.sourceRoutes.paginateRoute(routeName,"domain_id")
 
 
   @ApiOperation(value = "Add new sources to the system", notes = "", nickname = "", httpMethod = "POST")
@@ -142,7 +130,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   @Path("/{id}")
   @ApiOperation(value = "delete source by id", notes = "", nickname = "", httpMethod = "DELETE")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "id", value = "source id", required = true, dataType = "integer", paramType = "path")
+    new ApiImplicitParam(name = "id", value = "source id ", required = true, dataType = "integer", paramType = "path")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "delete success"),
@@ -150,6 +138,21 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteSourceByIdRoute: Route = modules.sourceRoutes.deleteByIdRoute(routeName)
+  def deleteSourceByIdRoute: Route = path(routeName / LongNumber) { sourceId =>
+    delete {
+      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        session =>if (session.admin) {
+            val operation = for {
+              source <- sourceService.deleteSource(sourceId)
+              flatTable <- sourceService.updateFlatTable(sourceId)
+            } yield (source,flatTable)
+            onComplete(operation) {
+              case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+            }
+          } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+      }
+    }
+  }
 
 }

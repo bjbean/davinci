@@ -1,5 +1,6 @@
 package edp.davinci.util
 
+import java.nio.charset.Charset
 import java.security.SecureRandom
 import javax.crypto.spec.DESKeySpec
 import javax.crypto.{Cipher, SecretKeyFactory}
@@ -41,22 +42,22 @@ trait DES {
 }
 
 
-//object DES {
-//  def main(args: Array[String]): Unit = {
-//    val UTF8_CHARSET = Charset.forName("UTF-8");
-//    val str = "测试内容"
-//    val pwd = "9588028820109132570743325311898426347857298773549468758875018579537757772163084478873699447306034466200616411960574122434059469100235892702736860872901247123456"
-//    val des = new DES
-//    val result = des.encrypt(str.getBytes(), pwd)
-//    println("加密后 " + result)
-//
-//    try {
-//      val decryptResult = des.decrypt(result, pwd)
-//      println("解密后 " + new String(decryptResult, 0, decryptResult.length, UTF8_CHARSET))
-//    }
-//    catch {
-//      case e:Throwable => e.printStackTrace()
-//    }
-//  }
-//
-//}
+object DESTest extends DES{
+  def main(args: Array[String]): Unit = {
+    val UTF8_CHARSET = Charset.forName("UTF-8");
+    val str = "测试内容"
+    val pwd = "9588028820109132570743325311898426347857298773549468758875018579537757772163084478873699447306034466200616411960574122434059469100235892702736860872901247123456"
+
+    val result = encrypt(str, pwd)
+    println("加密后 " + result)
+
+    try {
+      val decryptResult = decrypt(result, pwd)
+      println("解密后 " + new String(decryptResult, 0, decryptResult.length, UTF8_CHARSET))
+    }
+    catch {
+      case e:Throwable => e.printStackTrace()
+    }
+  }
+
+}

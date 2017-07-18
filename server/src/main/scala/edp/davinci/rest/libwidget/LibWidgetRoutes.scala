@@ -12,7 +12,7 @@ import edp.davinci.persistence.entities.QueryLibWidget
 import edp.davinci.rest.{ResponseJson, ResponseSeqJson, SessionClass}
 import edp.davinci.util.AuthorizationProvider
 import io.swagger.annotations._
-import edp.davinci.common.ResponseUtils._
+import edp.davinci.util.ResponseUtils._
 import org.slf4j.LoggerFactory
 
 @Api(value = "/libwidgets", consumes = "application/json", produces = "application/json")
@@ -22,19 +22,6 @@ class LibWidgetRoutes(modules: ConfigurationModule with PersistenceModule with B
   val routes: Route = getLibWidgetByAllRoute
   private lazy val libWidgetService = new LibWidgetService(modules)
   private val logger = LoggerFactory.getLogger(this.getClass)
-
-  //  @Path("/{id}")
-  //  @ApiOperation(value = "get one libWidget from system by id", notes = "", nickname = "", httpMethod = "GET")
-  //  @ApiImplicitParams(Array(
-  //    new ApiImplicitParam(name = "id", value = "libWidget id", required = true, dataType = "integer", paramType = "path")
-  //  ))
-  //  @ApiResponses(Array(
-  //    new ApiResponse(code = 200, message = "OK"),
-  //    new ApiResponse(code = 401, message = "authorization error"),
-  //    new ApiResponse(code = 400, message = "bad request"),
-  //    new ApiResponse(code = 403, message = "user is not admin")
-  //  ))
-  //  def getLibWidgetByIdRoute: Route = modules.libWidgetRoutes.getByIdRoute("libWidgets")
 
   @ApiOperation(value = "get all libWidget with the same domain", notes = "", nickname = "", httpMethod = "GET")
   @ApiResponses(Array(

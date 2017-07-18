@@ -2,8 +2,7 @@ package edp.davinci.rest
 
 import edp.davinci.persistence.entities._
 
-//token class
-case class LoginClass(username: String, pwd: String)
+case class LoginClass(username: String, password: String)
 
 case class LoginUserInfo(title: String, name: String)
 
@@ -13,14 +12,19 @@ case class ChangePwdClass(oldPass: String, newPass: String)
 
 case class ChangeUserPwdClass(id: Long, oldPass: String, newPass: String)
 
-//case class PaginationClass(pageIndex: Int, size: Int)
-case class BaseInfo(id: Long, name: String)
-
 case class SqlInfo(sqls: Array[String])
 
-case class OlapSql(payload: String)
+case class BaseInfo(id: Long, name: String)
 
-case class WidgetInfo(id: Long, widget_id: Long, flatTableId: Long, position_x: Int, position_y: Int, width: Int, length: Int, trigger_type:String, trigger_params:String)
+case class ManualInfo(adHoc:Option[String]=None,manualFilters:Option[String]=None)
+
+case class ShareWidgetInfo(userId:Long, infoId:Long)
+
+case class ShareDashboardInfo(userId:Long,dashboardId:Long)
+
+case class ShareInfo(userId:Long, infoId:Long,md5:String)
+
+case class WidgetInfo(id: Long, widget_id: Long, flatTableId: Long, position_x: Int, position_y: Int, width: Int, length: Int, trigger_type:String, trigger_params:String,aesStr:String="")
 
 case class DashboardInfo(id: Long, name: String, pic: String, desc: String, publish: Boolean, widgets: Seq[WidgetInfo])
 
@@ -70,7 +74,9 @@ case class PutUserInfoSeq(payload: Seq[PutUserInfo])
 
 case class PutWidgetInfoSeq(payload: Seq[PutWidgetInfo])
 
-case class FlatTableResult(result: Seq[String] = null,offset:Long,limit:Long,totalCount:Long)
+case class FlatTableResult(result: Seq[String] = null,totalCount:Long)
+
+case class ShareResult(putWidgetInfo: PutWidgetInfo,result: Seq[String] = null,totalCount:Long)
 
 case class ResponsePayload(response: String)
 

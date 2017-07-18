@@ -1,6 +1,6 @@
 package edp.davinci.rest.user
 
-import edp.davinci.common.ResponseUtils
+import edp.davinci.util.ResponseUtils
 import edp.davinci.module._
 import edp.davinci.persistence.entities._
 import edp.davinci.rest.{LoginUserInfo, SessionClass}
@@ -50,5 +50,13 @@ class UserService(modules: ConfigurationModule with PersistenceModule with Busin
 
   def getUserInfo(session:SessionClass): Future[Seq[(Long, String, String, String, Boolean, Boolean)]] ={
     db.run(userTQ.filter(_.id === session.userId).map(r => (r.id, r.email, r.title, r.name, r.admin, r.active)).result)
+  }
+
+  def deleteUser(userId:Long): Future[Int] ={
+    db.run(userTQ.filter(_.id === userId).delete)
+  }
+
+  def deleteRelGU(userId:Long): Future[Int] ={
+    db.run(relUGTQ.filter(_.user_id === userId).delete)
   }
 }

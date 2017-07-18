@@ -1,4 +1,4 @@
-package edp.davinci.common
+package edp.davinci.util
 
 import java.nio.charset.{Charset, CodingErrorAction}
 import java.util.TimeZone

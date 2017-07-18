@@ -8,11 +8,11 @@ import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModul
 import edp.davinci.persistence.entities.{PostWidgetInfo, PutWidgetInfo, Widget}
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.common.ResponseUtils._
+import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
-
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 @Api(value = "/widgets", consumes = "application/json", produces = "application/json")
@@ -77,10 +77,10 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   private def postWidgetComplete(session: SessionClass, postWidgetSeq: Seq[PostWidgetInfo]): Route = {
     if (session.admin) {
-      val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.flatTable_id, post.name, Some(post.olap_sql), post.desc, Some(post.chart_params), post.publish, active = true, null, session.userId, null, session.userId))
+      val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.flatTable_id, post.name, Some(post.adhoc_sql), post.desc, Some(post.chart_params), post.publish, active = true, null, session.userId, null, session.userId))
       onComplete(modules.widgetDal.insert(widgetSeq)) {
         case Success(widgets) =>
-          val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.flatTable_id, w.name, w.olap_sql.getOrElse(""), w.desc, w.chart_params.getOrElse(""), w.publish, Some(w.active)))
+          val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql.getOrElse(""), w.desc, w.chart_params.getOrElse(""), w.publish, Some(w.active)))
           complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session), putWidgets))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -131,7 +131,24 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteWidgetByIdRoute: Route = modules.widgetRoutes.deleteByIdRoute(routeName)
+  def deleteWidgetByIdRoute: Route = path(routeName / LongNumber) {
+    widgetId =>
+      delete {
+        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          session =>
+            if (session.admin) {
+              val operation = for {
+                user <- widgetService.deleteWidget(widgetId)
+                relGU <- widgetService.deleteRelDW(widgetId)
+              } yield (user, relGU)
+              onComplete(operation) {
+                case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
+                case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+              }
+            } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+        }
+      }
+  }
 
   @Path("/{widget_id}/sqls")
   @ApiOperation(value = "get whole sql by widget id", notes = "", nickname = "", httpMethod = "GET")

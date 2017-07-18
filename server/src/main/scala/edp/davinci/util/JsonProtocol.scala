@@ -52,7 +52,7 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatPostRelDashboardWidgetSeq: RootJsonFormat[PostRelDashboardWidgetSeq] = jsonFormat1(PostRelDashboardWidgetSeq)
   implicit val formatPutRelDashboardWidgetSeq: RootJsonFormat[PutRelDashboardWidgetSeq] = jsonFormat1(PutRelDashboardWidgetSeq)
 
-  implicit val formatWidgetInfo: RootJsonFormat[WidgetInfo] = jsonFormat9(WidgetInfo)
+  implicit val formatWidgetInfo: RootJsonFormat[WidgetInfo] = jsonFormat10(WidgetInfo)
   implicit val formatDashboard: RootJsonFormat[Dashboard] = jsonFormat10(Dashboard)
   implicit val formatPostDashboardInfo: RootJsonFormat[PostDashboardInfo] = jsonFormat4(PostDashboardInfo)
   implicit val formatPutDashboardInfo: RootJsonFormat[PutDashboardInfo] = jsonFormat6(PutDashboardInfo)
@@ -95,13 +95,13 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatPutLoginUserInfo: RootJsonFormat[LoginUserInfo] = jsonFormat2(LoginUserInfo)
 
-  implicit val formatBizlogicResult: RootJsonFormat[FlatTableResult] = jsonFormat4(FlatTableResult)
+  implicit val formatBizlogicResult: RootJsonFormat[FlatTableResult] = jsonFormat2(FlatTableResult)
 
   implicit val formatResponsePayload: RootJsonFormat[ResponsePayload] = jsonFormat1(ResponsePayload)
 
-  implicit val formatOlapSql: RootJsonFormat[OlapSql] = jsonFormat1(OlapSql)
+  implicit val formatManualInfo: RootJsonFormat[ManualInfo] = jsonFormat2(ManualInfo)
 
-  //  implicit val formatOlapSql: Unmarshaller[HttpRequest, Option[OlapSql]] = targetOptionUnmarshaller[HttpRequest, OlapSql]
+  implicit val formatShareResult: RootJsonFormat[ShareResult] = jsonFormat3(ShareResult)
 
   implicit def formatRequestJson[A: JsonFormat]: RootJsonFormat[RequestJson[A]] = jsonFormat1(RequestJson.apply[A])
 

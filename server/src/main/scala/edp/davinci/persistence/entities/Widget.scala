@@ -9,7 +9,7 @@ case class Widget(id: Long,
                   widgetlib_id: Long,
                   flatTable_id: Long,
                   name: String,
-                  olap_sql: Option[String] = None,
+                  adhoc_sql: Option[String] = None,
                   desc: String,
                   chart_params: Option[String] = None,
                   publish: Boolean,
@@ -23,7 +23,7 @@ case class Widget(id: Long,
 case class PostWidgetInfo(widgetlib_id: Long,
                           flatTable_id: Long,
                           name: String,
-                          olap_sql: String,
+                          adhoc_sql: String,
                           desc: String,
                           chart_params: String,
                           publish: Boolean) extends SimpleBaseEntity
@@ -32,7 +32,7 @@ case class PutWidgetInfo(id: Long,
                          widgetlib_id: Long,
                          flatTable_id: Long,
                          name: String,
-                         olap_sql: String,
+                         adhoc_sql: String,
                          desc: String,
                          chart_params: String,
                          publish: Boolean,
@@ -44,7 +44,7 @@ class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
   def flatTable_id: Rep[Long] = column[Long]("flatTable_id")
 
-  def olap_sql: Rep[Option[String]] = column[Option[String]]("olap_sql", O.Default(null))
+  def adhoc_sql: Rep[Option[String]] = column[Option[String]]("adhoc_sql", O.Default(null))
 
   def desc: Rep[String] = column[String]("desc")
 
@@ -60,5 +60,5 @@ class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
   def update_by: Rep[Long] = column[Long]("update_by")
 
-  def * : ProvenShape[Widget] = (id, widgetlib_id, flatTable_id, name, olap_sql, desc, chart_params, publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
+  def * : ProvenShape[Widget] = (id, widgetlib_id, flatTable_id, name, adhoc_sql, desc, chart_params, publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
 }

@@ -8,11 +8,10 @@ import edp.davinci.module._
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.common.ResponseUtils._
+import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations.{ApiImplicitParams, _}
-import org.slf4j.LoggerFactory
-
+import edp.davinci.DavinciConstants.conditionSeparator
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -22,8 +21,8 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   val routes: Route = getWidgetByDashboardIdRoute ~ postDashboardRoute ~ putDashboardRoute ~ postWidget2DashboardRoute ~ getDashboardByAllRoute ~ deleteDashboardByIdRoute ~ deleteWidgetFromDashboardRoute ~ postWidget2DashboardRoute ~ putWidgetInDashboardRoute
   private lazy val dashboardService = new DashboardService(modules)
-//  private lazy val logger = LoggerFactory.getLogger(this.getClass)
   private lazy val routeName = "dashboards"
+
 
   @Path("/{dashboard_id}")
   @ApiOperation(value = "get one dashboard from system by id", notes = "", nickname = "", httpMethod = "GET")
@@ -73,10 +72,10 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   ))
   def getDashboardByAllRoute: Route = path(routeName) {
     get {
-      parameter('active.as[Boolean].?){active =>
+      parameter('active.as[Boolean].?) { active =>
         authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
           session =>
-            onComplete(dashboardService.getAll(session,active.getOrElse(true))) {
+            onComplete(dashboardService.getAll(session, active.getOrElse(true))) {
               case Success(dashboardSeq) =>
                 val dashboards = dashboardSeq.map(d => PutDashboardInfo(d._1, d._2, d._3.getOrElse(""), d._4, d._5, Some(d._6)))
                 complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), dashboards))
@@ -156,7 +155,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   @Path("/{id}")
   @ApiOperation(value = "delete dashboard by id", notes = "", nickname = "", httpMethod = "DELETE")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "id", value = "dashboard id", required = true, dataType = "integer", paramType = "path")
+    new ApiImplicitParam(name = "id", value = "dashboard id ", required = true, dataType = "integer", paramType = "path")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "delete success"),
@@ -164,7 +163,23 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteDashboardByIdRoute: Route = modules.dashboardRoutes.deleteByIdRoute(routeName)
+  def deleteDashboardByIdRoute: Route = path(routeName / LongNumber) { dashboardId =>
+    delete {
+      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        session =>
+          if (session.admin) {
+            val operation = for {
+              delDashboard <- dashboardService.deleteDashboard(dashboardId)
+              delRel <- dashboardService.deleteRelByFilter(dashboardId)
+            } yield (delDashboard, delRel)
+            onComplete(operation) {
+              case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+            }
+          } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+      }
+    }
+  }
 
   @Path("/widgets")
   @ApiOperation(value = "add widgets to a dashboard", notes = "", nickname = "", httpMethod = "POST")
@@ -250,7 +265,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
           if (session.admin) {
-            onComplete(dashboardService.deleteRelDWById(session, relId)) {
+            onComplete(dashboardService.deleteRelDWById(relId)) {
               case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session), r))
               case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
             }
