@@ -1,19 +1,18 @@
 package edp.davinci.rest.group
 
 import javax.ws.rs.Path
-
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
+import edp.davinci.DavinciConstants
 import edp.davinci.module._
 import edp.davinci.persistence.entities.{PostGroupInfo, PutGroupInfo, UserGroup}
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.util.ResponseUtils.getHeader
 import edp.davinci.util.JsonProtocol._
+import edp.davinci.util.ResponseUtils.getHeader
 import io.swagger.annotations._
-import org.slf4j.LoggerFactory
-
 import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 @Api(value = "/groups", consumes = "application/json", produces = "application/json")
 @Path("/groups")
@@ -21,7 +20,6 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
 
   val routes: Route = getGroupByAllRoute ~ postGroupRoute ~ putGroupRoute ~ deleteGroupByIdRoute
   private lazy val groupService = new GroupService(modules)
-  //  private val logger = LoggerFactory.getLogger(this.getClass)
   private lazy val routeName = "groups"
 
   @ApiOperation(value = "get all group with the same domain", notes = "", nickname = "", httpMethod = "GET")
@@ -55,19 +53,6 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       }
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
-
-  //  @Path("{page=\\d+&size=\\d+}")
-  //  @ApiOperation(value = "get groups with pagenifation", notes = "", nickname = "", httpMethod = "GET")
-  //  @ApiImplicitParams(Array(
-  //    new ApiImplicitParam(name = "pagenifation", value = "pagenifation information", required = true, dataType = "String", paramType = "path")
-  //  ))
-  //  @ApiResponses(Array(
-  //    new ApiResponse(code = 200, message = "OK"),
-  //    new ApiResponse(code = 403, message = "user is not admin"),
-  //    new ApiResponse(code = 401, message = "authorization error"),
-  //    new ApiResponse(code = 500, message = "internal server error")
-  //  ))
-  //  def getGroupByPageRoute = modules.groupRoutes.pagenifationRoute(routeName)
 
 
   @ApiOperation(value = "Add a new group to the system", notes = "", nickname = "", httpMethod = "POST")
@@ -137,7 +122,6 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
   }
 
-
   @Path("/{id}")
   @ApiOperation(value = "delete group by id", notes = "", nickname = "", httpMethod = "DELETE")
   @ApiImplicitParams(Array(
@@ -149,7 +133,23 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteGroupByIdRoute: Route = modules.groupRoutes.deleteByIdRoute(routeName)
+  def deleteGroupByIdRoute: Route = path(routeName / LongNumber) { groupId =>
+    delete {
+      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        session =>
+          if (session.admin) {
+            val operation = for {
+              group <- groupService.deleteGroup(groupId)
+              relGF <- groupService.deleteRelGF(groupId)
+              relGU <- groupService.deleteRelGU(groupId)
+            } yield (group, relGF, relGU)
+            onComplete(operation) {
+              case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+            }
+          } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
 
-
+      }
+    }
+  }
 }

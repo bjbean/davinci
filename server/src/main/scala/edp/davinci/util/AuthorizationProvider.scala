@@ -17,7 +17,7 @@ class InternalError(statusCode: Int = 500, desc: String = "internal server error
 
 class UserNotFoundError(statusCode: Int = 404, desc: String = "user not found") extends AuthorizationError(statusCode, desc)
 
-class PWDError(statusCode: Int = 400, desc: String = "pwd is wrong") extends AuthorizationError(statusCode, desc)
+class passwordError(statusCode: Int = 400, desc: String = "pwd is wrong") extends AuthorizationError(statusCode, desc)
 
 object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceModuleImpl {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -64,7 +64,7 @@ object AuthorizationProvider extends ConfigurationModuleImpl with PersistenceMod
         userSeq.headOption match {
           case Some(user) =>
             if (verifyPwd(user.password, login.password)) user
-            else throw new PWDError()
+            else throw new passwordError()
           case None =>
             println("not found")
             logger.info("user not found")

@@ -189,20 +189,25 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteUserByIdRoute: Route = modules.userRoutes.deleteByIdRoute(routeName)
+  def deleteUserByIdRoute: Route = path(routeName / LongNumber) {
+    userId =>
+      delete {
+        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          session =>
+            if (session.admin) {
+              val operation = for {
+                user <- userService.deleteUser(userId)
+                relGU <- userService.deleteRelGU(userId)
+              } yield (user, relGU)
+              onComplete(operation) {
+                case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
+                case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+              }
+            } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+        }
+      }
+  }
 
-  //  @Path("{page=\\d+&size=\\d+}")
-  //  @ApiOperation(value = "get users with paginate", notes = "", nickname = "", httpMethod = "GET")
-  //  @ApiImplicitParams(Array(
-  //    new ApiImplicitParam(name = "paginate", value = "paginate information", required = true, dataType = "String", paramType = "path")
-  //  ))
-  //  @ApiResponses(Array(
-  //    new ApiResponse(code = 200, message = "OK"),
-  //    new ApiResponse(code = 403, message = "user is not admin"),
-  //    new ApiResponse(code = 401, message = "authorization error"),
-  //    new ApiResponse(code = 500, message = "internal server error")
-  //  ))
-  //  def getUserByPageRoute = modules.userRoutes.paginateRoute(routeName, "domain_id")
 
   @Path("/{user_id}/groups")
   @ApiOperation(value = "get groups by user id", notes = "", nickname = "", httpMethod = "GET")

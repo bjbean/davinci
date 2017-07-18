@@ -1,8 +1,10 @@
 package edp.davinci.rest.flattable
 
 import javax.ws.rs.Path
+
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
+import edp.davinci.DavinciConstants
 import edp.davinci.module.{ConfigurationModule, PersistenceModule, _}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
@@ -11,6 +13,7 @@ import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.{AuthorizationProvider, SqlUtils}
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
@@ -22,6 +25,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
   private lazy val flatTableService = new FlatTableService(modules)
   private lazy val logger = LoggerFactory.getLogger(this.getClass)
   private lazy val adHocTable = "table"
+  private lazy val routeName = "flattables"
 
 
   @ApiOperation(value = "get all flattables", notes = "", nickname = "", httpMethod = "GET")
@@ -33,7 +37,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 400, message = "bad request"),
     new ApiResponse(code = 404, message = "not found")
   ))
-  def getFlatTableByAllRoute: Route = path("flattables") {
+  def getFlatTableByAllRoute: Route = path(routeName) {
     get {
       parameter('active.as[Boolean].?) { active =>
         authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
@@ -61,7 +65,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 400, message = "bad request"),
     new ApiResponse(code = 405, message = "unspecified error")
   ))
-  def postFlatTableRoute: Route = path("flattables") {
+  def postFlatTableRoute: Route = path(routeName) {
     post {
       entity(as[PostFlatTableInfoSeq]) {
         flatTableSeq =>
@@ -101,7 +105,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 405, message = "put flatTable error")
   ))
-  def putFlatTableRoute: Route = path("flattables") {
+  def putFlatTableRoute: Route = path(routeName) {
     put {
       entity(as[PutFlatTableInfoSeq]) {
         flatTableSeq =>
@@ -115,7 +119,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
   private def putFlatTableComplete(session: SessionClass, flatTableSeq: Seq[PutFlatTableInfo]): Route = {
     val operation = for {
       updateOP <- flatTableService.updateFlatTbl(flatTableSeq, session)
-      deleteOp <- flatTableService.deleteByFlatId(flatTableSeq)
+      deleteOp <- flatTableService.deleteByFlatId(flatTableSeq.map(_.id))
     } yield (updateOP, deleteOp)
     onComplete(operation) {
       case Success(_) => val relSeq = for {rel <- flatTableSeq.head.relBG
@@ -128,7 +132,6 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
     }
   }
 
-
   @Path("/{id}")
   @ApiOperation(value = "delete flat table by id", notes = "", nickname = "", httpMethod = "DELETE")
   @ApiImplicitParams(Array(new ApiImplicitParam(name = "id", value = "flat table id", required = true, dataType = "integer", paramType = "path")))
@@ -138,7 +141,24 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteFlatTableByIdRoute: Route = modules.flatTableRoutes.deleteByIdRoute("flattables")
+  def deleteFlatTableByIdRoute: Route = path(routeName / LongNumber) { flatTableId =>
+    delete {
+      authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+        session =>
+          if (session.admin) {
+            val operation = for {
+              deleteFlatTable <- flatTableService.deleteByFlatId(Seq(flatTableId))
+              deleteRel <- flatTableService.deleteRelId(flatTableId)
+              updateWidget <- flatTableService.updateWidget(flatTableId)
+            } yield (deleteFlatTable, deleteRel, updateWidget)
+            onComplete(operation) {
+              case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+            }
+          } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+      }
+    }
+  }
 
   @Path("/groups/{rel_id}")
   @ApiOperation(value = "delete flattable from group by rel id", notes = "", nickname = "", httpMethod = "DELETE")
@@ -149,7 +169,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteRelGFById: Route = path("flattables" / "groups" / LongNumber) { relId =>
+  def deleteRelGFById: Route = path(routeName / "groups" / LongNumber) { relId =>
     delete {
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session => modules.relGroupFlatTableRoutes.deleteByIdComplete(relId, session)
@@ -167,7 +187,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 405, message = "internal get error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getGroupsByFlatIdRoute: Route = path("flattables" / LongNumber / "groups") { bizId =>
+  def getGroupsByFlatIdRoute: Route = path(routeName / LongNumber / "groups") { bizId =>
     get {
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
@@ -185,9 +205,10 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
   @ApiOperation(value = "get calculation results by biz id", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "id", value = "flattable id", required = true, dataType = "integer", paramType = "path"),
-    new ApiImplicitParam(name = "adhoc_sql", value = "adhoc_sql", required = false, dataType = "string", paramType = "body"),
+    new ApiImplicitParam(name = "manualInfo", value = "manualInfo", required = false, dataType = "edp.davinci.rest.ManualInfo", paramType = "body"),
     new ApiImplicitParam(name = "offset", value = "offset", required = false, dataType = "integer", paramType = "query"),
-    new ApiImplicitParam(name = "limit", value = "limit", required = false, dataType = "integer", paramType = "query")
+    new ApiImplicitParam(name = "limit", value = "limit", required = false, dataType = "integer", paramType = "query"),
+    new ApiImplicitParam(name = "sortby", value = "sort by", required = false, dataType = "string", paramType = "query")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "ok"),
@@ -195,13 +216,21 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getCalculationResRoute: Route = path("flattables" / LongNumber / "resultset") { bizId =>
+  def getCalculationResRoute: Route = path(routeName / LongNumber / "resultset") { bizId =>
     post {
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
-          entity(as[String]) { adHocSql =>
-            parameters('offset.as[Int] ? 0, 'limit.as[Int] ? 20) { (offset, limit) =>
-              getResultSetComplete(session, bizId, adHocSql, offset, limit)
+          entity(as[ManualInfo]) { manualInfo =>
+            parameters('offset.as[Int] ? 0, 'limit.as[Int] ? 1000, 'sortby.as[String] ? "") { (offset, limit, sortBy) =>
+              val paginationInfo = s" limit $limit offset $offset"
+              val sortInfo = if (sortBy != "") "ORDER BY " + sortBy.map(ch => if (ch == ':') ' ' else ch) else ""
+              val paginateAndSort = sortInfo + paginationInfo
+              getResultSetComplete(
+                session,
+                bizId,
+                manualInfo.adHoc.orNull,
+                manualInfo.manualFilters.orNull,
+                paginateAndSort)
             }
           }
       }
@@ -209,9 +238,11 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
   }
 
 
-  private def getResultSetComplete(session: SessionClass, flatTableId: Long, adHocSql: String, offset: Long, limit: Long) = {
-    val paginateStr = s" limit $limit offset $offset"
-    logger.info(paginateStr + "<<<<<<<<<<<<<<<<<<<<<<<<<")
+  private def getResultSetComplete(session: SessionClass,
+                                   flatTableId: Long,
+                                   adHocSql: String,
+                                   manualFilters: String,
+                                   paginateAndSort: String) = {
     onComplete(flatTableService.getSourceInfo(flatTableId, session)) {
       case Success(info) =>
         if (info.nonEmpty) {
@@ -219,11 +250,12 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
             val (sqlTemp, tableName, connectionUrl, _) = info.head
             val flatTablesFilters = {
               val filterList = info.map(_._4).filter(_.trim != "").map(_.mkString("(", "", ")"))
-              if(filterList.nonEmpty) filterList.mkString("(","OR",")") else null
+              if (filterList.nonEmpty) filterList.mkString("(", "OR", ")") else null
             }
-            val (resultList, totalCount) = SqlUtils.sqlExecute(flatTablesFilters, sqlTemp, tableName, adHocSql, paginateStr, connectionUrl)
+            val fullFilters = if (null != manualFilters) if (null != flatTablesFilters) flatTablesFilters + s"AND ($manualFilters)" else manualFilters else flatTablesFilters
+            val (resultList, totalCount) = SqlUtils.sqlExecute(fullFilters, sqlTemp, tableName, adHocSql, paginateAndSort, connectionUrl)
             val CSVResult = resultList.map(SqlUtils.covert2CSV)
-            complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(CSVResult, offset, limit, totalCount)))
+            complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(CSVResult, totalCount)))
           } catch {
             case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }

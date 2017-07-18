@@ -12,7 +12,7 @@ import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
-
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 @Api(value = "/widgets", consumes = "application/json", produces = "application/json")
@@ -131,7 +131,24 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteWidgetByIdRoute: Route = modules.widgetRoutes.deleteByIdRoute(routeName)
+  def deleteWidgetByIdRoute: Route = path(routeName / LongNumber) {
+    widgetId =>
+      delete {
+        authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
+          session =>
+            if (session.admin) {
+              val operation = for {
+                user <- widgetService.deleteWidget(widgetId)
+                relGU <- widgetService.deleteRelDW(widgetId)
+              } yield (user, relGU)
+              onComplete(operation) {
+                case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
+                case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+              }
+            } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+        }
+      }
+  }
 
   @Path("/{widget_id}/sqls")
   @ApiOperation(value = "get whole sql by widget id", notes = "", nickname = "", httpMethod = "GET")

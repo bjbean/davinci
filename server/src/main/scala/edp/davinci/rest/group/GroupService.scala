@@ -11,64 +11,43 @@ import scala.concurrent.Future
 
 class GroupService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
   private lazy val gDal = modules.groupDal
+  private lazy val db = gDal.getDB
+  private lazy val groupTQ = gDal.getTableQuery
+  private lazy val relGFTQ = modules.relGroupFlatTableDal.getTableQuery
+  private lazy val relGUTQ = modules.relUserGroupDal.getTableQuery
 
   def getAll(session: SessionClass, active: Boolean): Future[Seq[(Long, String, Option[String], Boolean)]] = {
-    val groupTQ = gDal.getTableQuery
     if (session.admin)
       if (active)
-        gDal.getDB.run(groupTQ.filter(_.active).map(r => (r.id, r.name, r.desc, r.active)).result)
+        db.run(groupTQ.filter(_.active).map(r => (r.id, r.name, r.desc, r.active)).result)
       else
-        gDal.getDB.run(groupTQ.map(r => (r.id, r.name, r.desc, r.active)).result)
+        db.run(groupTQ.map(r => (r.id, r.name, r.desc, r.active)).result)
     else if (active)
-      gDal.getDB.run(groupTQ.withFilter(g => {
+      db.run(groupTQ.withFilter(g => {
         g.active === true
         g.id inSet session.groupIdList
       }).map(r => (r.id, r.name, r.desc, r.active)).result)
     else
-      gDal.getDB.run(groupTQ.filter(g => g.id inSet session.groupIdList).map(r => (r.id, r.name, r.desc, r.active)).result)
+      db.run(groupTQ.filter(g => g.id inSet session.groupIdList).map(r => (r.id, r.name, r.desc, r.active)).result)
   }
 
   def update(groupSeq: Seq[PutGroupInfo], session: SessionClass): Future[Unit] = {
-    val groupTQ = gDal.getTableQuery
     val query = DBIO.seq(groupSeq.map(r => {
-      groupTQ.filter(_.id === r.id).map(group => (group.name, group.desc,group.active, group.update_by, group.update_time)).update(r.name, Some(r.desc),r.active.getOrElse(true), session.userId, ResponseUtils.currentTime)
+      groupTQ.filter(_.id === r.id).map(group => (group.name, group.desc, group.active, group.update_by, group.update_time)).update(r.name, Some(r.desc), r.active.getOrElse(true), session.userId, ResponseUtils.currentTime)
     }): _*)
-    gDal.getDB.run(query)
+    db.run(query)
   }
 
+  def deleteGroup(groupId: Long): Future[Int] = {
+    db.run(groupTQ.filter(_.id ===  groupId).delete)
+  }
 
-  //  def getAllGroupsComplete(session: SessionClass): Route = {
-  //    if (session.admin) {
-  //      onComplete(getAll) {
-  //        case Success(groupSeq) =>
-  //          if (groupSeq.nonEmpty) complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), groupSeq))
-  //          else complete(NotFound, getHeader(404, session))
-  //        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-  //      }
-  //    } else complete(Forbidden, getHeader(403, session))
-  //  }
-  //
-  //  def putUserComplete(session: SessionClass, groupSeq: Seq[PutGroupInfo]): Route = {
-  //    if (session.admin) {
-  //      val future = update(groupSeq, session)
-  //      onComplete(future) {
-  //        case Success(_) => complete(OK, getHeader(200, session))
-  //        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-  //      }
-  //    } else complete(Forbidden, getHeader(403, session))
-  //  }
-  //
-  //  def postGroup(session: SessionClass, postGroupSeq: Seq[PostGroupInfo]) = {
-  //    if (session.admin) {
-  //      val groupSeq = postGroupSeq.map(post => UserGroup(0, post.name, post.desc, active = true, null, session.userId, null, session.userId))
-  //      onComplete(groupDal.insert(groupSeq)) {
-  //        case Success(groupWithIdSeq) =>
-  //          val responseGroup = groupWithIdSeq.map(group => PutGroupInfo(group.id, group.name, group.desc))
-  //          complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), responseGroup))
-  //        case Failure(ex) => complete(InternalServerError, getHeader(500, ex.getMessage, session))
-  //      }
-  //    } else complete(Forbidden, getHeader(403, session))
-  //
-  //  }
+  def deleteRelGF(groupId: Long): Future[Int] = {
+    db.run(relGFTQ.filter(_.group_id === groupId).delete)
+  }
+
+  def deleteRelGU(groupId: Long): Future[Int] = {
+    db.run(relGUTQ.filter(_.group_id === groupId).delete)
+  }
 
 }

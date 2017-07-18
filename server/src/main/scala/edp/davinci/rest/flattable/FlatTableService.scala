@@ -14,6 +14,7 @@ class FlatTableService(modules: ConfigurationModule with PersistenceModule with 
   private lazy val flatTableTQ = fDal.getTableQuery
   private lazy val relGFTQ = relGFDal.getTableQuery
   private lazy val sourceTQ = modules.sourceDal.getTableQuery
+  private lazy val widgetTQ = modules.widgetDal.getTableQuery
   private lazy val db = fDal.getDB
 
   def getAllFlatTbls(active: Boolean): Future[Seq[(Long, Long, String, String, String, Option[String], String, String, String, Boolean)]] = {
@@ -31,17 +32,24 @@ class FlatTableService(modules: ConfigurationModule with PersistenceModule with 
     db.run(query)
   }
 
-  def deleteByFlatId(flatTableSeq: Seq[PutFlatTableInfo]): Future[Unit] = {
-    val query = DBIO.seq(flatTableSeq.map(r => {
-      relGFTQ.filter(_.flatTable_id === r.id).delete
+  def deleteByFlatId(idSeq: Seq[Long]): Future[Unit] = {
+    val query = DBIO.seq(idSeq.map(r => {
+      relGFTQ.filter(_.flatTable_id === r).delete
     }): _*)
     db.run(query)
+  }
+
+  def deleteRelId(flatTableId: Long): Future[Int] = {
+    db.run(relGFTQ.filter(_.flatTable_id === flatTableId).delete)
   }
 
   def getGroups(flatId: Long): Future[Seq[PutRelGroupFlatTable]] = {
     db.run(relGFTQ.filter(_.flatTable_id === flatId).map(rel => (rel.id, rel.group_id, rel.sql_params)).result).mapTo[Seq[PutRelGroupFlatTable]]
   }
 
+  def updateWidget(flatTableId:Long): Future[Int] ={
+    db.run(widgetTQ.filter(_.flatTable_id === flatTableId).map(_.flatTable_id).update(0))
+  }
 
   def getSourceInfo(flatTableId: Long, session: SessionClass): Future[Seq[(String, String, String, String)]] = {
     val rel = if (session.admin) relGFTQ.filter(_.flatTable_id === flatTableId) else relGFTQ.filter(_.flatTable_id === flatTableId).filter(_.group_id inSet session.groupIdList)

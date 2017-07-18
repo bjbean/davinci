@@ -4,9 +4,10 @@ import akka.http.scaladsl.server._
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.rest.flattable.FlatTableRoutes
 import edp.davinci.rest.dashboard.DashboardRoutes
+import edp.davinci.rest.downloads.DownloadRoutes
 import edp.davinci.rest.group.GroupRoutes
 import edp.davinci.rest.libwidget.LibWidgetRoutes
-import edp.davinci.rest.shareinfo.ShareRoutes
+import edp.davinci.rest.shares.ShareRoutes
 import edp.davinci.rest.source.SourceRoutes
 import edp.davinci.rest.sqllog.SqlLogRoutes
 import edp.davinci.rest.user.UserRoutes
@@ -26,6 +27,7 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
   val group = new GroupRoutes(modules)
   val sqlLog = new SqlLogRoutes(modules)
   val share = new ShareRoutes(modules)
+  val download = new DownloadRoutes(modules)
 
   val routes: Route =
     corsHandler(swagger.routes) ~ corsHandler(swagger.indexRoute) ~
@@ -40,6 +42,7 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
           corsHandler(libWidget.routes) ~
           corsHandler(group.routes) ~
           corsHandler(sqlLog.routes) ~
-        corsHandler(share.routes)
+          corsHandler(share.routes) ~
+          corsHandler(download.routes)
       }
 }
