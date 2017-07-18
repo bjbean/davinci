@@ -100,7 +100,7 @@ export class WidgetChart extends React.PureComponent {
         <Table
           className={`${styles.tableContainer} ${tableClass}`}
           dataSource={dataSource}
-          rowKey={s => s.id}
+          rowKey="antDesignTableId"
           columns={columns}
           scroll={tableSize}
           bordered

@@ -29,7 +29,7 @@ export const loadBizlogicGroups = promiseActionCreator(LOAD_BIZLOGIC_GROUPS, ['i
 
 export const editBizlogic = promiseActionCreator(EDIT_BIZLOGIC, ['bizlogic'])
 
-export const loadBizdatas = promiseActionCreator(LOAD_BIZDATAS, ['id', 'sql', 'offset', 'limit'])
+export const loadBizdatas = promiseActionCreator(LOAD_BIZDATAS, ['id', 'sql', 'sorts', 'offset', 'limit'])
 
 export function bizlogicsLoaded (bizlogics) {
   return {

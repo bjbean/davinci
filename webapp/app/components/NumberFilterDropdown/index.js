@@ -1,7 +1,7 @@
 import React, { PropTypes } from 'react'
 
 import Input from 'antd/lib/input'
-import Select from 'antd/lib/select'
+// import Select from 'antd/lib/select'
 const InputGroup = Input.Group
 
 import utilStyles from '../../assets/less/util.less'
@@ -10,10 +10,6 @@ export function NumberFilterDropdown (props) {
   return (
     <div className={utilStyles.searchFilterDropdown}>
       <InputGroup size="large" compact>
-        <Select size="large" defaultValue="1">
-          <Option value="1">之间</Option>
-          <Option value="2">之外</Option>
-        </Select>
         <Input
           className={utilStyles.number}
           value={props.from}

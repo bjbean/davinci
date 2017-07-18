@@ -44,7 +44,7 @@ function dashboardReducer (state = initialState, { type, payload }) {
         .set('currentItems', payload.dashboard.widgets)
     case ADD_DASHBOARD_ITEM_SUCCESS:
       if (items) {
-        items.unshift(payload.result)
+        items.push(payload.result)
         return state.set('currentItems', items.slice())
       } else {
         return state.set('currentItems', [payload.result])

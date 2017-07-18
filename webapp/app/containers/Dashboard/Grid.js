@@ -5,23 +5,16 @@ import { Link } from 'react-router'
 import echarts from 'echarts/lib/echarts'
 
 import Container from '../../components/Container'
-import WidgetForm from './WidgetForm'
+import DashboardItemForm from './components/DashboardItemForm'
 import Workbench from '../Widget/Workbench'
-import ChartUnit from './ChartUnit'
+import DashboardItem from './components/DashboardItem'
+import DashboardItemFilters from './components/DashboardItemFilters'
 import { Responsive, WidthProvider } from 'react-grid-layout'
 import Row from 'antd/lib/row'
 import Col from 'antd/lib/col'
 import Button from 'antd/lib/button'
-import Icon from 'antd/lib/icon'
-import Tooltip from 'antd/lib/tooltip'
 import Modal from 'antd/lib/modal'
-import Popconfirm from 'antd/lib/popconfirm'
 import Breadcrumb from 'antd/lib/breadcrumb'
-import Form from 'antd/lib/form'
-import InputNumber from 'antd/lib/input-number'
-import Select from 'antd/lib/select'
-const FormItem = Form.Item
-const Option = Select.Option
 
 import { promiseDispatcher } from '../../utils/reduxPromisation'
 import { loadDashboardDetail, addDashboardItem, editDashboardItem, editDashboardItems, deleteDashboardItem, clearCurrentDashboard } from './actions'
@@ -32,7 +25,7 @@ import { makeSelectWidgets, makeSelectWidgetlibs } from '../Widget/selectors'
 import { makeSelectBizlogics } from '../Bizlogic/selectors'
 import { makeSelectLoginUser } from '../App/selectors'
 import chartOptionsGenerator from '../Widget/chartOptionsGenerator'
-import { initializePosition, changePosition, diffPosition } from './localPositionOperator'
+import { initializePosition, changePosition, diffPosition } from './components/localPositionOperator'
 
 import utilStyles from '../../assets/less/util.less'
 import widgetStyles from '../Widget/Widget.less'
@@ -47,23 +40,25 @@ export class Grid extends React.Component {
       cols: { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 },
       mounted: false,
 
-      currentItemsByUserRole: [],
-      modifiedItems: false,
-      formType: '',
-      formVisible: false,
+      localPositions: [],
+      modifiedPositions: false,
+      editPositionSign: false,
+
+      dashboardItemFormType: '',
+      dashboardItemFormVisible: false,
+      dashboardItemFormStep: 0,
       modalLoading: false,
       selectedWidget: 0,
       triggerType: 'manual',
-      widgetFormStep: 0,
-      editPositionSign: false,
 
-      workbenchWidgetItem: 0,
+      workbenchDashboardItem: 0,
       workbenchWidget: null,
       workbenchVisible: false,
 
-      olapVisible: false,
-
-      flattables: {}
+      filtersVisible: false,
+      filtersDashboardItem: 0,
+      filtersKeys: null,
+      filtersTypes: null
     }
     this.frequent = {}
   }
@@ -83,31 +78,20 @@ export class Grid extends React.Component {
       onLoadBizlogics()
     }
 
-    Promise.all([
-      onLoadWidgets(),
-      onLoadWidgetlibs(),
-      onLoadDashboardDetail(params.id)
-    ])
-      .then((values) => {
-        const dashboard = values[2]
-        if (dashboard.widgets) {
-          dashboard.widgets.forEach(item => {
-            this.renderChart(item.id, item.widget_id)
-            this.setFrequent(item.id, item.widget_id)
-          })
-        }
-      })
+    onLoadWidgets()
+    onLoadWidgetlibs()
+    onLoadDashboardDetail(params.id)
   }
 
-  componentWillReceiveProps (props) {
+  componentWillReceiveProps (props, states) {
     const { loginUser, currentDashboard, currentItems } = props
-    const { modifiedItems } = this.state
+    const { modifiedPositions } = this.state
     if (currentItems) {
-      const currentItemsByUserRole = initializePosition(loginUser, currentDashboard, currentItems)
-      if (!modifiedItems) {
-        this.state.modifiedItems = currentItemsByUserRole.map(item => Object.assign({}, item))
+      const localPositions = initializePosition(loginUser, currentDashboard, currentItems)
+      if (!modifiedPositions) {
+        this.state.modifiedPositions = localPositions.map(item => Object.assign({}, item))
       }
-      this.state.currentItemsByUserRole = currentItemsByUserRole
+      this.state.localPositions = localPositions
     }
   }
 
@@ -125,65 +109,70 @@ export class Grid extends React.Component {
     this.props.onClearCurrentDashboard()
   }
 
-  renderChart = (id, widgetId, olap, offset, limit, callback) => {
-    const {
-      widgets,
-      widgetlibs,
-      onLoadBizdatas
-    } = this.props
+  renderChart = (renderType, dashboardItem, filters, sorts, offset, limit) =>
+    new Promise((resolve) => {
+      const {
+        widgets,
+        widgetlibs
+      } = this.props
 
-    const widget = widgets.find(w => w.id === widgetId)
-    const widgetlib = widgetlibs.find(wl => wl.id === widget.widgetlib_id)
+      const widget = widgets.find(w => w.id === dashboardItem.widget_id)
+      const chartInfo = widgetlibs.find(wl => wl.id === widget.widgetlib_id)
 
-    let domId = `widget_${id}`
-    let currentChart = this.charts[domId]
+      const domId = `widget_${dashboardItem.id}`
+      let currentChart = this.charts[domId]
 
-    if (widgetlib.type !== 'table') {
-      domId = `widget_${id}`
-      currentChart = this.charts[domId]
-
-      if (currentChart) {
-        currentChart.dispose()
-      }
-      currentChart = echarts.init(document.getElementById(domId))
-      currentChart.showLoading('default', { color: '#8BC34A' })
-      this.charts[domId] = currentChart
-    }
-
-    onLoadBizdatas(widget.flatTable_id, olap || widget.olap_sql, offset, limit)
-      .then((resultset) => {
-        if (widgetlib.type !== 'table') {
-          const chartOptions = chartOptionsGenerator({
-            dataSource: resultset.dataSource,
-            chartInfo: widgetlib,
-            chartParams: Object.assign({
-              id: widget.id,
-              name: widget.name,
-              desc: widget.desc,
-              flatTable_id: widget.flatTable_id,
-              widgetlib_id: widget.widgetlib_id
-            }, JSON.parse(widget.chart_params))
-          })
-          currentChart.setOption(chartOptions)
-          currentChart.hideLoading()
-        } else {
-          this.setState({
-            flattables: Object.assign({}, this.state.flattables, {
-              [`table_${id}`]: resultset
-            })
-          })
-          if (callback) {
-            callback()
-          }
+      if (chartInfo.type !== 'table') {
+        switch (renderType) {
+          case 'rerender':
+            if (currentChart) {
+              currentChart.dispose()
+            }
+            currentChart = echarts.init(document.getElementById(domId))
+            this.charts[domId] = currentChart
+            currentChart.showLoading('default', { color: '#8BC34A' })
+            break
+          case 'clear':
+            currentChart.clear()
+            currentChart.showLoading('default', { color: '#8BC34A' })
+            break
+          case 'refresh':
+            currentChart.showLoading('default', { color: '#8BC34A' })
+            break
+          default:
+            break
         }
-      })
-  }
+      }
 
-  setFrequent = (id, widgetId) => {
-    const { currentItems } = this.props
-    const dashboardItem = currentItems.find(ci => ci.id === Number(id))
+      const adhocAndFilters = {
+        adHoc: widget.adhoc_sql,
+        manualFilters: filters
+      }
 
-    let intervalId = `widget_${id}`
+      this.props.onLoadBizdatas(widget.flatTable_id, adhocAndFilters, sorts, offset, limit)
+        .then((resultset) => {
+          resolve(resultset)
+
+          if (chartInfo.type !== 'table') {
+            const chartOptions = chartOptionsGenerator({
+              dataSource: resultset.dataSource,
+              chartInfo: chartInfo,
+              chartParams: Object.assign({
+                id: widget.id,
+                name: widget.name,
+                desc: widget.desc,
+                flatTable_id: widget.flatTable_id,
+                widgetlib_id: widget.widgetlib_id
+              }, JSON.parse(widget.chart_params))
+            })
+            currentChart.setOption(chartOptions)
+            currentChart.hideLoading()
+          }
+        })
+    })
+
+  setFrequent = (dashboardItem, filters, sorts, offset, limit) => {
+    let intervalId = `widget_${dashboardItem.id}`
     let currentFrequent = this.frequent[intervalId]
 
     if (currentFrequent) {
@@ -192,58 +181,50 @@ export class Grid extends React.Component {
 
     if (dashboardItem.trigger_type === 'frequent') {
       currentFrequent = setInterval(() => {
-        this.renderChart(id, widgetId)
+        this.renderChart('dynamic', dashboardItem, filters, sorts, offset, limit)
       }, Number(dashboardItem.trigger_params) * 1000)
 
       this.frequent[intervalId] = currentFrequent
     }
   }
 
+  renderChartAndSetFrequent = (renderType, dashboardItem, filters, sorts, offset, limit) => {
+    const promise = this.renderChart(renderType, dashboardItem, filters, sorts, offset, limit)
+    this.setFrequent(dashboardItem, filters, sorts, offset, limit)
+    return promise
+  }
+
   onLayoutChange = (layout, layouts) => {
     // setTimtout 中 setState 会被同步执行
     setTimeout(() => {
-      const { currentItemsByUserRole, modifiedItems } = this.state
-      const newModifiedItems = changePosition(modifiedItems, layout, (item) => {
-        this.renderChart(item.i, item.widget_id)
-        this.setFrequent(item.i, item.widget_id)
+      const { localPositions, modifiedPositions } = this.state
+      const newModifiedItems = changePosition(modifiedPositions, layout, (pos) => {
+        const dashboardItem = this.props.currentItems.find(item => item.id === Number(pos.i))
+        this.renderChartAndSetFrequent('rerender', dashboardItem)
       })
 
       this.setState({
-        modifiedItems: newModifiedItems,
-        editPositionSign: diffPosition(currentItemsByUserRole, newModifiedItems)
+        modifiedPositions: newModifiedItems,
+        editPositionSign: diffPosition(localPositions, newModifiedItems)
       })
     })
   }
 
-  diffLayout = (prev, current, update, rerender) => {
-    current.forEach((item, index) => {
-      const prevItem = prev[index]
-      if (prevItem.x !== item.x || prevItem.y !== item.y) {
-        update(prevItem, item)
-      }
-      if (prevItem.w !== item.w || prevItem.h !== item.h) {
-        update(prevItem, item)
-        rerender(prevItem)
-      }
+  showAddDashboardItemForm = () => {
+    this.setState({
+      dashboardItemFormType: 'add',
+      dashboardItemFormVisible: true
     })
   }
 
-  showAdd = () => {
+  showEditDashboardItemForm = (dashboardItem) => () => {
     this.setState({
-      formType: 'add',
-      formVisible: true
-    })
-  }
-
-  showEdit = (id) => () => {
-    const dashboardItem = this.props.currentItems.find(c => c.id === Number(id))
-    this.setState({
-      formType: 'edit',
-      formVisible: true,
+      dashboardItemFormType: 'edit',
+      dashboardItemFormVisible: true,
       selectedWidget: dashboardItem.widget_id,
       triggerType: dashboardItem.trigger_type
     }, () => {
-      this.widgetForm.setFieldsValue({
+      this.dashboardItemForm.setFieldsValue({
         id: dashboardItem.id,
         trigger_type: dashboardItem.trigger_type,
         trigger_params: dashboardItem.trigger_params
@@ -251,16 +232,18 @@ export class Grid extends React.Component {
     })
   }
 
-  hideWidgetForm = () => {
+  hideDashboardItemForm = () => {
     this.setState({
       modalLoading: false,
-      formVisible: false,
+      dashboardItemFormVisible: false
+    })
+  }
+
+  afterDashboardItemFormClose = () => {
+    this.setState({
       selectedWidget: 0,
       triggerType: 'manual',
-      widgetFormStep: 0,
-      workbenchWidgetItem: 0,
-      workbenchWidget: null,
-      workbenchVisible: false
+      dashboardItemFormStep: 0
     })
   }
 
@@ -276,74 +259,74 @@ export class Grid extends React.Component {
     })
   }
 
-  changeFormStep = (sign) => () => {
+  changeDashboardItemFormStep = (sign) => () => {
     this.setState({
-      widgetFormStep: sign
+      dashboardItemFormStep: sign
     })
   }
 
-  onModalOk = () => {
-    const { currentDashboard } = this.props
-    const { modifiedItems, selectedWidget, formType } = this.state
+  saveDashboardItem = () => {
+    const { currentDashboard, currentItems } = this.props
+    const { modifiedPositions, selectedWidget, dashboardItemFormType } = this.state
 
-    const formdata = this.widgetForm.getFieldsValue()
+    const formdata = this.dashboardItemForm.getFieldsValue()
 
-    const predictPosYArr = modifiedItems.map(wi => wi.y + wi.h)
+    const predictPosYArr = modifiedPositions.map(wi => wi.y + wi.h)
 
-    const item = {
+    const newItem = {
       widget_id: selectedWidget,
       dashboard_id: currentDashboard.id,
-      position_x: 0,
-      position_y: predictPosYArr.length ? Math.max(...predictPosYArr) : 0,
-      width: 4,
-      length: 4,
       trigger_type: formdata.trigger_type,
       trigger_params: `${formdata.trigger_params}`
     }
 
     this.setState({ modalLoading: true })
 
-    if (formType === 'add') {
-      this.props.onAddDashboardItem(currentDashboard.id, item)
+    if (dashboardItemFormType === 'add') {
+      const positionInfo = {
+        position_x: 0,
+        position_y: predictPosYArr.length ? Math.max(...predictPosYArr) : 0,
+        width: 4,
+        length: 4
+      }
+
+      this.props.onAddDashboardItem(currentDashboard.id, Object.assign({}, newItem, positionInfo))
         .then(dashboardItem => {
-          modifiedItems.push({
+          modifiedPositions.push({
             x: dashboardItem.position_x,
             y: dashboardItem.position_y,
             w: dashboardItem.width,
             h: dashboardItem.length,
-            i: `${dashboardItem.id}`,
-            widget_id: dashboardItem.widget_id
+            i: `${dashboardItem.id}`
           })
-          this.renderChart(dashboardItem.id, dashboardItem.widget_id)
-          this.setFrequent(dashboardItem.id, dashboardItem.widget_id)
-          this.hideWidgetForm()
+          this.hideDashboardItemForm()
         })
     } else {
+      const dashboardItem = currentItems.find(item => item.id === Number(formdata.id))
+      const modifiedDashboardItem = Object.assign({}, dashboardItem, newItem)
+
       this.props.onEditDashboardItem(
         currentDashboard.id,
-        Object.assign({}, item, {
-          id: formdata.id
-        })
+        modifiedDashboardItem
       )
         .then(() => {
-          this.renderChart(formdata.id, selectedWidget)
-          this.setFrequent(formdata.id, selectedWidget)
-          this.hideWidgetForm()
+          this.renderChartAndSetFrequent('rerender', modifiedDashboardItem)
+          this.hideDashboardItemForm()
         })
     }
   }
 
-  editDashboardItems = () => {
+  editDashboardItemPositions = () => {
     const {
       loginUser,
       currentDashboard,
       currentItems,
       onEditDashboardItems
     } = this.props
-    const { modifiedItems } = this.state
+    const { modifiedPositions } = this.state
 
     const changedItems = currentItems.map((item, index) => {
-      const modifiedItem = modifiedItems[index]
+      const modifiedItem = modifiedPositions[index]
       return {
         id: item.id,
         widget_id: item.widget_id,
@@ -363,80 +346,93 @@ export class Grid extends React.Component {
           this.setState({ editPositionSign: false })
         })
     } else {
-      localStorage.setItem(`${loginUser.id}_${currentDashboard.id}_position`, JSON.stringify(modifiedItems))
+      localStorage.setItem(`${loginUser.id}_${currentDashboard.id}_position`, JSON.stringify(modifiedPositions))
       this.setState({ editPositionSign: false })
     }
   }
 
   deleteDashboardItem = (id) => () => {
-    this.props.onDeleteDashboardItem(Number(id))
+    this.props.onDeleteDashboardItem(id)
       .then(() => {
-        const { modifiedItems } = this.state
-        modifiedItems.splice(modifiedItems.findIndex(mi => mi.id === id), 1)
+        const { modifiedPositions } = this.state
+        modifiedPositions.splice(modifiedPositions.findIndex(mi => Number(mi.i) === id), 1)
         if (this.charts[`widget_${id}`]) {
           this.charts[`widget_${id}`].dispose()
+        }
+        if (this.frequent[`widget_${id}`]) {
+          clearInterval(this.frequent[`widget_${id}`])
         }
       })
   }
 
-  showWorkbench = (dashboardItemByUserRole) => () => {
-    const widget = this.props.widgets.find(w => w.id === dashboardItemByUserRole.widget_id)
+  showWorkbench = (dashboardItem, widget) => () => {
     this.setState({
-      workbenchmodifiedItem: dashboardItemByUserRole.i,
+      workbenchDashboardItem: dashboardItem.id,
       workbenchWidget: widget,
       workbenchVisible: true
     })
   }
 
   hideWorkbench = () => {
-    const { modifiedItems, workbenchWidgetItem } = this.state
-    const item = modifiedItems.find(wi => wi.i === workbenchWidgetItem)
-    this.renderChart(item.i, item.widget_id)
-    this.setFrequent(item.i, item.widget_id)
-    this.hideWidgetForm()
-  }
-
-  syncBizdatas = (dashboardItemByUserRole) => () => {
-    this.renderChart(dashboardItemByUserRole.i, dashboardItemByUserRole.widget_id)
-  }
-
-  showOlapForm = (dashboardItem) => () => {
     this.setState({
-      olapVisible: true
+      workbenchDashboardItem: 0,
+      workbenchWidget: null,
+      workbenchVisible: false
     })
   }
 
-  hideOlapForm = () => {
+  onWorkbenchClose = () => {
+    const dashboardItem = this.props.currentItems.find(item => item.id === this.state.workbenchDashboardItem)
+    this.renderChartAndSetFrequent('rerender', dashboardItem)
+    this.hideWorkbench()
+  }
+
+  showFiltersForm = (dashboardItem, keys, types) => () => {
     this.setState({
-      olapVisible: false
+      filtersVisible: true,
+      filtersDashboardItem: dashboardItem.id,
+      filtersKeys: keys,
+      filtersTypes: types
+    })
+  }
+
+  hideFiltersForm = () => {
+    this.setState({
+      filtersVisible: false,
+      dashboardItem: 0,
+      filtersKeys: [],
+      filtersTypes: []
     })
   }
 
   render () {
     const {
       currentDashboard,
+      currentItems,
       loginUser,
       bizlogics,
       widgets,
-      widgetlibs,
-      onAddDashboardItem
+      widgetlibs
     } = this.props
 
     const {
       cols,
       mounted,
-      currentItemsByUserRole,
-      formType,
-      formVisible,
+      localPositions,
+      modifiedPositions,
+      dashboardItemFormType,
+      dashboardItemFormVisible,
       modalLoading,
       selectedWidget,
       triggerType,
-      widgetFormStep,
+      dashboardItemFormStep,
       editPositionSign,
       workbenchWidget,
       workbenchVisible,
-      olapVisible,
-      flattables
+      filtersVisible,
+      filtersDashboardItem,
+      filtersKeys,
+      filtersTypes
     } = this.state
 
     let grids
@@ -447,88 +443,35 @@ export class Grid extends React.Component {
       }
       let itemblocks = []
 
-      currentItemsByUserRole.forEach(item => {
-        const widget = widgets.find(w => w.id === item.widget_id)
-        const widgetlib = widgetlibs.find(wl => wl.id === widget.widgetlib_id)
-
+      localPositions.forEach((pos, index) => {
         layouts.lg.push({
-          x: item.x,
-          y: item.y,
-          w: item.w,
-          h: item.h,
-          i: item.i
+          x: pos.x,
+          y: pos.y,
+          w: pos.w,
+          h: pos.h,
+          i: pos.i
         })
 
-        let editButton = ''
-        let widgetButton = ''
-        let deleteButton = ''
-
-        if (loginUser.admin) {
-          editButton = (
-            <Tooltip title="基本信息">
-              <Icon type="edit" onClick={this.showEdit(item.i)} />
-            </Tooltip>
-          )
-          widgetButton = (
-            <Tooltip title="Widget信息">
-              <Icon type="setting" onClick={this.showWorkbench(item)} />
-            </Tooltip>
-          )
-          deleteButton = (
-            <Popconfirm
-              title="确定删除？"
-              placement="bottom"
-              onConfirm={this.deleteDashboardItem(item.i)}
-            >
-              <Tooltip title="删除">
-                <Icon type="delete" />
-              </Tooltip>
-            </Popconfirm>
-          )
-        }
-
-        const resultset = flattables[`table_${item.i}`]
-        const dataSource = resultset ? resultset.dataSource : []
-        const dataTypes = resultset ? resultset.types : []
-        const pagination = resultset
-          ? {
-            pageSize: resultset.pageSize,
-            current: resultset.pageIndex,
-            total: resultset.total,
-            showSizeChanger: true
-          } : false
+        const dashboardItem = currentItems[index]
+        const modifiedPosition = modifiedPositions[index]
+        const widget = widgets.find(w => w.id === dashboardItem.widget_id)
+        const chartInfo = widgetlibs.find(wl => wl.id === widget.widgetlib_id)
 
         itemblocks.push((
-          <div key={item.i} className={styles.gridItem}>
-            <h4 className={styles.title}>
-              {widget.name}
-            </h4>
-            <div className={styles.tools}>
-              <Tooltip title="移动">
-                <i className={`${styles.move} iconfont icon-move1`} />
-              </Tooltip>
-              {editButton}
-              {widgetButton}
-              <Tooltip title="查询">
-                <Icon type="search" onClick={this.showOlapForm(item)} />
-              </Tooltip>
-              <Tooltip title="同步数据">
-                <Icon type="reload" onClick={this.syncBizdatas(item)} />
-              </Tooltip>
-              {deleteButton}
-            </div>
-            <ChartUnit
-              id={item.i}
-              dataSource={dataSource || []}
-              dataTypes={dataTypes}
-              pagination={pagination}
-              chartInfo={widgetlib}
-              chartParams={widget}
-              x={item.x}
-              y={item.y}
-              w={item.w}
-              g={item.h}
-              onTableSearch={this.renderChart}
+          <div key={pos.i}>
+            <DashboardItem
+              item={dashboardItem}
+              w={modifiedPosition ? modifiedPosition.w : 0}
+              h={modifiedPosition ? modifiedPosition.h : 0}
+              widget={widget}
+              chartInfo={chartInfo}
+              isAdmin={loginUser.admin}
+              onInitChart={this.renderChartAndSetFrequent}
+              onRenderChart={this.renderChart}
+              onShowEdit={this.showEditDashboardItemForm}
+              onShowWorkbench={this.showWorkbench}
+              onShowFiltersForm={this.showFiltersForm}
+              onDeleteDashboardItem={this.deleteDashboardItem}
             />
           </div>
         ))
@@ -551,12 +494,12 @@ export class Grid extends React.Component {
       )
     }
 
-    const modalButtons = widgetFormStep
+    const modalButtons = dashboardItemFormStep
       ? [
         <Button
           key="back"
           size="large"
-          onClick={this.changeFormStep(0)}>
+          onClick={this.changeDashboardItemFormStep(0)}>
           上一步
         </Button>,
         <Button
@@ -565,7 +508,7 @@ export class Grid extends React.Component {
           type="primary"
           loading={modalLoading}
           disabled={modalLoading}
-          onClick={this.onModalOk}>
+          onClick={this.saveDashboardItem}>
           保 存
         </Button>
       ]
@@ -575,7 +518,7 @@ export class Grid extends React.Component {
           size="large"
           type="primary"
           disabled={!selectedWidget}
-          onClick={this.changeFormStep(1)}>
+          onClick={this.changeDashboardItemFormStep(1)}>
           下一步
         </Button>
       ]
@@ -588,7 +531,7 @@ export class Grid extends React.Component {
         <Button
           size="large"
           style={{marginRight: '5px'}}
-          onClick={this.editDashboardItems}
+          onClick={this.editDashboardItemPositions}
         >
           保存位置修改
         </Button>
@@ -601,7 +544,7 @@ export class Grid extends React.Component {
           size="large"
           type="primary"
           icon="plus"
-          onClick={this.showAdd}
+          onClick={this.showAddDashboardItemForm}
         >
           新 增
         </Button>
@@ -635,30 +578,29 @@ export class Grid extends React.Component {
         {grids}
         <div className={styles.gridBottom} />
         <Modal
-          title={`${formType === 'add' ? '新增' : '修改'} Widget`}
+          title={`${dashboardItemFormType === 'add' ? '新增' : '修改'} Widget`}
           wrapClassName="ant-modal-large"
-          visible={formVisible}
+          visible={dashboardItemFormVisible}
           footer={modalButtons}
-          onCancel={this.hideWidgetForm}
+          onCancel={this.hideDashboardItemForm}
+          afterClose={this.afterDashboardItemFormClose}
         >
-          <WidgetForm
-            type={formType}
+          <DashboardItemForm
+            type={dashboardItemFormType}
             widgets={widgets || []}
             selectedWidget={selectedWidget}
             triggerType={triggerType}
-            step={widgetFormStep}
+            step={dashboardItemFormStep}
             onWidgetSelect={this.widgetSelect}
             onTriggerTypeSelect={this.triggerTypeSelect}
-            onAddDashboardItem={onAddDashboardItem}
-            onClose={this.hideWidgetForm}
-            ref={f => { this.widgetForm = f }}
+            ref={f => { this.dashboardItemForm = f }}
           />
         </Modal>
         <Modal
           title="Widget 详情"
           wrapClassName={`ant-modal-xlarge ${widgetStyles.workbenchWrapper}`}
           visible={workbenchVisible}
-          onCancel={this.hideWidgetForm}
+          onCancel={this.hideWorkbench}
           footer={false}
           maskClosable={false}
         >
@@ -667,84 +609,22 @@ export class Grid extends React.Component {
             widget={workbenchWidget}
             bizlogics={bizlogics || []}
             widgetlibs={widgetlibs || []}
-            onClose={this.hideWorkbench}
+            onClose={this.onWorkbenchClose}
             ref={f => { this.workbenchWrapper = f }}
           />
         </Modal>
         <Modal
           title="多维查询"
-          visible={olapVisible}
-          onCancel={this.hideOlapForm}
+          wrapClassName="ant-modal-xlarge"
+          visible={filtersVisible}
+          onCancel={this.hideFiltersForm}
         >
-          <Form className={styles.olapForm}>
-            <Row gutter={8}>
-              <Col>
-                <FormItem label="Group By" className={styles.olapFormItem}>
-                  <Select
-                    placeholder="Group By"
-                    mode="multiple"
-                  >
-                    <Option value="ip">ip</Option>
-                  </Select>
-                </FormItem>
-              </Col>
-            </Row>
-            <Row gutter={8}>
-              <Col>
-                <FormItem label="Aggregation Function" className={styles.olapFormItem}>
-                  <Select
-                    placeholder="Aggregation Function"
-                    mode="multiple"
-                  >
-                    <Option value="values">Avg(values)</Option>
-                  </Select>
-                </FormItem>
-              </Col>
-            </Row>
-            <Row gutter={8}>
-              <Col span={16}>
-                <FormItem label="Order By" className={styles.olapFormItem}>
-                  <Select
-                    placeholder="Order By"
-                    mode="multiple"
-                  >
-                    <Option value="count">count</Option>
-                  </Select>
-                </FormItem>
-              </Col>
-              <Col span={8}>
-                <FormItem label="Limit" className={styles.olapFormItem}>
-                  <InputNumber placeholder="Limit" min={0} />
-                </FormItem>
-              </Col>
-            </Row>
-            <Row gutter={8}>
-              <Col>
-                <FormItem label="Filters" className={styles.olapFilters}>
-                  <Select
-                    placeholder="Keys"
-                    mode="multiple"
-                  >
-                    <Option value="SMP集群2">Keys: SMP集群2</Option>
-                  </Select>
-                </FormItem>
-                <FormItem className={styles.olapFilters}>
-                  <Select
-                    placeholder="Level"
-                    mode="multiple"
-                  >
-                    <Option value="urlResp">Level: urlResp</Option>
-                  </Select>
-                </FormItem>
-                <FormItem className={styles.olapFilters}>
-                  <Select
-                    placeholder="Groups"
-                    mode="multiple"
-                  ></Select>
-                </FormItem>
-              </Col>
-            </Row>
-          </Form>
+          <DashboardItemFilters
+            loginUser={loginUser}
+            itemId={filtersDashboardItem}
+            keys={filtersKeys}
+            types={filtersTypes}
+          />
         </Modal>
       </Container>
     )
@@ -802,7 +682,7 @@ export function mapDispatchToProps (dispatch) {
     onLoadWidgets: () => promiseDispatcher(dispatch, loadWidgets),
     onLoadWidgetlibs: () => promiseDispatcher(dispatch, loadWidgetlibs),
     onLoadBizlogics: () => promiseDispatcher(dispatch, loadBizlogics),
-    onLoadBizdatas: (id, sql, offset, limit) => promiseDispatcher(dispatch, loadBizdatas, id, sql, offset, limit),
+    onLoadBizdatas: (id, sql, sorts, offset, limit) => promiseDispatcher(dispatch, loadBizdatas, id, sql, sorts, offset, limit),
     onClearCurrentDashboard: () => promiseDispatcher(dispatch, clearCurrentDashboard)
   }
 }

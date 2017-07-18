@@ -5,7 +5,7 @@ import { Link } from 'react-router'
 import classnames from 'classnames'
 
 import Container from '../../components/Container'
-import DashboardForm from './DashboardForm'
+import DashboardForm from './components/DashboardForm'
 import Row from 'antd/lib/row'
 import Col from 'antd/lib/col'
 import Button from 'antd/lib/button'

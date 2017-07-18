@@ -22,7 +22,7 @@ export class LoginForm extends PureComponent {
                   required: true,
                   message: '请输入用户名'
                 }],
-                initialValue: 'test'
+                initialValue: 'test@creditease.cn'
               })(
                 <Input placeholder="用户名" />
               )}
@@ -35,7 +35,7 @@ export class LoginForm extends PureComponent {
                   required: true,
                   message: '请输入密码'
                 }],
-                initialValue: ''
+                initialValue: '123456'
               })(
                 <Input placeholder="密码" type="password" />
               )}

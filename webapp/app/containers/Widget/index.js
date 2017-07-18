@@ -55,10 +55,13 @@ export class Widget extends React.Component {
 
   hideWorkbench = () => {
     this.setState({
+      workbenchVisible: false,
       workbenchType: '',
-      currentWidget: null,
-      workbenchVisible: false
+      currentWidget: null
     })
+  }
+
+  afterModalClose = () => {
     this.workbenchWrapper.refs.wrappedInstance.resetWorkbench()
   }
 
@@ -135,10 +138,11 @@ export class Widget extends React.Component {
           </Row>
         </Container.Body>
         <Modal
-          title="新增 Widget"
+          title={`${workbenchType === 'add' ? '新增' : '修改'} Widget`}
           wrapClassName={`ant-modal-xlarge ${styles.workbenchWrapper}`}
           visible={workbenchVisible}
           onCancel={this.hideWorkbench}
+          afterClose={this.afterModalClose}
           footer={false}
           maskClosable={false}
         >

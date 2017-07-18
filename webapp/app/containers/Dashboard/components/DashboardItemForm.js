@@ -13,12 +13,12 @@ const FormItem = Form.Item
 const Option = Select.Option
 const Step = Steps.Step
 
-import chartIconMapping from '../Widget/chartIconMapping'
+import chartIconMapping from '../../Widget/chartIconMapping'
 
-import utilStyles from '../../assets/less/util.less'
-import widgetStyles from '../Widget/Widget.less'
+import utilStyles from '../../../assets/less/util.less'
+import widgetStyles from '../../Widget/Widget.less'
 
-export class WidgetForm extends React.PureComponent {
+export class DashboardItemForm extends React.PureComponent {
 
   constructor (props) {
     super(props)
@@ -148,7 +148,7 @@ export class WidgetForm extends React.PureComponent {
   }
 }
 
-WidgetForm.propTypes = {
+DashboardItemForm.propTypes = {
   form: PropTypes.any,
   type: PropTypes.string,
   widgets: PropTypes.array,
@@ -156,9 +156,7 @@ WidgetForm.propTypes = {
   triggerType: PropTypes.string,
   onWidgetSelect: PropTypes.func,
   onTriggerTypeSelect: PropTypes.func,
-  // onAddDashboardItem: PropTypes.func,
-  // onClose: PropTypes.func,
   step: PropTypes.number
 }
 
-export default Form.create({withRef: true})(WidgetForm)
+export default Form.create({withRef: true})(DashboardItemForm)

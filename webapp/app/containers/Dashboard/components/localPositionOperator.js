@@ -11,8 +11,7 @@ export function initializePosition (loginUser, dashboard, items) {
             y: i.position_y,
             w: i.width,
             h: i.length,
-            i: `${i.id}`,
-            widget_id: i.widget_id
+            i: `${i.id}`
           }
         } else {
           return Object.assign({}, itemInLocal)
@@ -25,8 +24,7 @@ export function initializePosition (loginUser, dashboard, items) {
     y: i.position_y,
     w: i.width,
     h: i.length,
-    i: `${i.id}`,
-    widget_id: i.widget_id
+    i: `${i.id}`
   }))
 }
 
