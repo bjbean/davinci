@@ -10,7 +10,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>akcron</module>
         <module>server</module>
         <module>assembly</module>
     </modules>
@@ -31,7 +30,6 @@
         <kafka.version>0.10.0.0</kafka.version>
         <hadoop.version>2.7.1</hadoop.version>
         <hbase.version>1.1.2</hbase.version>
-        <hive.version>1.2.1</hive.version>
         <spark.version>2.0.2</spark.version>
         <tachyon.version>0.7.1</tachyon.version>
         <zookeeper.version>3.4.6</zookeeper.version>
@@ -39,7 +37,6 @@
         <json4s.version>3.2.11</json4s.version>
         <slf4j.version>1.7.21</slf4j.version>
         <guava.version>19.0</guava.version>
-        <edp-common.version>1.1.0-SNAPSHOT</edp-common.version>
         <edp-moonbox.version>1.0-SNAPSHOT</edp-moonbox.version>
     </properties>
 
@@ -119,14 +116,6 @@
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.library}</artifactId>
             <version>${scalatest.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- ================= java ================= -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
             <scope>provided</scope>
         </dependency>
 

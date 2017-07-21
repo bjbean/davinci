@@ -23,18 +23,7 @@
             </directory>
             <outputDirectory>bin</outputDirectory>
         </fileSet>
-        <fileSet>
-            <directory>
-                ${project.parent.basedir}/webapp
-            </directory>
-            <outputDirectory>bin</outputDirectory>
-        </fileSet>
-        <fileSet>
-            <outputDirectory>log</outputDirectory>
-            <excludes>
-                <exclude>**/*</exclude>
-            </excludes>
-        </fileSet>
+
     </fileSets>
 
     <dependencySets>
