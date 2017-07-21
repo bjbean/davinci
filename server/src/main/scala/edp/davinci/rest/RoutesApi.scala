@@ -28,9 +28,10 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
   val sqlLog = new SqlLogRoutes(modules)
   val share = new ShareRoutes(modules)
   val download = new DownloadRoutes(modules)
+  val davinci = new DavinciRoutes
 
   val routes: Route =
-    corsHandler(swagger.routes) ~ corsHandler(swagger.indexRoute) ~
+    corsHandler(davinci.indexRoute) ~
       pathPrefix("api" / "v1") {
         corsHandler(login.routes) ~
           corsHandler(users.routes) ~
