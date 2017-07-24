@@ -9,12 +9,16 @@ trait ConfigurationModule {
 }
 
 trait ConfigurationModuleImpl extends ConfigurationModule {
-  private val internalConfig: Config = {
-    val configDefaults = ConfigFactory.load(this.getClass.getClassLoader, "application.conf")
-
-    scala.sys.props.get("application.config") match {
-      case Some(filename) => ConfigFactory.parseFile(new File(filename)).withFallback(configDefaults)
-      case None => configDefaults
+  private lazy val internalConfig: Config = {
+    val configDefaults = ConfigFactory.load(this.getClass.getClassLoader,"application.conf")
+    val dir: String = System.getenv("DAVINCI_HOME")
+    //println(s"========= dir: ${dir}")
+    if (dir != null) {
+      //println(s"========= file path  ${dir}/application.conf")
+      ConfigFactory.parseFile(new File(dir + "/application.conf")).withFallback(configDefaults)
+    } else {
+      //println("========= dir is empty")
+      configDefaults
     }
   }
 
