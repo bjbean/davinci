@@ -133,7 +133,7 @@ trait SqlUtils extends Serializable {
     if (null != paramSeq && paramSeq.nonEmpty) paramSeq.foreach(param => kvMap(param.k) = List(param.v))
     if (defaultVars.nonEmpty)
       defaultVars.foreach(g => {
-        val k = g.substring(g.indexOf('$'), g.lastIndexOf('$')).trim
+        val k = g.substring(g.indexOf('$')+1, g.lastIndexOf('$')).trim
         val v = g.substring(g.indexOf("=") + 1).trim
         if (!kvMap.contains(k))
           kvMap(k) = List(v)
