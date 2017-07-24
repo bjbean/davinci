@@ -283,7 +283,7 @@ trait SqlUtils extends Serializable {
     parsedMap.foreach(tuple => {
       val (expr, (op, expressionList)) = tuple
       val (left, right) = (expressionList.head, expressionList.last)
-      val davinciVar = right.substring(right.indexOf('$'), right.lastIndexOf('$')).trim
+      val davinciVar = right.substring(right.indexOf('$')+1, right.lastIndexOf('$')).trim
       if (kvMap.contains(davinciVar)) {
         val values = kvMap(davinciVar)
         val refactorExprWithOr =
