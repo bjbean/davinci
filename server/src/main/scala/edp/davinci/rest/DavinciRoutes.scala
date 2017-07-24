@@ -1,10 +1,6 @@
 package edp.davinci.rest
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.server.{Directives, Route}
-import akka.stream.ActorMaterializer
-import com.github.swagger.akka.HasActorSystem
-import edp.davinci.Boot
 
 class DavinciRoutes extends Directives{
 //  override implicit val actorSystem: ActorSystem = Boot.system
