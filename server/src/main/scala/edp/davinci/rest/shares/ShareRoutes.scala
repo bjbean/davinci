@@ -272,7 +272,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
             val fullFilters = if (urlfilters != null) if (flatTablesFilters != null) flatTablesFilters + s"AND ($urlfilters)" else urlfilters else flatTablesFilters
             logger.info(fullFilters + "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ fullFilters")
             if (sqlTemp.trim != "") {
-              val resultList = sqlExecute(fullFilters, sqlTemp, tableName, putWidgetInfo.adhoc_sql, paginateAndSort, connectionUrl, paramSeq)
+              val resultList = sqlExecute(fullFilters, sqlTemp, tableName, putWidgetInfo.adhoc_sql, paginateAndSort, connectionUrl,null, paramSeq)
               contentTypeMatch(resultList, contentType, putWidgetInfo)
             } else complete(BadRequest, ResponseJson[String](getHeader(400, "flatTable sqls is empty", null), ""))
           }
@@ -290,7 +290,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     else headers.`Content-Disposition`(attachment, Map("filename" -> s"share.CSV")).asInstanceOf[HttpHeader]
     contentType match {
       case `textHtml` =>
-        complete(HttpResponse(headers = List(contentDisposition), entity = HttpEntity(textHtml, getHtmlStr(resultList._1))))
+        complete(HttpResponse(headers = List(contentDisposition), entity = HttpEntity(textHtml, getHTMLStr(resultList._1))))
       case `textCSV` =>
         val responseEntity = HttpEntity(textCSV, resultList._1.map(row => covert2CSV(row)).mkString("\n"))
         complete(HttpResponse(headers = List(contentDisposition), entity = responseEntity))

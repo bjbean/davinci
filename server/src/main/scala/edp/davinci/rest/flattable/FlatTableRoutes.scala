@@ -4,11 +4,12 @@ import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
-import edp.davinci.DavinciConstants
+import edp.davinci.{DavinciConstants, KV}
 import edp.davinci.module.{ConfigurationModule, PersistenceModule, _}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
 import edp.davinci.util.JsonProtocol._
+import edp.davinci.util.JsonUtils.json2caseClass
 import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.{AuthorizationProvider, SqlUtils}
 import io.swagger.annotations._
@@ -230,6 +231,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
                 bizId,
                 manualInfo.adHoc.orNull,
                 manualInfo.manualFilters.orNull,
+                manualInfo.params.orNull,
                 paginateAndSort)
             }
           }
@@ -242,20 +244,25 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
                                    flatTableId: Long,
                                    adHocSql: String,
                                    manualFilters: String,
+                                   paramSeq: Seq[KV],
                                    paginateAndSort: String) = {
     onComplete(flatTableService.getSourceInfo(flatTableId, session)) {
       case Success(info) =>
         if (info.nonEmpty) {
           try {
             val (sqlTemp, tableName, connectionUrl, _) = info.head
+            val groupVars: Seq[KV] = info.map(_._4).map(json2caseClass[KV])
             val flatTablesFilters = {
               val filterList = info.map(_._4).filter(_.trim != "").map(_.mkString("(", "", ")"))
               if (filterList.nonEmpty) filterList.mkString("(", "OR", ")") else null
             }
             val fullFilters = if (null != manualFilters) if (null != flatTablesFilters) flatTablesFilters + s"AND ($manualFilters)" else manualFilters else flatTablesFilters
-            val (resultList, totalCount) = SqlUtils.sqlExecute(fullFilters, sqlTemp, tableName, adHocSql, paginateAndSort, connectionUrl)
-            val CSVResult = resultList.map(SqlUtils.covert2CSV)
-            complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(CSVResult, totalCount)))
+            if (sqlTemp.trim != "") {
+              val (resultList, totalCount) = SqlUtils.sqlExecute(fullFilters, sqlTemp, tableName, adHocSql, paginateAndSort, connectionUrl, groupVars, paramSeq)
+              val CSVResult = resultList.map(SqlUtils.covert2CSV)
+              complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(CSVResult, totalCount)))
+            }
+            else complete(BadRequest, ResponseJson[String](getHeader(400, "there is no valid sql", session), ""))
           } catch {
             case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }

@@ -2,12 +2,15 @@ package edp.davinci.util
 
 import java.io.ByteArrayOutputStream
 import java.sql.{Connection, ResultSet, Statement}
+
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+import edp.davinci.DavinciConstants._
 import edp.davinci.KV
 import edp.davinci.csv.CSVWriter
+import edp.davinci.util.SqlOperators._
 import org.clapper.scalasti.{Constants, STGroupFile}
 import org.slf4j.LoggerFactory
-import edp.davinci.DavinciConstants._
+
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -16,6 +19,7 @@ object SqlUtils extends SqlUtils
 
 trait SqlUtils extends Serializable {
   lazy val dataSourceMap: mutable.HashMap[String, HikariDataSource] = new mutable.HashMap[String, HikariDataSource]
+  lazy val sqlRegex = "\\([^\\$]*\\$\\w+\\$\\s?\\)"
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   def getConnection(jdbcUrl: String, username: String, password: String, maxPoolSize: Int = 5): Connection = {
@@ -97,12 +101,15 @@ trait SqlUtils extends Serializable {
                  adHocSql: String,
                  paginateAndSort: String,
                  connectionUrl: String,
+                 groupVars: Seq[KV] = null,
                  paramSeq: Seq[KV] = null): (ListBuffer[Seq[String]], Long) = {
     var totalCount: Long = 0
     val trimSql = flatTableSqls.trim
     logger.info(trimSql + "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sqlTemp")
     val sqls = if (trimSql.lastIndexOf(sqlSeparator) == trimSql.length - 1) trimSql.dropRight(1).split(sqlSeparator) else trimSql.split(sqlSeparator)
-    val resetSqlBuffer: mutable.Buffer[String] = if (paramSeq != null) resetSql(sqls, paramSeq) else sqls.toBuffer
+    val sqlWithoutVar = sqls.filter(!_.contains("dv_"))
+    val kvMap = getKVMap(sqls, paramSeq, groupVars)
+    val resetSqlBuffer = matchAndReplace(sqlWithoutVar, sqlRegex, kvMap).toBuffer
     resetSqlBuffer.foreach(println)
     val projectSql = getProjectSql(resetSqlBuffer.last, filters, tableName, adHocSql, paginateAndSort)
     logger.info(projectSql + "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^projectSql")
@@ -114,19 +121,24 @@ trait SqlUtils extends Serializable {
     (getResult(connectionUrl, resultSql), totalCount)
   }
 
-  private def resetSql(sqlArr: Array[String], paramSeq: Seq[KV]) = {
-    val paramMap = mutable.HashMap.empty[String, String]
-    paramSeq.foreach(param => paramMap(param.k.toLowerCase) = param.v)
-    val resetSqls: Array[String] = sqlArr.map(sql => {
-      val lowerCaseSql = sql.trim.toLowerCase
-      if (lowerCaseSql.startsWith("set")) {
-        val setKey = lowerCaseSql.substring(lowerCaseSql.indexOf('@') + 1, lowerCaseSql.indexOf('=')).trim
-        val setSql = if (paramMap.contains(setKey)) s"SET @$setKey = '${paramMap(setKey)}'" else sql
-        logger.info(setSql + "***********************setSql")
-        setSql
-      } else sql
-    })
-    resetSqls.toBuffer
+
+  private def getKVMap(sqlArr: Array[String], paramSeq: Seq[KV], groupVars: Seq[KV]): mutable.HashMap[String, List[String]] = {
+    val defaultVars = sqlArr.filter(_.contains("dv_"))
+    val kvMap = mutable.HashMap.empty[String, List[String]]
+    if (null != groupVars && groupVars.nonEmpty)
+      groupVars.foreach(group => {
+        val (k, v) = (group.k, group.v)
+        if (kvMap.contains(k)) kvMap(k) ::: List(v) else kvMap(k) = List(v)
+      })
+    if (null != paramSeq && paramSeq.nonEmpty) paramSeq.foreach(param => kvMap(param.k) = List(param.v))
+    if (defaultVars.nonEmpty)
+      defaultVars.foreach(g => {
+        val k = g.substring(g.indexOf('$'), g.lastIndexOf('$')).trim
+        val v = g.substring(g.indexOf("=") + 1).trim
+        if (!kvMap.contains(k))
+          kvMap(k) = List(v)
+      })
+    kvMap
   }
 
   def getResult(connectionUrl: String, sql: Array[String]): ListBuffer[Seq[String]] = {
@@ -145,15 +157,12 @@ trait SqlUtils extends Serializable {
         try {
           dbConnection = SqlUtils.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
           statement = dbConnection.createStatement()
-          if (sql.length > 1)
-            for (elem <- sql.dropRight(1)) statement.execute(elem)
+          if (sql.length > 1) for (elem <- sql.dropRight(1)) statement.execute(elem)
           val resultSet = statement.executeQuery(sql.last)
           val meta = resultSet.getMetaData
-          for (i <- 1 to meta.getColumnCount)
-            columnList.append(meta.getColumnLabel(i) + ":" + meta.getColumnTypeName(i))
+          for (i <- 1 to meta.getColumnCount) columnList.append(meta.getColumnLabel(i) + ":" + meta.getColumnTypeName(i))
           resultList.append(columnList)
-          while (resultSet.next())
-            resultList.append(getRow(resultSet))
+          while (resultSet.next()) resultList.append(getRow(resultSet))
           resultList
         } catch {
           case e: Throwable => logger.error("get result exception", e)
@@ -185,10 +194,10 @@ trait SqlUtils extends Serializable {
   }
 
 
-  def getHtmlStr(resultList: ListBuffer[Seq[String]], stgPath: String = "stg/tmpl.stg"): String = {
-    println(resultList.head.toBuffer +"~~~~~~~~~~~~~~~~~~~~~table head before map")
+  def getHTMLStr(resultList: ListBuffer[Seq[String]], stgPath: String = "stg/tmpl.stg"): String = {
+    println(resultList.head.toBuffer + "~~~~~~~~~~~~~~~~~~~~~table head before map")
     val columns = resultList.head.map(c => c.split(":").head)
-    println(columns.toBuffer +"~~~~~~~~~~~~~~~~~~~~~table head after map")
+    println(columns.toBuffer + "~~~~~~~~~~~~~~~~~~~~~table head after map")
     resultList.remove(0)
     resultList.prepend(columns)
     resultList.prepend(Seq(""))
@@ -249,6 +258,58 @@ trait SqlUtils extends Serializable {
       }
       if (fieldValue == null) null.asInstanceOf[String] else fieldValue.toString
     })
+  }
+
+
+  def matchAndReplace(sqlList: Array[String], REGEX: String, kvMap: mutable.HashMap[String, List[String]]): Array[String] = {
+    sqlList.map(sql => {
+      val exprList = RegexMatcher.getMatchedItemList(sql, REGEX)
+      val parsedMap = SqlParser.getParsedMap(exprList)
+      val replaceMap = getReplaceStr(parsedMap, kvMap)
+      println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sql before replace")
+      println(sql)
+      var resultSql = sql
+      replaceMap.foreach(tuple => resultSql = resultSql.replace(tuple._1, tuple._2))
+      println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sql after replace")
+      println(resultSql)
+      resultSql
+    })
+
+  }
+
+
+  private def getReplaceStr(parsedMap: mutable.Map[String, (SqlOperators, List[String])], kvMap: mutable.HashMap[String, List[String]]): mutable.Map[String, String] = {
+    val replaceMap = mutable.Map.empty[String, String]
+    parsedMap.foreach(tuple => {
+      val (expr, (op, expressionList)) = tuple
+      val (left, right) = (expressionList.head, expressionList.last)
+      val davinciVar = right.substring(right.indexOf('$'), right.lastIndexOf('$')).trim
+      if (kvMap.contains(davinciVar)) {
+        val values = kvMap(davinciVar)
+        val refactorExprWithOr =
+          if (values.size > 1) kvMap(davinciVar).map(v => s"$left ${op.toString} $v").mkString("(", "OR", ")")
+          else s"$left ${op.toString} ${kvMap(davinciVar).mkString("")}"
+        val replaceStr = op match {
+          case EQUALSTO =>
+            if (values.size > 1) s"$left ${IN.toString} ${kvMap(davinciVar).mkString("(", ",", ")")}"
+            else s"$left ${op.toString} ${kvMap(davinciVar).mkString("")}"
+          case NOTEQUALSTO =>
+            if (values.size > 1) s"$left ${NoTIN.toString} ${kvMap(davinciVar).mkString("(", ",", ")")}"
+            else s"$left ${op.toString} ${kvMap(davinciVar).mkString("")}"
+          case BETWEEN =>
+            if (values.size > 1) s"$left ${IN.toString} ${kvMap(davinciVar).mkString("(", ",", ")")}"
+            else s"$left ${op.toString} ${kvMap(davinciVar).mkString("")}"
+          case IN => s"$left ${op.toString} ${kvMap(davinciVar).mkString("(", ",", ")")}"
+          case GREATERTHAN => refactorExprWithOr
+          case GREATERTHANEQUALS => refactorExprWithOr
+          case MINORTHAN => refactorExprWithOr
+          case MINORTHANEQUALS => refactorExprWithOr
+          case _ => ""
+        }
+        replaceMap(expr) = replaceStr
+      }
+    })
+    replaceMap
   }
 
 
