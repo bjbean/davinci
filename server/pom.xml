@@ -85,6 +85,11 @@
         <!--</exclusions>-->
         <!--</dependency>-->
         <dependency>
+            <groupId>com.github.jsqlparser</groupId>
+            <artifactId>jsqlparser</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
             <groupId>edp.davinci</groupId>
             <artifactId>davinci-akcro_${scala.library}</artifactId>
             <version>1.0-SNAPSHOT</version>
