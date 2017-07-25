@@ -133,7 +133,7 @@ trait SqlUtils extends Serializable {
     if (null != paramSeq && paramSeq.nonEmpty) paramSeq.foreach(param => kvMap(param.k) = List(param.v))
     if (defaultVars.nonEmpty)
       defaultVars.foreach(g => {
-        val k = g.substring(g.indexOf('$')+1, g.lastIndexOf('$')).trim
+        val k = g.substring(g.indexOf('$') + 1, g.lastIndexOf('$')).trim
         val v = g.substring(g.indexOf("=") + 1).trim
         if (!kvMap.contains(k))
           kvMap(k) = List(v)
@@ -283,23 +283,23 @@ trait SqlUtils extends Serializable {
     parsedMap.foreach(tuple => {
       val (expr, (op, expressionList)) = tuple
       val (left, right) = (expressionList.head, expressionList.last)
-      val davinciVar = right.substring(right.indexOf('$')+1, right.lastIndexOf('$')).trim
+      val davinciVar = right.substring(right.indexOf('$') + 1, right.lastIndexOf('$')).trim
       if (kvMap.contains(davinciVar)) {
-        val values = kvMap(davinciVar)
+        val values = kvMap(davinciVar).map(v => s"'$v'")
         val refactorExprWithOr =
-          if (values.size > 1) kvMap(davinciVar).map(v => s"$left ${op.toString} $v").mkString("(", "OR", ")")
-          else s"$left ${op.toString} ${kvMap(davinciVar).mkString("")}"
+          if (values.size > 1) values.map(v => s"$left ${op.toString} '$v'").mkString("(", "OR", ")")
+          else s"$left ${op.toString} ${values.mkString("")}"
         val replaceStr = op match {
           case EQUALSTO =>
-            if (values.size > 1) s"$left ${IN.toString} ${kvMap(davinciVar).mkString("(", ",", ")")}"
-            else s"$left ${op.toString} ${kvMap(davinciVar).mkString("")}"
+            if (values.size > 1) s"$left ${IN.toString} ${values.mkString("(", ",", ")")}"
+            else s"$left ${op.toString} ${values.mkString("")}"
           case NOTEQUALSTO =>
-            if (values.size > 1) s"$left ${NoTIN.toString} ${kvMap(davinciVar).mkString("(", ",", ")")}"
-            else s"$left ${op.toString} ${kvMap(davinciVar).mkString("")}"
+            if (values.size > 1) s"$left ${NoTIN.toString} ${values.mkString("(", ",", ")")}"
+            else s"$left ${op.toString} ${values.mkString("")}"
           case BETWEEN =>
-            if (values.size > 1) s"$left ${IN.toString} ${kvMap(davinciVar).mkString("(", ",", ")")}"
-            else s"$left ${op.toString} ${kvMap(davinciVar).mkString("")}"
-          case IN => s"$left ${op.toString} ${kvMap(davinciVar).mkString("(", ",", ")")}"
+            if (values.size > 1) s"$left ${IN.toString} ${values.mkString("(", ",", ")")}"
+            else s"$left ${op.toString} ${values.mkString("")}"
+          case IN => s"$left ${op.toString} ${values.mkString("(", ",", ")")}"
           case GREATERTHAN => refactorExprWithOr
           case GREATERTHANEQUALS => refactorExprWithOr
           case MINORTHAN => refactorExprWithOr
