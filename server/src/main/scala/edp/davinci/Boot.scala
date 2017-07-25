@@ -19,8 +19,7 @@ object Boot extends App {
   implicit lazy val materializer = ActorMaterializer()
   implicit lazy val ec = modules.system.dispatcher
 
-  lazy val  host = modules.config.getString("httpServer.host")
+  lazy val host = modules.config.getString("httpServer.host")
   lazy val port = modules.config.getInt("httpServer.port")
-
   Http().bindAndHandle(new RoutesApi(modules).routes, host, port)
 }
