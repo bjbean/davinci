@@ -3,6 +3,8 @@ import classnames from 'classnames'
 
 import Form from 'antd/lib/form'
 import Input from 'antd/lib/input'
+import InputNumber from 'antd/lib/input-number'
+import DatePicker from 'antd/lib/date-picker'
 import Select from 'antd/lib/select'
 import Button from 'antd/lib/button'
 import Icon from 'antd/lib/icon'
@@ -17,10 +19,39 @@ export class DashboardItemFilters extends PureComponent {
   constructor (props) {
     super(props)
     this.state = {
-      // filterTree: localStorage.getItem(`${props.loginUser.id}_${props.itemId}_filterTree`)
       filterTree: {},
       flattenTree: null
     }
+  }
+
+  componentWillMount () {
+    this.initTree(this.props)
+  }
+
+  componentWillUpdate (nextProps) {
+    if (nextProps.itemId && nextProps.itemId !== this.props.itemId) {
+      this.initTree(nextProps)
+    }
+  }
+
+  initTree = (props) => {
+    const { loginUser, itemId } = props
+    const filterTreeStr = localStorage.getItem(`${loginUser.id}_${itemId}_filterTree`)
+    if (filterTreeStr) {
+      const filterTree = JSON.parse(filterTreeStr)
+      this.state.filterTree = filterTree
+      this.state.flattenTree = this.initFlattenTree(filterTree, {})
+    }
+  }
+
+  initFlattenTree = (tree, flatten) => {
+    flatten[tree.id] = tree
+    if (tree.children) {
+      tree.children.forEach(c => {
+        this.initFlattenTree(c, flatten)
+      })
+    }
+    return flatten
   }
 
   renderFilterList = (filter, items) => {
@@ -39,7 +70,7 @@ export class DashboardItemFilters extends PureComponent {
               {getFieldDecorator(`${filter.id}Rel`, {
                 initialValue: filter.rel
               })(
-                <Select>
+                <Select onChange={this.changeLinkRel(filter)}>
                   <Option value="and">And</Option>
                   <Option value="or">Or</Option>
                 </Select>
@@ -55,7 +86,14 @@ export class DashboardItemFilters extends PureComponent {
   }
 
   renderFilterItem = (filter) => {
-    const { getFieldDecorator } = this.props.form
+    const {
+      form,
+      keys,
+      types
+    } = this.props
+
+    const { getFieldDecorator } = form
+
     const itemClass = classnames({
       [styles.filterItem]: true,
       [styles.root]: filter.root
@@ -65,41 +103,39 @@ export class DashboardItemFilters extends PureComponent {
       <Button shape="circle" icon="fork" type="primary" onClick={this.forkNode(filter.id)} />
     )
 
-    const operators = ['=', 'like', '>', '<', '>=', '<=', '!=']
-
-    const keySelectItems = this.props.keys.map(k => (
-      <Option key={k} value={k}>{k}</Option>
+    const keySelectOptions = keys.map((k, index) => (
+      <Option key={k} value={`${k}:${types[index]}`}>{k}</Option>
     ))
 
-    const operatorSelectItems = operators.map(k => (
-      <Option key={k} value={k}>{k}</Option>
-    ))
+    const operatorSelectOptions = this.generateFilterOperatorOptions(filter.filterType)
+
+    const valueInput = this.generateFilterValueInput(filter)
 
     return (
-      <div key={filter.id} className={itemClass}>
+      <div className={itemClass} key={filter.id}>
         <FormItem className={`${styles.filterFormItem} ${styles.filterFormKey}`}>
           {getFieldDecorator(`${filter.id}KeySelect`, {
             initialValue: filter.filterKey
           })(
             <Select placeholder="Column" onSelect={this.changeFilterKey(filter)}>
-              {keySelectItems}
+              {keySelectOptions}
             </Select>
           )}
         </FormItem>
         <FormItem className={`${styles.filterFormItem} ${styles.filterFormOperator}`}>
           {getFieldDecorator(`${filter.id}OperatorSelect`, {
-            initialValue: filter.filterType
+            initialValue: filter.filterOperator
           })(
-            <Select onSelect={this.changeFilterTypes(filter)}>
-              {operatorSelectItems}
+            <Select onSelect={this.changeFilterOperator(filter)}>
+              {operatorSelectOptions}
             </Select>
           )}
         </FormItem>
         <FormItem className={styles.filterFormItem}>
-          {getFieldDecorator(`${filter.id}Input`, {
-            initialValue: filter.filterValue
+          {getFieldDecorator(`${filter.id}Input${filter.inputUuid}`, {
+            initialValue: filter.filterValue || null
           })(
-            <Input onChange={this.changeFilterValue(filter)} />
+            valueInput
           )}
         </FormItem>
         <Button shape="circle" icon="plus" type="primary" onClick={this.addParallelNode(filter.id)} />
@@ -117,12 +153,68 @@ export class DashboardItemFilters extends PureComponent {
       return this.renderFilterItem(filter)
     } else {
       return (
-        <div className={`${styles.filterForm} ${styles.empty}`} onClick={this.addTreeRoot}>
+        <div className={styles.empty} onClick={this.addTreeRoot}>
           <h3>
             <Icon type="plus" /> 点击添加查询条件
           </h3>
         </div>
       )
+    }
+  }
+
+  generateFilterOperatorOptions = (type) => {
+    const operators = [
+      ['=', 'like', '!='],
+      ['=', '>', '<', '>=', '<=', '!=']
+    ]
+    const numbers = ['INT', 'BIGINT', 'DOUBLE']
+    const date = 'DATE'
+    const datetime = 'DATETIME'
+
+    const stringOptions = operators[0].slice().map(o => (
+      <Option key={o} value={o}>{o}</Option>
+    ))
+
+    const numbersAndDateOptions = operators[1].slice().map(o => (
+      <Option key={o} value={o}>{o}</Option>
+    ))
+
+    if (numbers.indexOf(type) >= 0 || date === type || datetime === type) {
+      return numbersAndDateOptions
+    } else {
+      return stringOptions
+    }
+  }
+
+  generateFilterValueInput = (filter) => {
+    const numbers = ['INT', 'BIGINT', 'DOUBLE']
+    const date = 'DATE'
+    const datetime = 'DATETIME'
+
+    const stringInput = (
+      <Input onChange={this.changeStringFilterValue(filter)} />
+    )
+
+    const numberInput = (
+      <InputNumber className={styles.inputNumber} onChange={this.changeNumberFilterValue(filter)} />
+    )
+
+    const dateInput = (
+      <DatePicker format="YYYY-MM-DD" onChange={this.changeDateFilterValue(filter)} />
+    )
+
+    const datetimeInput = (
+      <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" onOk={this.changeDateFilterValue(filter)} />
+    )
+
+    if (numbers.indexOf(filter.filterType) >= 0) {
+      return numberInput
+    } else if (filter.filterType === date) {
+      return dateInput
+    } else if (filter.filterType === datetime) {
+      return datetimeInput
+    } else {
+      return stringInput
     }
   }
 
@@ -236,6 +328,7 @@ export class DashboardItemFilters extends PureComponent {
           rel: onlyChild.rel,
           filterKey: onlyChild.filterKey,
           filterType: onlyChild.filterType,
+          filterOperator: onlyChild.filterOperator,
           filterValue: onlyChild.filterValue,
           children: onlyChild.children
         })
@@ -271,16 +364,81 @@ export class DashboardItemFilters extends PureComponent {
     }
   }
 
+  changeLinkRel = (filter) => (val) => {
+    filter.rel = val
+  }
+
   changeFilterKey = (filter) => (val) => {
-    filter.filterKey = val
+    const keyAndType = val.split(':')
+    filter.filterKey = keyAndType[0]
+    filter.filterType = keyAndType[1]
+    filter.filterValue = ''
+    filter.inputUuid = uuid(8, 16)
   }
 
-  changeFilterTypes = (filter) => (val) => {
-    filter.filterType = val
+  changeFilterOperator = (filter) => (val) => {
+    filter.filterOperator = val
   }
 
-  changeFilterValue = (filter) => (event) => {
+  changeStringFilterValue = (filter) => (event) => {
     filter.filterValue = event.target.value
+  }
+
+  changeNumberFilterValue = (filter) => (val) => {
+    filter.filterValue = val
+  }
+
+  changeDateFilterValue = (filter) => (date) => {
+    filter.filterValue = date
+  }
+
+  doQuery = () => {
+    const { loginUser, itemId, onQuery } = this.props
+    const { filterTree } = this.state
+    localStorage.setItem(`${loginUser.id}_${itemId}_filterTree`, JSON.stringify(filterTree))
+    onQuery(this.getSqlExpresstions(filterTree))
+    this.resetTree()
+  }
+
+  resetTree = () => {
+    this.setState({
+      filterTree: {},
+      flattenTree: null
+    })
+  }
+
+  getSqlExpresstions = (tree) => {
+    if (Object.keys(tree).length > 0) {
+      if (tree.type === 'link') {
+        const partials = tree.children.map(c => {
+          if (c.type === 'link') {
+            return this.getSqlExpresstions(c)
+          } else {
+            return `${c.filterKey} ${c.filterOperator} ${this.getFilterValue(c.filterValue, c.filterType)}`
+          }
+        })
+        const expressions = partials.join(` ${tree.rel} `)
+        return `(${expressions})`
+      } else {
+        return `${tree.filterKey} ${tree.filterOperator} ${this.getFilterValue(tree.filterValue, tree.filterType)}`
+      }
+    } else {
+      return ''
+    }
+  }
+
+  getFilterValue = (val, type) => {
+    if (typeof val === 'object') {
+      return type === 'DATE'
+        ? `'${val.format('YYYY-MM-DD')}'`
+        : `'${val.format('YYYY-MM-DD HH:mm:ss')}'`
+    } else {
+      if (type === 'VARCHAR') {
+        return `'${val}'`
+      } else {
+        return val
+      }
+    }
   }
 
   render () {
@@ -289,9 +447,15 @@ export class DashboardItemFilters extends PureComponent {
     } = this.state
 
     return (
-      <Form className={styles.filterForm}>
-        {this.renderFilters(filterTree)}
-      </Form>
+      <div className={styles.filters}>
+        <Form className={styles.filterForm}>
+          {this.renderFilters(filterTree)}
+        </Form>
+        <div className={styles.buttons}>
+          <Button size="large">保存</Button>
+          <Button size="large" type="primary" onClick={this.doQuery}>查询</Button>
+        </div>
+      </div>
     )
   }
 }
@@ -301,7 +465,8 @@ DashboardItemFilters.propTypes = {
   keys: PropTypes.array,
   types: PropTypes.array,
   loginUser: PropTypes.object,
-  itemId: PropTypes.number
+  itemId: PropTypes.number,
+  onQuery: PropTypes.func
 }
 
 export default Form.create({withRef: true})(DashboardItemFilters)

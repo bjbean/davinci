@@ -198,7 +198,7 @@ export class TableChart extends PureComponent {
           const filterValue = filterValues[k] || {}
           const columnType = columnTypes[index]
           const isNumber = ['INT', 'BIGINT', 'DOUBLE']
-          const isDatetime = ['DATE']
+          const isDatetime = ['DATE', 'DATETIME']
 
           if (isNumber.indexOf(columnType) >= 0) {
             filterDropdown = (

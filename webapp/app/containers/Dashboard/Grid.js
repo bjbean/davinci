@@ -399,10 +399,18 @@ export class Grid extends React.Component {
   hideFiltersForm = () => {
     this.setState({
       filtersVisible: false,
-      dashboardItem: 0,
+      filtersDashboardItem: 0,
       filtersKeys: [],
       filtersTypes: []
     })
+    this.dashboardItemFilters.refs.wrappedComponent.refs.formWrappedComponent.resetTree()
+  }
+
+  doFilterQuery = (sql) => {
+    // const dashboardItem = this.props.currentItems.find(item => item.id === this.state.filtersDashboardItem)
+    // this.renderChart('refresh', dashboardItem, sql)
+    this[`dashboardItem${this.state.filtersDashboardItem}`].onTableSearch(sql)
+    this.hideFiltersForm()
   }
 
   render () {
@@ -472,6 +480,7 @@ export class Grid extends React.Component {
               onShowWorkbench={this.showWorkbench}
               onShowFiltersForm={this.showFiltersForm}
               onDeleteDashboardItem={this.deleteDashboardItem}
+              ref={f => { this[`dashboardItem${pos.i}`] = f }}
             />
           </div>
         ))
@@ -614,16 +623,19 @@ export class Grid extends React.Component {
           />
         </Modal>
         <Modal
-          title="多维查询"
+          title="条件查询"
           wrapClassName="ant-modal-xlarge"
           visible={filtersVisible}
           onCancel={this.hideFiltersForm}
+          footer={false}
         >
           <DashboardItemFilters
             loginUser={loginUser}
             itemId={filtersDashboardItem}
             keys={filtersKeys}
             types={filtersTypes}
+            onQuery={this.doFilterQuery}
+            ref={f => { this.dashboardItemFilters = f }}
           />
         </Modal>
       </Container>

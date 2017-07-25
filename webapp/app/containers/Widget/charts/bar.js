@@ -10,15 +10,21 @@ export default function (dataSource, flatInfo, chartParams) {
   const {
     xAxis,
     metrics,
+    vertical,
     stack,
     label,
     tooltip,
     legend,
-    toolbox
+    toolbox,
+    top,
+    bottom,
+    left,
+    right
   } = chartParams
 
   let metricOptions,
     xAxisOptions,
+    yAxisOptions,
     stackOption,
     labelOption,
     tooltipOptions,
@@ -32,15 +38,27 @@ export default function (dataSource, flatInfo, chartParams) {
   if (metrics) {
     metrics.forEach(m => {
       stackOption = stack && stack.length ? { stack: 'stack' } : null
-      labelOption = label && label.length
-        ? {
+
+      if (vertical && vertical.length) {
+        labelOption = {
           label: {
             normal: {
               show: true,
-              position: stack && stack.length ? 'insideTop' : 'top'
+              position: 'insideLeft'
             }
           }
-        } : null
+        }
+      } else {
+        labelOption = label && label.length
+          ? {
+            label: {
+              normal: {
+                show: true,
+                position: stack && stack.length ? 'insideTop' : 'top'
+              }
+            }
+          } : null
+      }
 
       let serieObj = Object.assign({},
         {
@@ -59,13 +77,52 @@ export default function (dataSource, flatInfo, chartParams) {
     }
   }
 
-  // x轴数据
-  xAxisOptions = xAxis && {
-    xAxis: {
-      data: dataSource.map(d => d[xAxis]),
-      axisLabel: {
-        interval: 0,
-        rotate: 45
+  // x轴与y轴数据
+  if (vertical && vertical.length) {
+    if (xAxis) {
+      xAxisOptions = {
+        yAxis: {
+          data: dataSource.map(d => d[xAxis]),
+          axisLabel: {
+            show: false
+          },
+          axisLine: {
+            show: false
+          },
+          axisTick: {
+            show: false
+          }
+        }
+      }
+    }
+
+    yAxisOptions = {
+      xAxis: {
+        type: 'value',
+        position: 'top',
+        splitLine: {
+          lineStyle: {
+            type: 'dashed'
+          }
+        }
+      }
+    }
+  } else {
+    if (xAxis) {
+      xAxisOptions = {
+        xAxis: {
+          data: dataSource.map(d => d[xAxis]),
+          axisLabel: {
+            interval: 0,
+            rotate: 45
+          }
+        }
+      }
+    }
+
+    yAxisOptions = {
+      yAxis: {
+        type: 'value'
       }
     }
   }
@@ -107,23 +164,17 @@ export default function (dataSource, flatInfo, chartParams) {
   // grid
   gridOptions = {
     grid: {
-      top: legend && legend.length  // FIXME
-        ? Math.ceil(metricArr.length / Math.round((document.documentElement.clientWidth - 40 - 320 - 32 - 200) / 100)) * 30 + 10
-        : 40,
-      left: 60,
-      right: 60,
-      bottom: 80
+      top: top,
+      left: left,
+      right: right,
+      bottom: bottom
     }
   }
 
   return Object.assign({},
-    {
-      yAxis: {
-        type: 'value'
-      }
-    },
     metricOptions,
     xAxisOptions,
+    yAxisOptions,
     tooltipOptions,
     legendOptions,
     toolboxOptions,
