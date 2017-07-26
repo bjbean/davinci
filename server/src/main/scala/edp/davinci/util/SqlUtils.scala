@@ -128,7 +128,7 @@ trait SqlUtils extends Serializable {
     if (null != groupVars && groupVars.nonEmpty)
       groupVars.foreach(group => {
         val (k, v) = (group.k, group.v)
-        if (kvMap.contains(k)) kvMap(k) ::: List(v) else kvMap(k) = List(v)
+        if (kvMap.contains(k)) kvMap(k) =kvMap(k) ::: List(v) else kvMap(k) = List(v)
       })
     if (null != paramSeq && paramSeq.nonEmpty) paramSeq.foreach(param => kvMap(param.k) = List(param.v))
     if (defaultVars.nonEmpty)
