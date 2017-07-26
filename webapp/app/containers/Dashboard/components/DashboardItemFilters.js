@@ -115,6 +115,10 @@ export class DashboardItemFilters extends PureComponent {
       <div className={itemClass} key={filter.id}>
         <FormItem className={`${styles.filterFormItem} ${styles.filterFormKey}`}>
           {getFieldDecorator(`${filter.id}KeySelect`, {
+            rules: [{
+              required: true,
+              message: 'Column 不能为空'
+            }],
             initialValue: filter.filterKey
           })(
             <Select placeholder="Column" onSelect={this.changeFilterKey(filter)}>
@@ -124,6 +128,10 @@ export class DashboardItemFilters extends PureComponent {
         </FormItem>
         <FormItem className={`${styles.filterFormItem} ${styles.filterFormOperator}`}>
           {getFieldDecorator(`${filter.id}OperatorSelect`, {
+            rules: [{
+              required: true,
+              message: 'Operator 不能为空'
+            }],
             initialValue: filter.filterOperator
           })(
             <Select onSelect={this.changeFilterOperator(filter)}>
@@ -133,6 +141,10 @@ export class DashboardItemFilters extends PureComponent {
         </FormItem>
         <FormItem className={styles.filterFormItem}>
           {getFieldDecorator(`${filter.id}Input${filter.inputUuid}`, {
+            rules: [{
+              required: true,
+              message: 'Value 不能为空'
+            }],
             initialValue: filter.filterValue || null
           })(
             valueInput
@@ -393,11 +405,15 @@ export class DashboardItemFilters extends PureComponent {
   }
 
   doQuery = () => {
-    const { loginUser, itemId, onQuery } = this.props
-    const { filterTree } = this.state
-    localStorage.setItem(`${loginUser.id}_${itemId}_filterTree`, JSON.stringify(filterTree))
-    onQuery(this.getSqlExpresstions(filterTree))
-    this.resetTree()
+    this.props.form.validateFieldsAndScroll((err, values) => {
+      if (!err) {
+        const { loginUser, itemId, onQuery } = this.props
+        const { filterTree } = this.state
+        localStorage.setItem(`${loginUser.id}_${itemId}_filterTree`, JSON.stringify(filterTree))
+        onQuery(this.getSqlExpresstions(filterTree))
+        this.resetTree()
+      }
+    })
   }
 
   resetTree = () => {
