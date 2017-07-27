@@ -4,7 +4,7 @@ import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
-import edp.davinci.{DavinciConstants, KV}
+import edp.davinci.KV
 import edp.davinci.module.{ConfigurationModule, PersistenceModule, _}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
@@ -14,7 +14,6 @@ import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.{AuthorizationProvider, SqlUtils}
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
@@ -251,7 +250,8 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
         if (info.nonEmpty) {
           try {
             val (sqlTemp, tableName, connectionUrl, _) = info.head
-            val groupVars: Seq[KV] = info.map(_._4).filter(_.trim != "").map(json2caseClass[KV])
+            val group= info.map(_._4).filter(_.trim != "")
+            val groupVars =  group.flatMap(g => json2caseClass[Seq[KV]](g))
             if (sqlTemp.trim != "") {
               val (resultList, totalCount) = SqlUtils.sqlExecute(manualFilters, sqlTemp, tableName, adHocSql, paginateAndSort, connectionUrl, groupVars, paramSeq)
               val CSVResult = resultList.map(SqlUtils.covert2CSV)

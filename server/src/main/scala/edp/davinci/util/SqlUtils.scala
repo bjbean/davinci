@@ -126,7 +126,7 @@ trait SqlUtils extends Serializable {
     if (null != groupVars && groupVars.nonEmpty)
       groupVars.foreach(group => {
         val (k, v) = (group.k, group.v)
-        if (kvMap.contains(k)) kvMap(k) =kvMap(k) ::: List(v) else kvMap(k) = List(v)
+        if (kvMap.contains(k)) kvMap(k) = kvMap(k) ::: List(v) else kvMap(k) = List(v)
       })
     if (null != paramSeq && paramSeq.nonEmpty) paramSeq.foreach(param => kvMap(param.k) = List(param.v))
     if (defaultVars.nonEmpty)
@@ -195,7 +195,7 @@ trait SqlUtils extends Serializable {
 
   def getHTMLStr(resultList: ListBuffer[Seq[String]], stgPath: String = "stg/tmpl.stg"): String = {
     println(resultList.head.toBuffer + "~~~~~~~~~~~~~~~~~~~~~table head before map")
-    val columns = resultList.head.map(c => c.split(":").head)
+    val columns = resultList.head.map(c => c.split(CSVHeaderSeparator).head)
     println(columns.toBuffer + "~~~~~~~~~~~~~~~~~~~~~table head after map")
     resultList.remove(0)
     resultList.prepend(columns)
