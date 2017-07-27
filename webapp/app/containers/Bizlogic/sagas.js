@@ -22,7 +22,7 @@ import {
 
 import request from '../../utils/request'
 import api from '../../utils/api'
-import { notifySagasError } from '../../utils/util'
+import { uuid, notifySagasError } from '../../utils/util'
 import { promiseSagaCreator } from '../../utils/reduxPromisation'
 import { writeAdapter, readListAdapter, readObjectAdapter } from '../../utils/asyncAdapter'
 
@@ -129,10 +129,10 @@ export function* editBizlogicWatcher () {
 }
 
 export const getBizdatas = promiseSagaCreator(
-  function* ({ id, sql, offset, limit }) {
+  function* ({ id, sql, sorts, offset, limit }) {
     let queries = ''
     if (offset !== undefined && limit !== undefined) {
-      queries = `?offset=${offset}&limit=${limit}`
+      queries = `?sortby=${sorts}&offset=${offset}&limit=${limit}`
     }
     const asyncData = yield call(request, {
       method: 'post',
@@ -150,13 +150,12 @@ export const getBizdatas = promiseSagaCreator(
 
 function resultsetConverter (resultset) {
   let dataSource = []
+  let keys = []
   let types = []
 
   if (resultset.result && resultset.result.length) {
     const arr = resultset.result
     const keysWithType = csvParser.toArray(arr.splice(0, 1)[0])
-
-    let keys = []
 
     keysWithType.forEach(kwt => {
       const kwtArr = kwt.split(':')
@@ -166,7 +165,9 @@ function resultsetConverter (resultset) {
 
     dataSource = arr.map(csvVal => {
       const jsonVal = csvParser.toArray(csvVal)
-      let obj = {}
+      let obj = {
+        antDesignTableId: uuid(8, 32)
+      }
       keys.forEach((k, index) => {
         obj[k] = jsonVal[index]
       })
@@ -176,6 +177,7 @@ function resultsetConverter (resultset) {
 
   return {
     dataSource: dataSource,
+    keys: keys,
     types: types,
     pageSize: resultset.limit,
     pageIndex: parseInt(resultset.offset / resultset.limit) + 1,

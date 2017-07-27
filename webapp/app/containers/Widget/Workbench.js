@@ -14,11 +14,11 @@ export class Workbench extends React.Component {
   constructor (props) {
     super(props)
     this.state = {
-      dataSource: false,
+      data: false,
       chartInfo: false,
       chartParams: {},
       tableLoading: false,
-      olapSql: props.type === 'edit' ? props.widget.olap_sql : '',
+      adhocSql: props.type === 'edit' ? props.widget.adhoc_sql : '',
 
       tableHeight: 0
     }
@@ -36,12 +36,12 @@ export class Workbench extends React.Component {
     })
   }
 
-  componentWillUpdate (nextProps) {
+  componentWillUpdate (nextProps, ns) {
     const type = nextProps.type
     const widget = nextProps.widget || {}
     const currentWidget = this.props.widget || {}
 
-    this.state.olapSql = widget.olap_sql
+    this.state.adhocSql = widget.adhoc_sql || ''
 
     if (widget.id !== currentWidget.id && type === 'edit') {
       this.getDetail(nextProps)
@@ -50,8 +50,8 @@ export class Workbench extends React.Component {
 
   getDetail = (props) => {
     const { widget } = props
-    const { olapSql } = this.state
-    this.bizlogicChange(widget.flatTable_id, olapSql)
+    const { adhocSql } = this.state
+    this.bizlogicChange(widget.flatTable_id, adhocSql)
     this.widgetTypeChange(widget.widgetlib_id)
       .then(() => {
         const info = {
@@ -69,32 +69,28 @@ export class Workbench extends React.Component {
 
         const formValues = Object.assign({}, info, params)
 
-        this.setState({
-          chartParams: formValues
-        })
+        this.state.chartParams = formValues
+
         this.widgetForm.setFieldsValue(formValues)
       })
   }
 
   bizlogicChange = (val, sql) => {
     this.setState({ tableLoading: true })
-    this.props.onLoadBizdatas(val, sql)
+
+    this.props.onLoadBizdatas(val, { adHoc: sql })
       .then(resultset => {
-        console.log(resultset)
         this.setState({
-          dataSource: resultset.dataSource,
+          data: resultset,
           tableLoading: false
         })
       })
-      .catch(() => {
-        this.setState({ tableLoading: false })
-      })
   }
 
-  olapSqlQuery = () => {
+  adhocSqlQuery = () => {
     const flatTableId = this.widgetForm.getFieldValue('flatTable_id')
     if (flatTableId) {
-      this.bizlogicChange(flatTableId, this.state.olapSql)
+      this.bizlogicChange(flatTableId, this.state.adhocSql)
     }
   }
 
@@ -116,7 +112,7 @@ export class Workbench extends React.Component {
   saveWidget = () => new Promise((resolve, reject) => {
     this.widgetForm.validateFieldsAndScroll((err, values) => {
       if (!err) {
-        const { chartInfo, olapSql } = this.state
+        const { chartInfo, adhocSql } = this.state
 
         let id = values.id
         let name = values.name
@@ -133,7 +129,7 @@ export class Workbench extends React.Component {
         let widget = {
           name,
           desc,
-          olap_sql: olapSql,
+          adhoc_sql: adhocSql,
           publish: true,
           trigger_type: '',
           widgetlib_id,
@@ -149,13 +145,11 @@ export class Workbench extends React.Component {
           widget.id = id
           this.props.onEditWidget(widget).then(() => {
             resolve()
-            this.resetWorkbench()
             this.props.onClose()
           })
         } else {
           this.props.onAddWidget(widget).then(() => {
             resolve()
-            this.resetWorkbench()
             this.props.onClose()
           })
         }
@@ -168,16 +162,16 @@ export class Workbench extends React.Component {
   resetWorkbench = () => {
     this.widgetForm.resetFields()
     this.setState({
-      dataSource: false,
+      data: false,
       chartInfo: false,
       chartParams: {},
-      olapSql: ''
+      adhocSql: ''
     })
   }
 
-  olapSqlInputChange = (event) => {
+  adhocSqlInputChange = (event) => {
     this.setState({
-      olapSql: event.target.value
+      adhocSql: event.target.value
     })
   }
 
@@ -187,11 +181,11 @@ export class Workbench extends React.Component {
       widgetlibs
     } = this.props
     const {
-      dataSource,
+      data,
       chartInfo,
       chartParams,
       tableLoading,
-      olapSql
+      adhocSql
     } = this.state
 
     return (
@@ -199,7 +193,7 @@ export class Workbench extends React.Component {
         <WidgetForm
           bizlogics={bizlogics}
           widgetlibs={widgetlibs}
-          dataSource={dataSource}
+          dataSource={data ? data.dataSource : []}
           chartInfo={chartInfo}
           onBizlogicChange={this.bizlogicChange}
           onWidgetTypeChange={this.widgetTypeChange}
@@ -207,14 +201,14 @@ export class Workbench extends React.Component {
           ref={f => { this.widgetForm = f }}
         />
         <SplitView
-          dataSource={dataSource}
+          data={data}
           chartInfo={chartInfo}
           chartParams={chartParams}
           tableLoading={tableLoading}
-          olapSql={olapSql}
+          adhocSql={adhocSql}
           onSaveWidget={this.saveWidget}
-          onOlapSqlInputChange={this.olapSqlInputChange}
-          onOlapSqlQuery={this.olapSqlQuery}
+          onAdhocSqlInputChange={this.adhocSqlInputChange}
+          onAdhocSqlQuery={this.adhocSqlQuery}
         />
       </div>
     )
@@ -234,7 +228,7 @@ Workbench.propTypes = {
 
 export function mapDispatchToProps (dispatch) {
   return {
-    onLoadBizdatas: (id, sql) => promiseDispatcher(dispatch, loadBizdatas, id, sql, undefined, undefined),
+    onLoadBizdatas: (id, sql) => promiseDispatcher(dispatch, loadBizdatas, id, sql, undefined, undefined, undefined),
     onAddWidget: (widget) => promiseDispatcher(dispatch, addWidget, widget),
     onEditWidget: (widget) => promiseDispatcher(dispatch, editWidget, widget)
   }

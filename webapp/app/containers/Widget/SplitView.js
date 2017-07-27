@@ -1,13 +1,13 @@
 import React, { PropTypes, PureComponent } from 'react'
 
+import TableChart from '../Dashboard/components/TableChart'
 import SegmentControl from '../../components/SegmentControl'
 import WidgetChart from './WidgetChart'
-import Table from 'antd/lib/table'
 import Icon from 'antd/lib/icon'
 import Button from 'antd/lib/button'
 import Input from 'antd/lib/input'
 
-import { TABLE_HEADER_HEIGHT, COLUMN_WIDTH } from '../../globalConstants'
+import { TABLE_HEADER_HEIGHT, TABLE_PAGINATION_HEIGHT } from '../../globalConstants'
 import styles from './Widget.less'
 
 export class SplitView extends PureComponent {
@@ -26,12 +26,12 @@ export class SplitView extends PureComponent {
   componentDidMount () {
     this.setState({
       tableWidth: this.refs.tableContainer.offsetHeight,
-      tableHeight: this.refs.tableContainer.offsetHeight - TABLE_HEADER_HEIGHT
+      tableHeight: this.refs.tableContainer.offsetHeight - TABLE_HEADER_HEIGHT - TABLE_PAGINATION_HEIGHT
     })
   }
 
   componentWillUpdate (props) {
-    this.state.tableInitiate = !!props.dataSource
+    this.state.tableInitiate = !!props.data
   }
 
   sengmentControlChange = (val) => {
@@ -53,13 +53,13 @@ export class SplitView extends PureComponent {
 
   render () {
     const {
-      dataSource,
+      data,
       chartInfo,
       chartParams,
       tableLoading,
-      olapSql,
-      onOlapSqlInputChange,
-      onOlapSqlQuery
+      adhocSql,
+      onAdhocSqlInputChange,
+      onAdhocSqlQuery
     } = this.props
 
     const {
@@ -70,34 +70,16 @@ export class SplitView extends PureComponent {
       loading
     } = this.state
 
-    const columnKeys = dataSource && dataSource.length && Object.keys(dataSource[0])
-    const columns = columnKeys
-      ? columnKeys
-        .filter(k => typeof dataSource[0][k] !== 'object')
-        .map(k => ({
-          title: k.toUpperCase(),
-          dataIndex: k,
-          key: k,
-          width: COLUMN_WIDTH
-        }))
-      : []
-
-    const predictColumnsWidth = columnKeys && columnKeys.length * COLUMN_WIDTH
-    const tableWidthObj = predictColumnsWidth > tableWidth
-      ? { x: predictColumnsWidth }
-      : null
-    const tableSize = Object.assign({}, tableWidthObj, { y: tableHeight })
-
     const tableContent = tableInitiate
       ? (
-        <Table
-          dataSource={dataSource || []}
-          rowKey={s => s.id}
-          columns={columns}
-          pagination={false}
-          scroll={tableSize}
+        <TableChart
+          data={data || {}}
           loading={tableLoading}
-          bordered
+          width={tableWidth}
+          height={tableHeight}
+          // onChange={onTableSearch}
+          filterable={false}
+          sortable={false}
         />
       )
       : (
@@ -108,10 +90,10 @@ export class SplitView extends PureComponent {
         </div>
       )
 
-    const chartContent = dataSource && chartInfo && chartInitiate
+    const chartContent = data && chartInfo && chartInitiate
       ? (
         <WidgetChart
-          dataSource={dataSource || []}
+          dataSource={data ? data.dataSource : []}
           chartInfo={chartInfo}
           chartParams={chartParams}
         />
@@ -149,14 +131,14 @@ export class SplitView extends PureComponent {
             <Input
               size="large"
               placeholder="Write Query SQL Here"
-              value={olapSql}
-              onChange={onOlapSqlInputChange}
-              onPressEnter={onOlapSqlQuery}
+              value={adhocSql}
+              onChange={onAdhocSqlInputChange}
+              onPressEnter={onAdhocSqlQuery}
               addonAfter={
                 <Icon
                   className={styles.runSql}
                   type="play-circle-o"
-                  onClick={onOlapSqlQuery}
+                  onClick={onAdhocSqlQuery}
                 />
               }
             />
@@ -176,9 +158,9 @@ export class SplitView extends PureComponent {
 }
 
 SplitView.propTypes = {
-  dataSource: PropTypes.oneOfType([
+  data: PropTypes.oneOfType([
     PropTypes.bool,
-    PropTypes.array
+    PropTypes.object
   ]),
   chartInfo: PropTypes.oneOfType([
     PropTypes.bool,
@@ -186,10 +168,10 @@ SplitView.propTypes = {
   ]),
   chartParams: PropTypes.object,
   tableLoading: PropTypes.bool,
-  olapSql: PropTypes.string,
+  adhocSql: PropTypes.string,
   onSaveWidget: PropTypes.func,
-  onOlapSqlInputChange: PropTypes.func,
-  onOlapSqlQuery: PropTypes.func
+  onAdhocSqlInputChange: PropTypes.func,
+  onAdhocSqlQuery: PropTypes.func
 }
 
 export default SplitView

@@ -8,7 +8,7 @@ import Radio from 'antd/lib/radio'
 const FormItem = Form.Item
 const RadioGroup = Radio.Group
 
-import utilStyles from '../../assets/less/util.less'
+import utilStyles from '../../../assets/less/util.less'
 
 export class DashboardForm extends React.PureComponent {
 

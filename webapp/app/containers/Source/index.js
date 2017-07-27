@@ -268,7 +268,7 @@ export class Source extends React.PureComponent {
                 </Col>
               </Row>
               <Modal
-                title={`${formType === 'add' ? '新增' : '修改'}用户组`}
+                title={`${formType === 'add' ? '新增' : '修改'} Source`}
                 wrapClassName="ant-modal-small"
                 visible={formVisible}
                 footer={modalButtons}

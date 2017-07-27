@@ -1,52 +1,35 @@
-/**
- * app.js
- *
- * This is the entry file for the application, only setup and boilerplate
- * code.
- */
-
-// Needed for redux-saga es6 generator support
 import 'babel-polyfill'
 
-// Import all the third party stuff
 import React from 'react'
 import ReactDOM from 'react-dom'
 import { Provider } from 'react-redux'
-import { applyRouterMiddleware, Router, hashHistory } from 'react-router'
+import { applyRouterMiddleware, Router, browserHistory } from 'react-router'
 import { syncHistoryWithStore } from 'react-router-redux'
 import { useScroll } from 'react-router-scroll'
 
-// Import root app
-import App from 'containers/App'
+import Share from './index'
 
-// Import selector for `syncHistoryWithStore`
 import { makeSelectLocationState } from 'containers/App/selectors'
 
-// Import Language Provider
 import LanguageProvider from 'containers/LanguageProvider'
 
-// Load the favicon, the manifest.json file and the .htaccess file
-/* eslint-disable import/no-webpack-loader-syntax */
 import '!file-loader?name=[name].[ext]!./favicon.ico'
 import '!file-loader?name=[name].[ext]!./manifest.json'
-import 'file-loader?name=[name].[ext]!./.htaccess' // eslint-disable-line import/extensions
-/* eslint-enable import/no-webpack-loader-syntax */
+import 'file-loader?name=[name].[ext]!./.htaccess'
 
 import configureStore from './store'
 
-// Import i18n messages
 import { translationMessages } from './i18n'
 
-// Import routes
 import createRoutes from './routes'
 
-import '../node_modules/antd/dist/antd.less'
-import '../node_modules/react-grid-layout/css/styles.css'
-import '../node_modules/react-resizable/css/styles.css'
-import './assets/fonts/iconfont.css'
-import './assets/override/antd.css'
-import './assets/override/react-grid.css'
-import './assets/less/style.less'
+import '../../../node_modules/antd/dist/antd.less'
+import '../../../node_modules/react-grid-layout/css/styles.css'
+import '../../../node_modules/react-resizable/css/styles.css'
+import '../../assets/fonts/iconfont.css'
+import '../../assets/override/antd.css'
+import '../../assets/override/react-grid.css'
+import '../../assets/less/style.less'
 
 import 'echarts/lib/chart/bar'
 import 'echarts/lib/chart/line'
@@ -60,30 +43,17 @@ import 'echarts/lib/component/legend'
 import 'echarts/lib/component/tooltip'
 import 'echarts/lib/component/toolbox'
 
-// Create redux store with history
-// this uses the singleton browserHistory provided by react-router
-// Optionally, this could be changed to leverage a created history
-// e.g. `const browserHistory = useRouterHistory(createBrowserHistory)()`
 const initialState = {}
-const store = configureStore(initialState, hashHistory)
+const store = configureStore(initialState, browserHistory)
 
-// Sync history and store, as the react-router-redux reducer
-// is under the non-default key ("routing"), selectLocationState
-// must be provided for resolving how to retrieve the "route" in the state
-const history = syncHistoryWithStore(hashHistory, store, {
+const history = syncHistoryWithStore(browserHistory, store, {
   selectLocationState: makeSelectLocationState()
 })
 
-// Set up the router, wrapping all Routes in the App component
 const rootRoute = {
   path: '/',
-  component: App,
-  childRoutes: createRoutes(store),
-  indexRoute: {
-    onEnter: (_, replace) => {
-      replace('/visual')
-    }
-  }
+  component: Share,
+  childRoutes: createRoutes(store)
 }
 
 const render = (messages) => {
