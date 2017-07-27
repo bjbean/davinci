@@ -274,7 +274,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     else headers.`Content-Disposition`(attachment, Map("filename" -> s"share.CSV")).asInstanceOf[HttpHeader]
     contentType match {
       case `textHtml` =>
-        complete(HttpResponse(headers = List(contentDisposition), entity = HttpEntity(textHtml, getHtmlStr(resultList._1))))
+        complete(HttpResponse(headers = List(contentDisposition), entity = HttpEntity(textHtml, getHTMLStr(resultList._1))))
       case `textCSV` =>
         val responseEntity = HttpEntity(textCSV, resultList._1.map(row => covert2CSV(row)).mkString("\n"))
         complete(HttpResponse(headers = List(contentDisposition), entity = responseEntity))

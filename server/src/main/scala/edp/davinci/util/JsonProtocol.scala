@@ -1,6 +1,7 @@
 package edp.davinci.util
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import edp.davinci.KV
 import edp.davinci.persistence.base.BaseEntity
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
@@ -99,7 +100,9 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatResponsePayload: RootJsonFormat[ResponsePayload] = jsonFormat1(ResponsePayload)
 
-  implicit val formatManualInfo: RootJsonFormat[ManualInfo] = jsonFormat2(ManualInfo)
+  implicit val formatKV: RootJsonFormat[KV] =jsonFormat2(KV)
+
+  implicit val formatManualInfo: RootJsonFormat[ManualInfo] = jsonFormat3(ManualInfo)
 
   implicit val formatShareResult: RootJsonFormat[ShareResult] = jsonFormat3(ShareResult)
 

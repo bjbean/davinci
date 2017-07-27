@@ -47,16 +47,16 @@ class FlatTableService(modules: ConfigurationModule with PersistenceModule with 
     db.run(relGFTQ.filter(_.flatTable_id === flatId).map(rel => (rel.id, rel.group_id, rel.sql_params)).result).mapTo[Seq[PutRelGroupFlatTable]]
   }
 
-  def updateWidget(flatTableId:Long): Future[Int] ={
+  def updateWidget(flatTableId: Long): Future[Int] = {
     db.run(widgetTQ.filter(_.flatTable_id === flatTableId).map(_.flatTable_id).update(0))
   }
 
   def getSourceInfo(flatTableId: Long, session: SessionClass): Future[Seq[(String, String, String, String)]] = {
     val rel = if (session.admin) relGFTQ.filter(_.flatTable_id === flatTableId) else relGFTQ.filter(_.flatTable_id === flatTableId).filter(_.group_id inSet session.groupIdList)
-    val query = (flatTableTQ.filter(obj => obj.id === flatTableId) join sourceTQ on (_.source_id === _.id) join
-      rel on (_._1.id === _.flatTable_id))
+    val query = (rel join flatTableTQ.filter(obj => obj.id === flatTableId) on (_.flatTable_id === _.id) join
+      sourceTQ on (_._2.source_id === _.id))
       .map {
-        case (fs, r) => (fs._1.sql_tmpl, fs._1.result_table, fs._2.connection_url, r.sql_params)
+        case (rf, s) => (rf._2.sql_tmpl, rf._2.result_table, s.connection_url, rf._1.sql_params)
       }.result
     db.run(query)
   }
