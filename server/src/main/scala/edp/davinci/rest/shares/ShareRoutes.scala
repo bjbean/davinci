@@ -248,38 +248,22 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
         val (widgetInfo, groupIds, admin) = widgetAndGroup
         val putWidgetInfo = PutWidgetInfo(widgetInfo._1, widgetInfo._2, widgetInfo._3, widgetInfo._4, widgetInfo._5.orNull, widgetInfo._6, widgetInfo._7.getOrElse(""), widgetInfo._8, Some(widgetInfo._9))
         val sourceFuture = shareService.getSourceInfo(putWidgetInfo.flatTable_id, groupIds, admin)
-        HtmlOrCSVComplete(sourceFuture, putWidgetInfo, contentType, urlfilters, paramSeq, paginateAndSort)
-      case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
-    }
-  }
-
-
-  private def HtmlOrCSVComplete(sourceFuture: Future[Seq[(String, String, String, String)]],
-                                putWidgetInfo: PutWidgetInfo,
-                                contentType: ContentType.NonBinary,
-                                urlfilters: String,
-                                paramSeq: Seq[KV],
-                                paginateAndSort: String) = {
-    onComplete(sourceFuture) {
-      case Success(sourceInfo) =>
-        if (sourceInfo.nonEmpty) {
-          try {
-            val (sqlTemp, tableName, connectionUrl, _) = sourceInfo.head
-            val flatTablesFilters = {
-              val filterList = sourceInfo.map(_._4).filter(_.trim != "").map(_.mkString("(", "", ")"))
-              if (filterList.nonEmpty) filterList.mkString("(", "OR", ")") else null
-            }
-            val fullFilters = if (urlfilters != null) if (flatTablesFilters != null) flatTablesFilters + s"AND ($urlfilters)" else urlfilters else flatTablesFilters
-            logger.info(fullFilters + "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ fullFilters")
-            if (sqlTemp.trim != "") {
-              val resultList = sqlExecute(fullFilters, sqlTemp, tableName, putWidgetInfo.adhoc_sql, paginateAndSort, connectionUrl, paramSeq)
-              contentTypeMatch(resultList, contentType, putWidgetInfo)
-            } else complete(BadRequest, ResponseJson[String](getHeader(400, "flatTable sqls is empty", null), ""))
-          }
-          catch {
-            case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
-          }
-        } else complete(BadRequest, ResponseJson[String](getHeader(400, "", null), "source info is empty"))
+        onComplete(sourceFuture) {
+          case Success(sourceInfo) =>
+            if (sourceInfo.nonEmpty) {
+              try {
+                val (sqlTemp, tableName, connectionUrl, _) = sourceInfo.head
+                if (sqlTemp.trim != "") {
+                  val resultList = sqlExecute(urlfilters, sqlTemp, tableName, putWidgetInfo.adhoc_sql, paginateAndSort, connectionUrl, paramSeq)
+                  contentTypeMatch(resultList, contentType, putWidgetInfo)
+                } else complete(BadRequest, ResponseJson[String](getHeader(400, "flatTable sqls is empty", null), ""))
+              }
+              catch {
+                case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
+              }
+            } else complete(BadRequest, ResponseJson[String](getHeader(400, "", null), "source info is empty"))
+          case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
+        }
       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
     }
   }
