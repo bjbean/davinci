@@ -67,7 +67,6 @@ trait SqlUtils extends Serializable {
     config.setJdbcUrl(jdbcUrl)
     config.setMaximumPoolSize(muxPoolSize)
     config.setMinimumIdle(1)
-    // config.setConnectionTestQuery("SELECT 1")
 
     config.addDataSourceProperty("cachePrepStmts", "true")
     config.addDataSourceProperty("prepStmtCacheSize", "250")
@@ -80,7 +79,6 @@ trait SqlUtils extends Serializable {
 
   def resetConnection(jdbcUrl: String, username: String, password: String): Unit = {
     shutdownConnection(jdbcUrl.toLowerCase)
-    //    datasourceMap -= jdbcUrl
     getConnection(jdbcUrl, username, password).close()
   }
 
@@ -122,7 +120,7 @@ trait SqlUtils extends Serializable {
       if (lowerCaseSql.startsWith("set")) {
         val setKey = lowerCaseSql.substring(lowerCaseSql.indexOf('@') + 1, lowerCaseSql.indexOf('=')).trim
         val setSql = if (paramMap.contains(setKey)) s"SET @$setKey = '${paramMap(setKey)}'" else sql
-        logger.info(setSql + "***********************setSql")
+        logger.info(setSql + "------------------------------------setSql")
         setSql
       } else sql
     })
@@ -138,12 +136,13 @@ trait SqlUtils extends Serializable {
     var statement: Statement = null
     if (connectionUrl != null) {
       val connectionInfo = connectionUrl.split(sqlUrlSeparator)
-      if (connectionInfo.size != 3) {
+        .filter(u => u.contains("user") || u.contains("password")).map(u => u.substring(u.indexOf('=') + 1))
+      if (connectionInfo.length != 2) {
         logger.info("connection is not in right format")
         throw new Exception("connection is not in right format:" + connectionUrl)
       } else {
         try {
-          dbConnection = SqlUtils.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
+          dbConnection = SqlUtils.getConnection(connectionUrl, connectionInfo(0), connectionInfo(1))
           statement = dbConnection.createStatement()
           if (sql.length > 1)
             for (elem <- sql.dropRight(1)) statement.execute(elem)
@@ -186,9 +185,9 @@ trait SqlUtils extends Serializable {
 
 
   def getHtmlStr(resultList: ListBuffer[Seq[String]], stgPath: String = "stg/tmpl.stg"): String = {
-    println(resultList.head.toBuffer +"~~~~~~~~~~~~~~~~~~~~~table head before map")
+    println(resultList.head.toBuffer + "~~~~~~~~~~~~~~~~~~~~~table head before map")
     val columns = resultList.head.map(c => c.split(":").head)
-    println(columns.toBuffer +"~~~~~~~~~~~~~~~~~~~~~table head after map")
+    println(columns.toBuffer + "~~~~~~~~~~~~~~~~~~~~~table head after map")
     resultList.remove(0)
     resultList.prepend(columns)
     resultList.prepend(Seq(""))
@@ -210,7 +209,7 @@ trait SqlUtils extends Serializable {
     */
 
   def getProjectSql(projectSql: String, filters: String, tableName: String, adHocSql: String, paginateStr: String = ""): String = {
-    logger.info(projectSql + "the initial project sql ~~~~~~~~~~~~~~~")
+    logger.info(projectSql + " ~~~~~~~~~~~~~~~the initial project sql")
     val projectSqlWithFilter = if (null != filters && filters != "") s"SELECT * FROM ($projectSql) AS PROFILTER WHERE $filters" else projectSql
     val mixinSql = if (null != adHocSql && adHocSql.trim != "{}" && adHocSql.trim != "") {
       try {

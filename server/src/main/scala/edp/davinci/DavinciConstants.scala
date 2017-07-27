@@ -12,5 +12,5 @@ trait DavinciConstants {
 trait SeparatorConstants {
   lazy val conditionSeparator = ","
   lazy val sqlSeparator = ";"
-  lazy val sqlUrlSeparator = "<:>"
+  lazy val sqlUrlSeparator = "&"
 }
