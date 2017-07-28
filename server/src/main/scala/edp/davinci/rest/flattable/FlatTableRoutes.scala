@@ -259,7 +259,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
             }
             else complete(BadRequest, ResponseJson[String](getHeader(400, "there is no valid sql", session), ""))
           } catch {
-            case synx:SQLException =>complete(BadRequest, ResponseJson[String](getHeader(400, "SQL 语法错误", session),synx.getMessage))
+            case synx:SQLException =>complete(BadRequest, ResponseJson[String](getHeader(400, "SQL语法错误", session),synx.getMessage))
             case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }
         }
