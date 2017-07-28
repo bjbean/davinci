@@ -1,7 +1,7 @@
 package edp.davinci.rest.flattable
 
+import java.sql.SQLException
 import javax.ws.rs.Path
-
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.KV
@@ -259,6 +259,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
             }
             else complete(BadRequest, ResponseJson[String](getHeader(400, "there is no valid sql", session), ""))
           } catch {
+            case synx:SQLException =>complete(BadRequest, ResponseJson[String](getHeader(400, "SQL 语法错误", session),synx.getMessage))
             case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }
         }

@@ -1,10 +1,13 @@
 package edp.davinci.rest.shares
 
+import java.sql.SQLException
 import javax.ws.rs.Path
+
+import akka.http.scaladsl.model.ContentType.NonBinary
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpEntity, _}
 import akka.http.scaladsl.model.headers.ContentDispositionTypes.{attachment, inline}
-import akka.http.scaladsl.server.{Directives, Route}
+import akka.http.scaladsl.server.{Directives, Route, StandardRoute}
 import edp.davinci.{KV, URLHelper}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities._
@@ -15,6 +18,7 @@ import edp.davinci.util.ResponseUtils.getHeader
 import edp.davinci.util.{AesUtils, AuthorizationProvider, MD5Utils, SqlUtils}
 import io.swagger.annotations._
 import org.slf4j.LoggerFactory
+
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -25,7 +29,7 @@ import edp.davinci.DavinciConstants.conditionSeparator
 @Api(value = "/shares", consumes = "application/json", produces = "application/json")
 @Path("/shares")
 class ShareRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives with SqlUtils {
-  val routes: Route = getWidgetURLRoute ~ getDashboardURLRoute ~ getHtmlRoute ~ getCSVRoute ~ getShareDashboardRoute ~ getShareWidgetRoute
+  val routes: Route = getWidgetURLRoute ~ getDashboardURLRoute ~ getHtmlRoute ~ getCSVRoute ~ getShareDashboardRoute ~ getShareWidgetRoute ~ getShareResultRoute
   private lazy val shareService = new ShareService(modules)
   private val logger = LoggerFactory.getLogger(this.getClass)
   private lazy val routeName = "shares"
@@ -134,10 +138,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   @Path("/widget/{share_info}")
   @ApiOperation(value = "get widget by share info", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "share_info", value = "share info value", required = true, dataType = "string", paramType = "path"),
-    new ApiImplicitParam(name = "limit", value = "limit", required = false, dataType = "integer", paramType = "query"),
-    new ApiImplicitParam(name = "offset", value = "offset", required = false, dataType = "integer", paramType = "query"),
-    new ApiImplicitParam(name = "sortby", value = "sortby", required = false, dataType = "string", paramType = "query")))
+    new ApiImplicitParam(name = "share_info", value = "share info value", required = true, dataType = "string", paramType = "path")))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -146,12 +147,16 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   ))
   def getShareWidgetRoute: Route = path(routeName / "widget" / Segment) { shareInfoStr =>
     get {
-      parameters('offset.as[Int] ? 0, 'limit.as[Int] ? -1, 'sortby.as[String] ? "") { (offset, limit, sortby) =>
-        val paginationInfo = if (limit != -1) s" limit $limit offset $offset" else ""
-        val sortInfo = if (sortby != "") "ORDER BY " + sortby.map(ch => if (ch == ':') ' ' else ch) else ""
-        val paginateAndSort = sortInfo + paginationInfo
-        verifyAndGetResult(shareInfoStr, appJson, paginateAndSort)
+      val shareInfo = getShareInfo(shareInfoStr)
+      if (isValidShareInfo(shareInfo)) {
+        onComplete(shareService.getWidgetById(shareInfo.infoId)) {
+          case Success(widgetInfo) =>
+            val putWidgetInfo = PutWidgetInfo(widgetInfo._1, widgetInfo._2, widgetInfo._3, widgetInfo._4, widgetInfo._5.orNull, widgetInfo._6, widgetInfo._7.getOrElse(""), widgetInfo._8, Some(widgetInfo._9))
+            complete(OK, ResponseJson[Seq[PutWidgetInfo]](getHeader(200, null), Seq(putWidgetInfo)))
+          case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
+        }
       }
+      else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), ""))
     }
   }
 
@@ -168,18 +173,9 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   ))
   def getShareDashboardRoute: Route = path(routeName / "dashboard" / Segment) { shareInfoStr =>
     get {
-      try {
-        val jsonShareInfo = AesUtils.decrypt(shareInfoStr, aesPassword)
-        val shareInfo: ShareInfo = json2caseClass[ShareInfo](jsonShareInfo)
-        val (userId, infoId) = (shareInfo.userId, shareInfo.infoId)
-        val MD5Info = MD5Utils.getMD5(caseClass2json[ShareDashboardInfo](ShareDashboardInfo(userId, infoId)))
-        if (MD5Info == shareInfo.md5) {
-          getDashboardComplete(userId, infoId)
-        }
-        else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), ""))
-      } catch {
-        case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
-      }
+      val shareInfo = getShareInfo(shareInfoStr)
+      if (isValidShareInfo(shareInfo)) getDashboardComplete(shareInfo.userId, shareInfo.infoId)
+      else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), ""))
     }
   }
 
@@ -212,32 +208,106 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   }
 
 
-  private def verifyAndGetResult(shareInfoStr: String, contentType: ContentType.NonBinary, paginateAndSort: String): Route = {
+  @Path("/resultset/{share_info}")
+  @ApiOperation(value = "get shared result by share info", notes = "", nickname = "", httpMethod = "POST")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "share_info", value = "share info value", required = true, dataType = "string", paramType = "path"),
+    new ApiImplicitParam(name = "manualInfo", value = "manualInfo", required = false, dataType = "edp.davinci.rest.ManualInfo", paramType = "body"),
+    new ApiImplicitParam(name = "offset", value = "offset", required = false, dataType = "integer", paramType = "query"),
+    new ApiImplicitParam(name = "limit", value = "limit", required = false, dataType = "integer", paramType = "query"),
+    new ApiImplicitParam(name = "sortby", value = "sort by", required = false, dataType = "string", paramType = "query")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "post success"),
+    new ApiResponse(code = 403, message = "user is not admin"),
+    new ApiResponse(code = 401, message = "authorization error"),
+    new ApiResponse(code = 400, message = "bad request")
+  ))
+  def getShareResultRoute: Route = path(routeName / "resultset" / Segment) { shareInfoStr =>
+    post {
+      entity(as[ManualInfo]) { manualInfo =>
+        parameters('offset.as[Int] ? 0, 'limit.as[Int] ? -1, 'sortby.as[String] ? "") { (offset, limit, sortby) =>
+          val paginationInfo = if (limit != -1) s" limit $limit offset $offset" else ""
+          val sortInfo = if (sortby != "") "ORDER BY " + sortby.map(ch => if (ch == ':') ' ' else ch) else ""
+          val paginateAndSort = sortInfo + paginationInfo
+          verifyAndGetResult(shareInfoStr, appJson, paginateAndSort, manualInfo)
+        }
+      }
+    }
+  }
+
+
+  private def isValidShareInfo(shareInfo: ShareInfo) = {
+    if (null == shareInfo) false
+    else {
+      val (userId, infoId) = (shareInfo.userId, shareInfo.infoId)
+      val MD5Info = MD5Utils.getMD5(caseClass2json(ShareWidgetInfo(userId, infoId)))
+      if (MD5Info == shareInfo.md5) true else false
+    }
+  }
+
+
+  private def getShareInfo(shareInfoStr: String) = {
     val infoArr: Array[String] = shareInfoStr.split(conditionSeparator.toString)
     if (infoArr.head.trim != "") {
       try {
         val jsonShareInfo = AesUtils.decrypt(infoArr.head.trim, aesPassword)
-        val shareInfo: ShareInfo = json2caseClass[ShareInfo](jsonShareInfo)
-        val (userId, infoId) = (shareInfo.userId, shareInfo.infoId)
-        val MD5Info = MD5Utils.getMD5(caseClass2json(ShareWidgetInfo(userId, infoId)))
-        if (MD5Info == shareInfo.md5) {
-          if (infoArr.length == 2) {
-            val base64decoder = new sun.misc.BASE64Decoder
-            val base64decode: String = new String(base64decoder.decodeBuffer(infoArr.last))
-            val setParamAndFilter: URLHelper = json2caseClass[URLHelper](base64decode)
-            getResultComplete(userId, infoId, contentType, setParamAndFilter.f_get, setParamAndFilter.p_get, paginateAndSort)
-          } else
-            getResultComplete(userId, infoId, contentType, null, null, paginateAndSort)
-        }
-        else complete(HttpEntity(contentType, "".getBytes("UTF-8")))
+        json2caseClass[ShareInfo](jsonShareInfo)
       } catch {
-        case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
+        case e: Throwable => logger.error("failed to resolve share info", e)
+          null.asInstanceOf[ShareInfo]
       }
-    } else complete(BadRequest, ResponseJson[String](getHeader(400, "User Authentication Failed", null), ""))
+    }
+    else null.asInstanceOf[ShareInfo]
+  }
+
+  private def verifyAndGetResult(shareInfoStr: String, contentType: ContentType.NonBinary, paginateAndSort: String, manualInfo: ManualInfo = null): Route = {
+    val infoArr: Array[String] = shareInfoStr.split(conditionSeparator.toString)
+    try {
+      val shareInfo = getShareInfo(shareInfoStr)
+      val (userId, infoId) = (shareInfo.userId, shareInfo.infoId)
+      if (isValidShareInfo(shareInfo)) {
+        val (manualFilters, widgetParams) = (manualInfo.manualFilters.orNull, manualInfo.params.orNull)
+        if (infoArr.length == 2) {
+          val base64decoder = new sun.misc.BASE64Decoder
+          val base64decode: String = new String(base64decoder.decodeBuffer(infoArr.last))
+          val paramAndFilter: URLHelper = json2caseClass[URLHelper](base64decode)
+          val (urlFilters, urlParams) = (paramAndFilter.f_get, paramAndFilter.p_get)
+          val filters = mergeFilters(manualFilters, urlFilters)
+          val params = mergeParams(widgetParams, urlParams)
+          getResultComplete(userId, infoId, contentType, filters, params, paginateAndSort, manualInfo.adHoc.orNull)
+        } else getResultComplete(userId, infoId, contentType, manualFilters, widgetParams, paginateAndSort, manualInfo.adHoc.orNull)
+      }
+      else complete(HttpEntity(contentType, "".getBytes("UTF-8")))
+    } catch {
+      case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
+    }
+  }
+
+  private def mergeFilters(manualFilters: String, urlFilters: String) = {
+    if (null != manualFilters)
+      if (null != urlFilters)
+        Set(manualFilters, urlFilters).map(f => s"($f)").mkString(" AND ")
+      else manualFilters
+    else urlFilters
   }
 
 
-  private def getResultComplete(userId: Long, widgetId: Long, contentType: ContentType.NonBinary, urlfilters: String, paramSeq: Seq[KV], paginateAndSort: String) = {
+  private def mergeParams(widgetParams: List[KV], urlParams: List[KV]) = {
+    if (null != widgetParams)
+      if (null != urlParams)
+        widgetParams ::: urlParams
+      else widgetParams
+    else urlParams
+  }
+
+  private def getResultComplete(userId: Long,
+                                widgetId: Long,
+                                contentType: ContentType.NonBinary,
+                                urlFilters: String,
+                                paramSeq: Seq[KV],
+                                paginateAndSort: String,
+                                adHocSql: String = null): Route = {
     val operation = for {
       widget <- shareService.getWidgetById(widgetId)
       group <- shareService.getUserGroup(userId)
@@ -254,11 +324,13 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
               try {
                 val (sqlTemp, tableName, connectionUrl, _) = sourceInfo.head
                 if (sqlTemp.trim != "") {
-                  val resultList = sqlExecute(urlfilters, sqlTemp, tableName, putWidgetInfo.adhoc_sql, paginateAndSort, connectionUrl, paramSeq)
-                  contentTypeMatch(resultList, contentType, putWidgetInfo)
-                } else complete(BadRequest, ResponseJson[String](getHeader(400, "flatTable sqls is empty", null), ""))
+                  val resultList = sqlExecute(urlFilters, sqlTemp, tableName, adHocSql, paginateAndSort, connectionUrl, paramSeq)
+                  contentTypeMatch(resultList, contentType)
+                }
+                else complete(BadRequest, ResponseJson[String](getHeader(400, "flatTable sqls is empty", null), ""))
               }
               catch {
+                case synx:SQLException =>complete(BadRequest, ResponseJson[String](getHeader(400, "SQL语法错误", null),synx.getMessage))
                 case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
               }
             } else complete(BadRequest, ResponseJson[String](getHeader(400, "", null), "source info is empty"))
@@ -269,10 +341,10 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   }
 
 
-  private def contentTypeMatch(resultList: (ListBuffer[Seq[String]], Long), contentType: ContentType.NonBinary, putWidgetInfo: PutWidgetInfo) = {
+  private def contentTypeMatch(resultList: (ListBuffer[Seq[String]], Long), contentType: NonBinary): StandardRoute = {
     val contentDisposition = if (contentType == textHtml) headers.`Content-Disposition`(inline, Map("filename" -> s"share.html")).asInstanceOf[HttpHeader]
     else headers.`Content-Disposition`(attachment, Map("filename" -> s"share.CSV")).asInstanceOf[HttpHeader]
-    contentType match {
+    val route = contentType match {
       case `textHtml` =>
         complete(HttpResponse(headers = List(contentDisposition), entity = HttpEntity(textHtml, getHTMLStr(resultList._1))))
       case `textCSV` =>
@@ -280,10 +352,11 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
         complete(HttpResponse(headers = List(contentDisposition), entity = responseEntity))
       case `appJson` =>
         val CSVResult = resultList._1.map(covert2CSV)
-        complete(OK, ResponseJson[ShareResult](getHeader(200, null), ShareResult(putWidgetInfo, CSVResult, resultList._2)))
+        complete(OK, ResponseJson[ShareResult](getHeader(200, null), ShareResult(CSVResult, resultList._2)))
       case _ => logger.info("unsupported contentType")
         complete(BadRequest, ResponseJson[String](getHeader(400, "", null), "unsupported contentType"))
     }
+    route
   }
 
 }

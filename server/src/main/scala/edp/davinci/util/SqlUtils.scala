@@ -7,10 +7,8 @@ import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import edp.davinci.DavinciConstants._
 import edp.davinci.KV
 import edp.davinci.csv.CSVWriter
-import edp.davinci.util.SqlOperators._
 import org.clapper.scalasti.{Constants, STGroupFile}
 import org.slf4j.LoggerFactory
-
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -99,15 +97,15 @@ trait SqlUtils extends Serializable {
                  adHocSql: String,
                  paginateAndSort: String,
                  connectionUrl: String,
-                 groupVars: Seq[KV] = null,
-                 paramSeq: Seq[KV] = null): (ListBuffer[Seq[String]], Long) = {
+                 paramSeq: Seq[KV] = null,
+                 groupParams: Seq[KV] = null): (ListBuffer[Seq[String]], Long) = {
     var totalCount: Long = 0
     val trimSql = flatTableSqls.trim
     logger.info(trimSql + "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sqlTemp")
     val sqls = if (trimSql.lastIndexOf(sqlSeparator) == trimSql.length - 1) trimSql.dropRight(1).split(sqlSeparator) else trimSql.split(sqlSeparator)
     val sqlWithoutVar = sqls.filter(!_.contains("dv_"))
-    val kvMap = getKVMap(sqls, paramSeq, groupVars)
-    val resetSqlBuffer = matchAndReplace(sqlWithoutVar, sqlRegex, kvMap).toBuffer
+    val kvMap = getKVMap(sqls, paramSeq, groupParams)
+    val resetSqlBuffer = RegexMatcher.matchAndReplace(sqlWithoutVar, sqlRegex, kvMap).toBuffer
     resetSqlBuffer.foreach(println)
     val projectSql = getProjectSql(resetSqlBuffer.last, filters, tableName, adHocSql, paginateAndSort)
     logger.info(projectSql + "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^projectSql")
@@ -213,13 +211,13 @@ trait SqlUtils extends Serializable {
 
   /**
     *
-    * @param projectSql a SQL string; eg. SELECT * FROM Table
+    * @param querySql a SQL string; eg. SELECT * FROM Table
     * @return SQL string mixing AdHoc SQL
     */
 
-  def getProjectSql(projectSql: String, filters: String, tableName: String, adHocSql: String, paginateStr: String = ""): String = {
-    logger.info(projectSql + " ~~~~~~~~~~~~~~~the initial project sql")
-    val projectSqlWithFilter = if (null != filters && filters != "") s"SELECT * FROM ($projectSql) AS PROFILTER WHERE $filters" else projectSql
+  def getProjectSql(querySql: String, filters: String, tableName: String, adHocSql: String, paginateStr: String = ""): String = {
+    logger.info(querySql + " ~~~~~~~~~~~~~~~the initial project sql")
+    val projectSqlWithFilter = if (null != filters && filters != "") s"SELECT * FROM ($querySql) AS PROFILTER WHERE $filters" else querySql
     val mixinSql = if (null != adHocSql && adHocSql.trim != "{}" && adHocSql.trim != "") {
       try {
         val sqlArr = adHocSql.toLowerCase.split(flatTable)
@@ -258,58 +256,5 @@ trait SqlUtils extends Serializable {
       if (fieldValue == null) null.asInstanceOf[String] else fieldValue.toString
     })
   }
-
-
-  def matchAndReplace(sqlList: Array[String], REGEX: String, kvMap: mutable.HashMap[String, List[String]]): Array[String] = {
-    sqlList.map(sql => {
-      val exprList = RegexMatcher.getMatchedItemList(sql, REGEX)
-      val parsedMap = SqlParser.getParsedMap(exprList)
-      val replaceMap = getReplaceStr(parsedMap, kvMap)
-      println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sql before replace")
-      println(sql)
-      var resultSql = sql
-      replaceMap.foreach(tuple => resultSql = resultSql.replace(tuple._1, tuple._2))
-      println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sql after replace")
-      println(resultSql)
-      resultSql
-    })
-
-  }
-
-
-  private def getReplaceStr(parsedMap: mutable.Map[String, (SqlOperators, List[String])], kvMap: mutable.HashMap[String, List[String]]): mutable.Map[String, String] = {
-    val replaceMap = mutable.Map.empty[String, String]
-    parsedMap.foreach(tuple => {
-      val (expr, (op, expressionList)) = tuple
-      val (left, right) = (expressionList.head, expressionList.last)
-      val davinciVar = right.substring(right.indexOf('$') + 1, right.lastIndexOf('$')).trim
-      if (kvMap.contains(davinciVar)) {
-        val values = kvMap(davinciVar).map(v => s"'$v'")
-        val refactorExprWithOr =
-          if (values.size > 1) values.map(v => s"$left ${op.toString} '$v'").mkString("(", "OR", ")")
-          else s"$left ${op.toString} ${values.mkString("")}"
-        val replaceStr = op match {
-          case EQUALSTO =>
-            if (values.size > 1) s"$left ${IN.toString} ${values.mkString("(", ",", ")")}"
-            else s"$left ${op.toString} ${values.mkString("")}"
-          case NOTEQUALSTO =>
-            if (values.size > 1) s"$left ${NoTIN.toString} ${values.mkString("(", ",", ")")}"
-            else s"$left ${op.toString} ${values.mkString("")}"
-          case BETWEEN =>
-            if (values.size > 1) s"$left ${IN.toString} ${values.mkString("(", ",", ")")}"
-            else s"$left ${op.toString} ${values.mkString("")}"
-          case IN => s"$left ${op.toString} ${values.mkString("(", ",", ")")}"
-          case GREATERTHAN => refactorExprWithOr
-          case GREATERTHANEQUALS => refactorExprWithOr
-          case MINORTHAN => refactorExprWithOr
-          case MINORTHANEQUALS => refactorExprWithOr
-          case _ => ""
-        }
-        replaceMap(expr) = replaceStr
-      }
-    })
-    replaceMap
-  }
-
 
 }

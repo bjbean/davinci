@@ -17,7 +17,7 @@ case class SqlInfo(sqls: Array[String])
 
 case class BaseInfo(id: Long, name: String)
 
-case class ManualInfo(adHoc: Option[String] = None, manualFilters: Option[String] = None, params: Option[Seq[KV]] = None)
+case class ManualInfo(adHoc: Option[String] = None, manualFilters: Option[String] = None, params: Option[List[KV]] = None)
 
 case class ShareWidgetInfo(userId: Long, infoId: Long)
 
@@ -77,7 +77,7 @@ case class PutWidgetInfoSeq(payload: Seq[PutWidgetInfo])
 
 case class FlatTableResult(result: Seq[String] = null, totalCount: Long)
 
-case class ShareResult(putWidgetInfo: PutWidgetInfo, result: Seq[String] = null, totalCount: Long)
+case class ShareResult(result: Seq[String], totalCount: Long)
 
 case class ResponsePayload(response: String)
 

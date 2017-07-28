@@ -1,5 +1,6 @@
 package edp.davinci.rest.downloads
 
+import java.sql.SQLException
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, OK}
@@ -13,6 +14,7 @@ import edp.davinci.util.ResponseUtils.getHeader
 import edp.davinci.util.{AuthorizationProvider, SqlUtils}
 import io.swagger.annotations._
 import slick.jdbc.MySQLProfile.api._
+
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -61,6 +63,7 @@ class DownloadRoutes(modules: ConfigurationModule with PersistenceModule with Bu
                       val responseEntity = HttpEntity(textCSV, CSVResult)
                       complete(HttpResponse(headers = List(contentDisposition), entity = responseEntity))
                     } catch {
+                      case synx:SQLException =>complete(BadRequest, ResponseJson[String](getHeader(400, "SQL 语法错误", session), ""))
                       case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
                     }
                   }
