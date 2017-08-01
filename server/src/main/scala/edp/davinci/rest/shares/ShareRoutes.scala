@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpEntity, _}
 import akka.http.scaladsl.model.headers.ContentDispositionTypes.{attachment, inline}
 import akka.http.scaladsl.server.{Directives, Route, StandardRoute}
-import edp.davinci.{KV, URLHelper}
+import edp.davinci.{KV, ParamHelper}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest.{ShareInfo, _}
@@ -271,7 +271,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
         if (infoArr.length == 2) {
           val base64decoder = new sun.misc.BASE64Decoder
           val base64decode: String = new String(base64decoder.decodeBuffer(infoArr.last))
-          val paramAndFilter: URLHelper = json2caseClass[URLHelper](base64decode)
+          val paramAndFilter: ParamHelper = json2caseClass[ParamHelper](base64decode)
           val (urlFilters, urlParams) = (paramAndFilter.f_get, paramAndFilter.p_get)
           val filters = mergeFilters(manualFilters, urlFilters)
           val params = mergeParams(widgetParams, urlParams)
