@@ -2,16 +2,13 @@
 <configuration>
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>../logs/application.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- daily rollover -->
-            <fileNamePattern>../logs/application.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy
-                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <!-- or whenever the file size reaches 10MB -->
-                <maxFileSize>100MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
-            <!-- keep 30 days' worth of history -->
-            <maxHistory>10</maxHistory>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>application.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- each file should be at most 100MB, keep 60 days worth of history, but at most 20GB -->
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>20GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
             <pattern>[%level]-[%date]-[%logger]-[%thread] %msg%n</pattern>
@@ -23,25 +20,24 @@
             <pattern>%highlight([%level])-[%date]-[%logger]-[%thread] %msg%n</pattern>
         </encoder>
     </appender>
-
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <target>System.out</target>
         <encoder>
             <pattern>%date{MM/dd HH:mm:ss} %-5level[%.15thread] %logger{1} - %msg%n</pattern>
         </encoder>
     </appender>
-    <logger name="slick" level="INFO" />
-    <logger name="slick.jdbc" level="DEBUG" />
+    <logger name="slick" level="INFO"/>
+    <logger name="slick.jdbc" level="DEBUG"/>
     <logger name="slick.basic.BasicBackend.action" level="${log.action:-INFO}"/>
     <!--<logger name="slick.jdbc.DriverDataSource" level="${log.jdbc.driver:-info}"/>-->
     <!--<logger name="slick.jdbc.JdbcBackend.statement" level="${log.jdbc.statement:-info}"/>-->
     <logger name="slick.jdbc.JdbcBackend.parameter" level="${log.jdbc.parameter:-INFO}"/>
-    <!--<logger name="slick.jdbc.JdbcBackend.benchmark" level="${log.jdbc.bench:-info}"/>-->
+    <!--<logger name="slick.jdbc.JdbcBackend.benchmark" level="${log.jdbc.bench:-INFO}"/>-->
     <logger name="slick.jdbc.StatementInvoker.result" level="${log.jdbc.result:-INFO}"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
-        <appender-ref ref="CONSOLE"/>
+        <!--<appender-ref ref="CONSOLE"/>-->
     </root>
 </configuration>
