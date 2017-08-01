@@ -6,7 +6,6 @@ import edp.davinci.util.{RegexMatcher, SqlParser}
 import org.scalatest.FunSuite
 import edp.davinci.util.JsonUtils.json2caseClass
 import edp.davinci.util.SqlUtils._
-import scala.collection.mutable
 
 
 class MatchAndReplace extends FunSuite {
@@ -32,12 +31,13 @@ class MatchAndReplace extends FunSuite {
   }
 
   test("match all") {
-    val groupStr = "[{\"k\":\"v2\",\"v\":\"北京\"},{\"k\":\"v3\",\"v\":\"20\"}]"
-    val queryStr = "[{\"k\":\"v2\",\"v\":\"shanghai\"},{\"k\":\"v3\",\"v\":\"30\"}]"
+    val groupStr = "[{\"k\":\"v2\",\"v\":\"北京\"},{\"k\":\"v3\",\"v\":\"24\"},{\"k\":\"v2\",\"v\":\"shanghai\"},{\"k\":\"v3\",\"v\":\"45\"}]"
+    val queryStr = "[{\"k\":\"v1_\",\"v\":\"liaog\"}]"
     val flatTableSqls = "dv_groupvar @$v1_$ = mary;" +
       "dv_groupvar @$v2$ = beijing;" +
       "dv_groupvar @$v3$ = 20;" +
-      "select name,age,city from davinci where ((name_) =  $v1_$) and (city =$v2$) and (age > $v3$) or sex != '男' "
+      "dv_queryvar @$v4$ = select;" +
+      "$v4$ where name = $ v1_$ and (city =$v2$) and (age > $v3$) or sex != '男' "
     val groupParams = json2caseClass[Seq[KV]](groupStr)
     val queryParams = json2caseClass[Seq[KV]](queryStr)
 
@@ -46,27 +46,7 @@ class MatchAndReplace extends FunSuite {
     val sqlWithoutVar = sqls.filter(!_.contains("dv_"))
     val groupKVMap = getGroupKVMap(sqls, groupParams)
     val queryKVMap = getQueryKVMap(sqls, queryParams)
-     RegexMatcher.matchAndReplace(sqlWithoutVar, groupKVMap, queryKVMap).toBuffer.foreach(println)
+    RegexMatcher.matchAndReplace(sqlWithoutVar, groupKVMap, queryKVMap)
   }
-
-  test("get all the parameters") {
-    val sqls = "dv_groupvar @$v1_$ = mary;" +
-      "dv_groupvar @$v2$ = beijing;" +
-      "dv_groupvar @$v3$ = 20;" +
-      "select name,age,city from davinci where ((name_) =  $v1_$) and (city =$v2$) and (age > $v3$) or sex != '男' "
-    val sqlList = sqls.split(";")
-    val groupVars = sqlList.filter(_.contains("dv_groupvar"))
-    val groupMap = mutable.HashMap.empty[String, List[String]]
-    groupVars.foreach(g => {
-      val k = g.substring(g.indexOf('$') + 1, g.lastIndexOf('$')).trim
-      val v = g.substring(g.indexOf("=") + 1).trim
-      groupMap(k) = List(v)
-    })
-    groupMap.foreach(println)
-    val toMatchSql = sqlList.filter(!_.contains("dv_groupvar"))
-    val sqlRegex = "\\([^\\$]*\\$\\w+\\$\\s?\\)"
-    //    RegexMatcher.matchAndReplace(toMatchSql,,groupMap)
-  }
-
 
 }

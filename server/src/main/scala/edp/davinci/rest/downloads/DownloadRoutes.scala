@@ -7,9 +7,11 @@ import akka.http.scaladsl.model.StatusCodes.{BadRequest, OK}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.ContentDispositionTypes.attachment
 import akka.http.scaladsl.server.{Directives, Route}
+import edp.davinci.KV
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.rest.{ResponseJson, SessionClass}
 import edp.davinci.util.JsonProtocol._
+import edp.davinci.util.JsonUtils.json2caseClass
 import edp.davinci.util.ResponseUtils.getHeader
 import edp.davinci.util.{AuthorizationProvider, SqlUtils}
 import io.swagger.annotations._
@@ -55,15 +57,17 @@ class DownloadRoutes(modules: ConfigurationModule with PersistenceModule with Bu
                       val (sqlTemp, tableName, connectionUrl, _) = info.head
                       val flatTablesFilters = {
                         val filterList = info.map(_._4).filter(_.trim != "").map(_.mkString("(", "", ")"))
-                        if (filterList.nonEmpty) filterList.mkString("(", "OR", ")") else null
+                        if (filterList.nonEmpty) filterList.mkString("(", " OR ", ")") else null
                       }
+                      val group = info.map(_._4).filter(_.trim != "")
+                      val groupVars = group.flatMap(g => json2caseClass[Seq[KV]](g))
                       val contentDisposition = headers.`Content-Disposition`(attachment, Map("filename" -> s"share.CSV")).asInstanceOf[HttpHeader]
-                      val (resultList, _) = SqlUtils.sqlExecute(flatTablesFilters, sqlTemp, tableName, widgetInfo._2.getOrElse(""), "", connectionUrl)
+                      val (resultList, _) = SqlUtils.sqlExecute(flatTablesFilters, sqlTemp, tableName, widgetInfo._2.getOrElse(""), "", connectionUrl, null, groupVars)
                       val CSVResult = resultList.map(r => r.map(str => if (null != str) str.split(":").head else str)).map(row => covert2CSV(row)).mkString("\n")
                       val responseEntity = HttpEntity(textCSV, CSVResult)
                       complete(HttpResponse(headers = List(contentDisposition), entity = responseEntity))
                     } catch {
-                      case synx:SQLException =>complete(BadRequest, ResponseJson[String](getHeader(400, "SQL 语法错误", session), ""))
+                      case synx: SQLException => complete(BadRequest, ResponseJson[String](getHeader(400, "SQL 语法错误", session), ""))
                       case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
                     }
                   }

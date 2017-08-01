@@ -101,14 +101,16 @@ trait SqlUtils extends Serializable {
                  groupParams: Seq[KV] = null): (ListBuffer[Seq[String]], Long) = {
     var totalCount: Long = 0
     val trimSql = flatTableSqls.trim
-    logger.info(trimSql + "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sqlTemp")
+    logger.info(trimSql + "~~~~~~~~~~~~~~~~~~~~~~~~~sqlTemp")
     val sqls = if (trimSql.lastIndexOf(sqlSeparator) == trimSql.length - 1) trimSql.dropRight(1).split(sqlSeparator) else trimSql.split(sqlSeparator)
     val sqlWithoutVar = sqls.filter(!_.contains("dv_"))
-    val kvMap = getKVMap(sqls, paramSeq, groupParams)
-    val resetSqlBuffer = RegexMatcher.matchAndReplace(sqlWithoutVar, sqlRegex, kvMap).toBuffer
-    resetSqlBuffer.foreach(println)
+    val groupKVMap = getGroupKVMap(sqls, groupParams)
+    val queryKVMap = getQueryKVMap(sqls, paramSeq)
+    val resetSqlBuffer = if (groupKVMap.nonEmpty || queryKVMap.nonEmpty)
+      RegexMatcher.matchAndReplace(sqlWithoutVar, groupKVMap, queryKVMap).toBuffer else sqlWithoutVar.toBuffer
+    resetSqlBuffer.foreach(logger.info)
     val projectSql = getProjectSql(resetSqlBuffer.last, filters, tableName, adHocSql, paginateAndSort)
-    logger.info(projectSql + "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^projectSql")
+    logger.info(projectSql + "^^^^^^^^^^^^^^^^^^^^^^projectSql")
     resetSqlBuffer.remove(resetSqlBuffer.length - 1)
     resetSqlBuffer.append(projectSql.split(sqlSeparator).head)
     val resultSql = resetSqlBuffer.toArray
@@ -118,28 +120,41 @@ trait SqlUtils extends Serializable {
   }
 
 
-  private def getKVMap(sqlArr: Array[String], paramSeq: Seq[KV], groupVars: Seq[KV]): mutable.HashMap[String, List[String]] = {
-    val defaultVars = sqlArr.filter(_.contains("dv_"))
-    val kvMap = mutable.HashMap.empty[String, List[String]]
-    if (null != groupVars && groupVars.nonEmpty)
-      groupVars.foreach(group => {
+  def getGroupKVMap(sqlArr: Array[String], groupParams: Seq[KV]): mutable.HashMap[String, List[String]] = {
+    val defaultVars = sqlArr.filter(_.contains("dv_group"))
+    val groupKVMap = mutable.HashMap.empty[String, List[String]]
+    if (null != groupParams && groupParams.nonEmpty)
+      groupParams.foreach(group => {
         val (k, v) = (group.k, group.v)
-        if (kvMap.contains(k)) kvMap(k) = kvMap(k) ::: List(v) else kvMap(k) = List(v)
+        if (groupKVMap.contains(k)) groupKVMap(k) = groupKVMap(k) ::: List(v) else groupKVMap(k) = List(v)
       })
-    if (null != paramSeq && paramSeq.nonEmpty) paramSeq.foreach(param => kvMap(param.k) = List(param.v))
     if (defaultVars.nonEmpty)
       defaultVars.foreach(g => {
         val k = g.substring(g.indexOf('$') + 1, g.lastIndexOf('$')).trim
         val v = g.substring(g.indexOf("=") + 1).trim
-        if (!kvMap.contains(k))
-          kvMap(k) = List(v)
+        if (!groupKVMap.contains(k))
+          groupKVMap(k) = List(v)
       })
-    kvMap
+    groupKVMap
+  }
+
+  def getQueryKVMap(sqlArr: Array[String], paramSeq: Seq[KV]): mutable.HashMap[String, String] = {
+    val defaultVars = sqlArr.filter(_.contains("dv_query"))
+    val queryKVMap = mutable.HashMap.empty[String, String]
+    if (null != paramSeq && paramSeq.nonEmpty) paramSeq.foreach(param => queryKVMap(param.k) = param.v)
+    if (defaultVars.nonEmpty)
+      defaultVars.foreach(g => {
+        val k = g.substring(g.indexOf('$') + 1, g.lastIndexOf('$')).trim
+        val v = g.substring(g.indexOf("=") + 1).trim
+        if (!queryKVMap.contains(k))
+          queryKVMap(k) = v
+      })
+    queryKVMap
   }
 
   def getResult(connectionUrl: String, sql: Array[String]): ListBuffer[Seq[String]] = {
     logger.info("the sql in getResult:")
-    sql.foreach(println)
+    sql.foreach(logger.info)
     val resultList = new ListBuffer[Seq[String]]
     val columnList = new ListBuffer[String]
     var dbConnection: Connection = null
@@ -216,7 +231,7 @@ trait SqlUtils extends Serializable {
     */
 
   def getProjectSql(querySql: String, filters: String, tableName: String, adHocSql: String, paginateStr: String = ""): String = {
-    logger.info(querySql + " ~~~~~~~~~~~~~~~the initial project sql")
+    logger.info(querySql + "~~~~~~~~~~~~~~~~~~~~~~~~~the initial project sql")
     val projectSqlWithFilter = if (null != filters && filters != "") s"SELECT * FROM ($querySql) AS PROFILTER WHERE $filters" else querySql
     val mixinSql = if (null != adHocSql && adHocSql.trim != "{}" && adHocSql.trim != "") {
       try {

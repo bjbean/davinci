@@ -253,7 +253,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
             val group= info.map(_._4).filter(_.trim != "")
             val groupVars =  group.flatMap(g => json2caseClass[Seq[KV]](g))
             if (sqlTemp.trim != "") {
-              val (resultList, totalCount) = SqlUtils.sqlExecute(manualFilters, sqlTemp, tableName, adHocSql, paginateAndSort, connectionUrl, groupVars, paramSeq)
+              val (resultList, totalCount) = SqlUtils.sqlExecute(manualFilters, sqlTemp, tableName, adHocSql, paginateAndSort, connectionUrl, paramSeq, groupVars)
               val CSVResult = resultList.map(SqlUtils.covert2CSV)
               complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(CSVResult, totalCount)))
             }

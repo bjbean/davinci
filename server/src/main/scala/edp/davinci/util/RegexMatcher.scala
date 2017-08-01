@@ -3,6 +3,7 @@ package edp.davinci.util
 import java.util.regex.Pattern
 
 import edp.davinci.util.SqlOperators._
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -10,6 +11,10 @@ import scala.collection.mutable.ListBuffer
 object RegexMatcher extends RegexMatcher
 
 trait RegexMatcher {
+  lazy val groupRegex = "\\([^\\$]*\\$\\w+\\$\\s?\\)"
+  lazy val queryRegex = "\\$\\s*\\w+\\s*\\$"
+  val logger: Logger = LoggerFactory.getLogger(this.getClass)
+
   def getMatchedItemList(sqlStr: String, REGEX: String): List[String] = {
     val listBuffer = ListBuffer.empty[String]
     val pattern = Pattern.compile(REGEX)
@@ -20,25 +25,30 @@ trait RegexMatcher {
   }
 
 
-
-  def matchAndReplace(sqlList: Array[String], REGEX: String, kvMap: mutable.HashMap[String, List[String]]): Array[String] = {
+  def matchAndReplace(sqlList: Array[String], groupKVMap: mutable.HashMap[String, List[String]], queryKVMap: mutable.HashMap[String, String]): Array[String] = {
     sqlList.map(sql => {
-      val exprList = RegexMatcher.getMatchedItemList(sql, REGEX)
+      val exprList = getMatchedItemList(sql, groupRegex)
       val parsedMap = SqlParser.getParsedMap(exprList)
-      val replaceMap = getReplaceStr(parsedMap, kvMap)
-      println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sql before replace")
-      println(sql)
       var resultSql = sql
-      replaceMap.foreach(tuple => resultSql = resultSql.replace(tuple._1, tuple._2))
-      println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sql after replace")
-      println(resultSql)
+      if (groupKVMap.nonEmpty) {
+        val replaceMap = getGroupReplaceStr(parsedMap, groupKVMap)
+        logger.info(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sql before merge\n$sql")
+        replaceMap.foreach(tuple => resultSql = resultSql.replace(tuple._1, tuple._2))
+        logger.info(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sql after merge\n$resultSql")
+      }
+      val matchItemList = getMatchedItemList(resultSql, queryRegex)
+      val itemTupleList: List[(String, String)] = matchItemList.map(item => (item, item.substring(item.indexOf('$') + 1, item.lastIndexOf('$')).trim))
+      if (queryKVMap.nonEmpty) {
+        itemTupleList.foreach(tuple => if(queryKVMap.contains(tuple._2)) resultSql = resultSql.replace(tuple._1, queryKVMap(tuple._2)))
+        logger.info(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sql after replace\n$resultSql")
+      }
       resultSql
     })
 
   }
 
 
-  private def getReplaceStr(parsedMap: mutable.Map[String, (SqlOperators, List[String])], kvMap: mutable.HashMap[String, List[String]]): mutable.Map[String, String] = {
+  private def getGroupReplaceStr(parsedMap: mutable.Map[String, (SqlOperators, List[String])], kvMap: mutable.HashMap[String, List[String]]): mutable.Map[String, String] = {
     val replaceMap = mutable.Map.empty[String, String]
     parsedMap.foreach(tuple => {
       val (expr, (op, expressionList)) = tuple
@@ -47,7 +57,7 @@ trait RegexMatcher {
       if (kvMap.contains(davinciVar)) {
         val values = kvMap(davinciVar).map(v => s"'$v'")
         val refactorExprWithOr =
-          if (values.size > 1) values.map(v => s"$left ${op.toString} '$v'").mkString("(", "OR", ")")
+          if (values.size > 1) values.map(v => s"$left ${op.toString} $v").mkString("(", " OR ", ")")
           else s"$left ${op.toString} ${values.mkString("")}"
         val replaceStr = op match {
           case EQUALSTO =>
