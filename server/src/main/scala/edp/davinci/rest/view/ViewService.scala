@@ -1,4 +1,4 @@
-package edp.davinci.rest.flattable
+package edp.davinci.rest.view
 
 import edp.davinci.util.ResponseUtils
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
@@ -8,7 +8,7 @@ import slick.jdbc.MySQLProfile.api._
 
 import scala.concurrent.Future
 
-class FlatTableService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
+class ViewService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
   private lazy val fDal = modules.flatTableDal
   private lazy val relGFDal = modules.relGroupFlatTableDal
   private lazy val flatTableTQ = fDal.getTableQuery

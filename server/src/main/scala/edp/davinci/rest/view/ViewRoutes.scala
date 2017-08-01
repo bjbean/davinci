@@ -1,4 +1,4 @@
-package edp.davinci.rest.flattable
+package edp.davinci.rest.view
 
 import java.sql.SQLException
 import javax.ws.rs.Path
@@ -19,10 +19,10 @@ import scala.util.{Failure, Success}
 
 @Api(value = "/flattables", consumes = "application/json", produces = "application/json")
 @Path("/flattables")
-class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
+class ViewRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = postFlatTableRoute ~ putFlatTableRoute ~ getFlatTableByAllRoute ~ deleteFlatTableByIdRoute ~ getGroupsByFlatIdRoute ~ getCalculationResRoute ~ deleteRelGFById
-  private lazy val flatTableService = new FlatTableService(modules)
+  private lazy val flatTableService = new ViewService(modules)
   private lazy val logger = LoggerFactory.getLogger(this.getClass)
   private lazy val adHocTable = "table"
   private lazy val routeName = "flattables"
@@ -47,7 +47,9 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
                 case Success(flatTableSeq) =>
                   val queryResult = flatTableSeq.map(biz => QueryFlatTable(biz._1, biz._2, biz._3, biz._4, biz._5, biz._6.getOrElse(""), biz._7, biz._8, biz._9, biz._10))
                   complete(OK, ResponseSeqJson[QueryFlatTable](getHeader(200, session), queryResult))
-                case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+                case Failure(ex) =>
+                  logger.error(" get flatTableSeq",ex)
+                  complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
               }
             } else complete(Forbidden, ResponseJson[String](getHeader(403, "user is not admin", session), ""))
         }
@@ -250,8 +252,8 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
         if (info.nonEmpty) {
           try {
             val (sqlTemp, tableName, connectionUrl, _) = info.head
-            val group= info.map(_._4).filter(_.trim != "")
-            val groupVars =  group.flatMap(g => json2caseClass[Seq[KV]](g))
+            val group = info.map(_._4).filter(_.trim != "")
+            val groupVars = group.flatMap(g => json2caseClass[Seq[KV]](g))
             if (sqlTemp.trim != "") {
               val (resultList, totalCount) = SqlUtils.sqlExecute(manualFilters, sqlTemp, tableName, adHocSql, paginateAndSort, connectionUrl, paramSeq, groupVars)
               val CSVResult = resultList.map(SqlUtils.covert2CSV)
@@ -259,7 +261,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
             }
             else complete(BadRequest, ResponseJson[String](getHeader(400, "there is no valid sql", session), ""))
           } catch {
-            case synx:SQLException =>complete(BadRequest, ResponseJson[String](getHeader(400, "SQL语法错误", session),synx.getMessage))
+            case synx: SQLException => complete(BadRequest, ResponseJson[String](getHeader(400, "SQL语法错误", session), synx.getMessage))
             case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }
         }
