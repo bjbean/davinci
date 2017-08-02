@@ -156,7 +156,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
           case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
         }
       }
-      else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), ""))
+      else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), "widget info verify failed"))
     }
   }
 
@@ -174,8 +174,8 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   def getShareDashboardRoute: Route = path(routeName / "dashboard" / Segment) { shareInfoStr =>
     get {
       val shareInfo = getShareInfo(shareInfoStr)
-      if (isValidShareInfo(shareInfo)) getDashboardComplete(shareInfo.userId, shareInfo.infoId)
-      else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), ""))
+      if (isValidShareInfo(shareInfo,"dashboard")) getDashboardComplete(shareInfo.userId, shareInfo.infoId)
+      else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), "dashboard info verify failed"))
     }
   }
 
@@ -237,11 +237,15 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   }
 
 
-  private def isValidShareInfo(shareInfo: ShareInfo) = {
+  private def isValidShareInfo(shareInfo: ShareInfo, shareEntity: String = "widget") = {
     if (null == shareInfo) false
     else {
       val (userId, infoId) = (shareInfo.userId, shareInfo.infoId)
-      val MD5Info = MD5Utils.getMD5(caseClass2json(ShareWidgetInfo(userId, infoId)))
+      val MD5Info =
+        if (shareEntity == "widget")
+          MD5Utils.getMD5(caseClass2json(ShareWidgetInfo(userId, infoId)))
+        else
+          MD5Utils.getMD5(caseClass2json(ShareDashboardInfo(userId, infoId)))
       if (MD5Info == shareInfo.md5) true else false
     }
   }
@@ -330,7 +334,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
                 else complete(BadRequest, ResponseJson[String](getHeader(400, "flatTable sqls is empty", null), ""))
               }
               catch {
-                case synx:SQLException =>complete(BadRequest, ResponseJson[String](getHeader(400, "SQL语法错误", null),synx.getMessage))
+                case synx: SQLException => complete(BadRequest, ResponseJson[String](getHeader(400, "SQL语法错误", null), synx.getMessage))
                 case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
               }
             } else complete(BadRequest, ResponseJson[String](getHeader(400, "", null), "source info is empty"))
