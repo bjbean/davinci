@@ -15,7 +15,7 @@ trait ConfigurationModuleImpl extends ConfigurationModule {
     //println(s"========= dir: ${dir}")
     if (dir != null) {
       //println(s"========= file path  ${dir}/application.conf")
-      ConfigFactory.parseFile(new File(dir + "/application.conf")).withFallback(configDefaults)
+      ConfigFactory.parseFile(new File(dir + "/conf/application.conf")).withFallback(configDefaults)
     } else {
       //println("========= dir is empty")
       configDefaults
