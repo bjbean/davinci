@@ -8,15 +8,10 @@ import edp.davinci.rest._
 
 object Boot extends App {
   // configuring modules for application, cake pattern for DI
-  val modules = new ConfigurationModuleImpl
-    with PersistenceModuleImpl
-    with ActorModuleImpl
-    with CalculationModuleImpl
-    with BusinessModuleImpl
-    with RoutesModuleImpl
+  lazy val modules = ModuleInstance.getModule
 
   implicit lazy val system = modules.system
-  implicit lazy val materialize = ActorMaterializer()
+  implicit lazy val materializer = ActorMaterializer()
   implicit lazy val ec = modules.system.dispatcher
 
   lazy val host = modules.config.getString("httpServer.host")

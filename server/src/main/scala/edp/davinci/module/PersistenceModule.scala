@@ -33,7 +33,7 @@ trait PersistenceModuleImpl extends PersistenceModule with DbModule {
   private lazy val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("mysqldb")
   override implicit lazy val profile: JdbcProfile = dbConfig.profile
   override implicit lazy val db: JdbcProfile#Backend#Database = dbConfig.db
-
+  println("in persist")
   override lazy val groupDal = new BaseDalImpl[GroupTable, UserGroup](TableQuery[GroupTable])
   override lazy val sqlLogDal = new BaseDalImpl[SqlLogTable, SqlLog](TableQuery[SqlLogTable])
   override lazy val sourceDal = new BaseDalImpl[SourceTable, Source](TableQuery[SourceTable])

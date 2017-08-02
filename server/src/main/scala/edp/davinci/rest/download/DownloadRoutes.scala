@@ -31,7 +31,7 @@ class DownloadRoutes(modules: ConfigurationModule with PersistenceModule with Bu
   private lazy val widgetTQ = modules.widgetDal.getTableQuery
   private lazy val db = fDal.getDB
   private lazy val textCSV = MediaTypes.`text/csv` withCharset HttpCharsets.`UTF-8`
-  val routes: Route = getWidgetURLRoute
+  val routes: Route = downloadCSVRoute
 
   @Path("/csv/{widget_id}")
   @ApiOperation(value = "download csv", notes = "", nickname = "", httpMethod = "GET")
@@ -44,7 +44,7 @@ class DownloadRoutes(modules: ConfigurationModule with PersistenceModule with Bu
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def getWidgetURLRoute: Route = path(routeName / "csv" / LongNumber) { widgetId =>
+  def downloadCSVRoute: Route = path(routeName / "csv" / LongNumber) { widgetId =>
     get {
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
