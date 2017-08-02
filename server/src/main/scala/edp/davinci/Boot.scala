@@ -16,7 +16,7 @@ object Boot extends App {
     with RoutesModuleImpl
 
   implicit lazy val system = modules.system
-  implicit lazy val materializer = ActorMaterializer()
+  implicit lazy val materialize = ActorMaterializer()
   implicit lazy val ec = modules.system.dispatcher
 
   lazy val host = modules.config.getString("httpServer.host")
