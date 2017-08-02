@@ -35,10 +35,10 @@ class ShareService(modules: ConfigurationModule with PersistenceModule with Busi
 
   def getSourceInfo(flatTableId: Long, groupIds: Seq[Long], admin: Boolean): Future[Seq[(String, String, String, String)]] = {
     val rel = if (admin) relGFTQ.filter(_.flatTable_id === flatTableId) else relGFTQ.filter(_.flatTable_id === flatTableId).filter(_.group_id inSet groupIds)
-    val query = (flatTableTQ.filter(obj => obj.id === flatTableId) join sourceTQ on (_.source_id === _.id) join
-      rel on (_._1.id === _.flatTable_id))
+    val query = (rel join flatTableTQ.filter(obj => obj.id === flatTableId) on (_.flatTable_id === _.id) join
+      sourceTQ on (_._2.source_id === _.id))
       .map {
-        case (fs, r) => (fs._1.sql_tmpl, fs._1.result_table, fs._2.connection_url, r.sql_params)
+        case (rf, s) => (rf._2.sql_tmpl, rf._2.result_table, s.connection_url, rf._1.sql_params)
       }.result
     db.run(query)
   }
