@@ -7,7 +7,7 @@ import com.github.swagger.akka.{HasActorSystem, SwaggerHttpService}
 import edp.davinci.Boot
 import edp.davinci.rest.view.ViewRoutes
 import edp.davinci.rest.dashboard.DashboardRoutes
-import edp.davinci.rest.downloads.DownloadRoutes
+import edp.davinci.rest.download.DownloadRoutes
 import edp.davinci.rest.group.GroupRoutes
 import edp.davinci.rest.libwidget.LibWidgetRoutes
 import edp.davinci.rest.shares.ShareRoutes
@@ -46,7 +46,7 @@ class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
   //  provides license and other description details
 
   val indexRoute: Route = get {
-    pathPrefix("") {
+    pathPrefix("swagger") {
       pathEndOrSingleSlash {
         getFromResource("swagger-ui/index.html")
       }
