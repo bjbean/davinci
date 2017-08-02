@@ -1,4 +1,4 @@
-package edp.davinci.rest.downloads
+package edp.davinci.rest.download
 
 import java.sql.SQLException
 import javax.ws.rs.Path
@@ -71,8 +71,7 @@ class DownloadRoutes(modules: ConfigurationModule with PersistenceModule with Bu
                       case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
                     }
                   }
-                  else
-                    complete(OK, ResponseJson[String](getHeader(200, "source info is empty", session), ""))
+                  else complete(OK, ResponseJson[String](getHeader(200, "source info is empty", session), ""))
                 case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
               }
             case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
