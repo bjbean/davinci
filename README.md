@@ -3,7 +3,13 @@ edp
 
 how to make a dist package
 --------------------------
-cd edp-davinci && mvn clean package -Pdist
+mvn clean install package -Pdist
+
+how to generate THIRD-PARTY.txt?
+------
+mvn install license:aggregate-add-third-party -Dlicense.outputDirectory=
+
+
 
 
 
