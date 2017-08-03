@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -40,7 +40,6 @@
         <edp-moonbox.version>1.0-SNAPSHOT</edp-moonbox.version>
     </properties>
 
-
     <distributionManagement>
         <repository>
             <id>ce-nexus</id>
@@ -74,7 +73,6 @@
             <id>oracle</id>
             <url>http://code.lds.org/nexus/content/groups/main-repo/</url>
         </repository>
-
         <repository>
             <id>conjars.org</id>
             <url>http://conjars.org/repo/</url>
@@ -83,7 +81,6 @@
             <id>springrepo</id>
             <url>http://repo.spring.io/libs-release-remote/</url>
         </repository>
-
     </repositories>
 
     <!-- common pluginRepositories -->
@@ -109,21 +106,20 @@
         </pluginRepository>
     </pluginRepositories>
 
-
     <dependencies>
-
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.library}</artifactId>
             <version>${scalatest.version}</version>
             <scope>provided</scope>
         </dependency>
-
     </dependencies>
-
 
     <build>
         <plugins>
+            <!-- ========================================================== -->
+            <!-- compile scala and java -->
+            <!-- ========================================================== -->
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
@@ -133,7 +129,7 @@
                     <scalaVersion>${scala.version}</scalaVersion>
                     <scalaCompatVersion>${scala.library}</scalaCompatVersion>
                     <recompileMode>incremental</recompileMode>
-                    <useZincServer>true</useZincServer>
+                    <useZincServer>false</useZincServer>
                     <args>
                         <arg>-unchecked</arg>
                         <arg>-deprecation</arg>
@@ -232,8 +228,55 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- ========================================================== -->
+            <!-- license -->
+            <!-- ========================================================== -->
+            <!--<plugin>-->
+                <!--<groupId>com.mycila</groupId>-->
+                <!--<artifactId>license-maven-plugin</artifactId>-->
+                <!--<version>3.0</version>-->
+                <!--<inherited>false</inherited>-->
+                <!--<configuration>-->
+                    <!--<header>misc/license_header.txt</header>-->
+                    <!--<aggregate>true</aggregate>-->
+                    <!--<properties>-->
+                        <!--<inceptionYear>${project.inceptionYear}</inceptionYear>-->
+                    <!--</properties>-->
+                    <!--<includes>-->
+                        <!--<include>src/**/*.java</include>-->
+                        <!--<include>src/**/*.scala</include>-->
+                        <!--<include>src/**/*.xml</include>-->
+                    <!--</includes>-->
+                    <!--<excludes>-->
+                        <!--<exclude>**/logback.xml</exclude>-->
+                        <!--<exclude>**/logback-test.xml</exclude>-->
+                        <!--<exclude>**/src/test/resources/**</exclude>-->
+                    <!--</excludes>-->
+                <!--</configuration>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<id>check-license</id>-->
+                        <!--<phase>initialize</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>check</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
+            <!--<plugin>-->
+                <!--<groupId>org.codehaus.mojo</groupId>-->
+                <!--<artifactId>license-maven-plugin</artifactId>-->
+                <!--<version>1.13</version>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<id>download-licenses</id>-->
+                        <!--<goals>-->
+                            <!--<goal>download-licenses</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
         </plugins>
     </build>
-
-
 </project>
