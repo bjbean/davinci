@@ -3,23 +3,19 @@ package edp.davinci.module
 import java.io.File
 
 import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.log4j.PropertyConfigurator
 
 trait ConfigurationModule {
   def config: Config
 }
 
 trait ConfigurationModuleImpl extends ConfigurationModule {
+  val userDir: String = System.getProperty("user.dir")
+  PropertyConfigurator.configure(s"$userDir/conf/log4j.properties")
+
   private lazy val internalConfig: Config = {
-    val configDefaults = ConfigFactory.load(this.getClass.getClassLoader,"application.conf")
-    val dir: String = System.getenv("DAVINCI_HOME")
-    //println(s"========= dir: ${dir}")
-    if (dir != null) {
-      //println(s"========= file path  ${dir}/application.conf")
-      ConfigFactory.parseFile(new File(dir + "/conf/application.conf")).withFallback(configDefaults)
-    } else {
-      //println("========= dir is empty")
-      configDefaults
-    }
+    val configDefaults = ConfigFactory.load(this.getClass.getClassLoader, "application.conf")
+    ConfigFactory.parseFile(new File(userDir + "/conf/application.conf")).withFallback(configDefaults)
   }
 
   def config = internalConfig
