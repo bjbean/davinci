@@ -11,6 +11,7 @@ import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.ResponseUtils.getHeader
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
+import org.apache.log4j.Logger
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -22,7 +23,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
 
   val routes: Route = postUserRoute ~ putUserRoute ~ putLoginUserRoute ~ getUserByAllRoute ~ deleteUserByIdRoute ~ getGroupsByUserIdRoute ~ deleteUserFromGroupRoute ~ getUserInfoByToken
   private lazy val userService = new UserService(modules)
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val logger = Logger.getLogger(this.getClass)
   private lazy val routeName = "users"
 
   @ApiOperation(value = "get all users with the same domain", notes = "", nickname = "", httpMethod = "GET")

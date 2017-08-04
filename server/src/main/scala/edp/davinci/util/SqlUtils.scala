@@ -7,8 +7,8 @@ import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import edp.davinci.DavinciConstants._
 import edp.davinci.KV
 import edp.davinci.csv.CSVWriter
+import org.apache.log4j.Logger
 import org.clapper.scalasti.{Constants, STGroupFile}
-import org.slf4j.LoggerFactory
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -18,7 +18,7 @@ object SqlUtils extends SqlUtils
 trait SqlUtils extends Serializable {
   lazy val dataSourceMap: mutable.HashMap[String, HikariDataSource] = new mutable.HashMap[String, HikariDataSource]
   lazy val sqlRegex = "\\([^\\$]*\\$\\w+\\$\\s?\\)"
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val logger = Logger.getLogger(this.getClass)
 
   def getConnection(jdbcUrl: String, username: String, password: String, maxPoolSize: Int = 5): Connection = {
     val tmpJdbcUrl = jdbcUrl.toLowerCase

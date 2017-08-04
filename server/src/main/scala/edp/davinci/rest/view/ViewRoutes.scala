@@ -2,6 +2,7 @@ package edp.davinci.rest.view
 
 import java.sql.SQLException
 import javax.ws.rs.Path
+
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
 import edp.davinci.KV
@@ -13,7 +14,9 @@ import edp.davinci.util.JsonUtils.json2caseClass
 import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.{AuthorizationProvider, SqlUtils}
 import io.swagger.annotations._
+import org.apache.log4j.Logger
 import org.slf4j.LoggerFactory
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
@@ -23,7 +26,7 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
 
   val routes: Route = postFlatTableRoute ~ putFlatTableRoute ~ getFlatTableByAllRoute ~ deleteFlatTableByIdRoute ~ getGroupsByFlatIdRoute ~ getCalculationResRoute ~ deleteRelGFById
   private lazy val flatTableService = new ViewService(modules)
-  private lazy val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val logger = Logger.getLogger(this.getClass)
   private lazy val adHocTable = "table"
   private lazy val routeName = "flattables"
 

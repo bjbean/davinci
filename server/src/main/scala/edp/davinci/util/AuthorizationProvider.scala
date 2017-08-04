@@ -4,9 +4,8 @@ import akka.http.scaladsl.server.directives.Credentials
 import edp.davinci.ModuleInstance
 import edp.davinci.persistence.entities.{QueryUserInfo, User}
 import edp.davinci.rest.{LoginClass, SessionClass}
-import org.slf4j.LoggerFactory
+import org.apache.log4j.Logger
 import slick.jdbc.MySQLProfile.api._
-
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -19,7 +18,7 @@ class passwordError(statusCode: Int = 400, desc: String = "pwd is wrong") extend
 
 object AuthorizationProvider {
   private lazy val module = ModuleInstance.modules
-  private lazy val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val logger = Logger.getLogger(this.getClass)
   lazy val realm = "davinci"
 
   def createSessionClass(login: LoginClass): Future[Either[AuthorizationError, (SessionClass, QueryUserInfo)] with Product with Serializable] = {

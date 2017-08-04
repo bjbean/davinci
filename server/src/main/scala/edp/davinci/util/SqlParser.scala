@@ -5,6 +5,7 @@ import net.sf.jsqlparser.expression.ExpressionVisitorAdapter
 import net.sf.jsqlparser.expression.operators.relational._
 import net.sf.jsqlparser.parser.CCJSqlParserUtil
 import net.sf.jsqlparser.statement.select.{PlainSelect, Select}
+import org.apache.log4j.Logger
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -31,7 +32,7 @@ object SqlOperators extends Enumeration {
 object SqlParser extends SqlParser
 
 trait SqlParser {
-  lazy val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val logger = Logger.getLogger(this.getClass)
   def getVisitor(listBuffer: ListBuffer[(SqlOperators.SqlOperators, List[String])]): ExpressionVisitorAdapter = {
     new ExpressionVisitorAdapter() {
       override def visit(expr: InExpression) {

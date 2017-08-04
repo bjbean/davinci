@@ -3,8 +3,7 @@ package edp.davinci.util
 import java.util.regex.Pattern
 
 import edp.davinci.util.SqlOperators._
-import org.slf4j.{Logger, LoggerFactory}
-
+import org.apache.log4j.Logger
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -13,7 +12,7 @@ object RegexMatcher extends RegexMatcher
 trait RegexMatcher {
   lazy val groupRegex = "\\([^\\$]*\\$\\w+\\$\\s?\\)"
   lazy val queryRegex = "\\$\\s*\\w+\\s*\\$"
-  val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val logger = Logger.getLogger(this.getClass)
 
   def getMatchedItemList(sqlStr: String, REGEX: String): List[String] = {
     val listBuffer = ListBuffer.empty[String]
