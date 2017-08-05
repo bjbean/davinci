@@ -196,7 +196,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
           case Success(shareDashboard) =>
             val (dashboard, widgets) = shareDashboard
             val infoSeq = widgets.map(r => {
-              val aesStr = getShareURL(caseClass2json[ShareWidgetInfo](ShareWidgetInfo(userId, r._1)), userId, r._1)
+              val aesStr = getShareURL(caseClass2json[ShareWidgetInfo](ShareWidgetInfo(userId, r._2)), userId, r._2)
               WidgetInfo(r._1, r._2, r._3, r._4, r._5, r._6, r._7, r._8, r._9, aesStr)
             })
             val dashboardInfo = DashboardInfo(dashboard._1, dashboard._2, dashboard._3.getOrElse(""), dashboard._4, dashboard._5, infoSeq)
