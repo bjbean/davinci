@@ -151,7 +151,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       if (isValidShareInfo(shareInfo)) {
         onComplete(shareService.getWidgetById(shareInfo.infoId)) {
           case Success(widgetInfo) =>
-            val putWidgetInfo = PutWidgetInfo(widgetInfo._1, widgetInfo._2, widgetInfo._3, widgetInfo._4, widgetInfo._5.orNull, widgetInfo._6, widgetInfo._7.getOrElse(""), widgetInfo._8, Some(widgetInfo._9))
+            val putWidgetInfo = PutWidgetInfo(widgetInfo._1, widgetInfo._2, widgetInfo._3, widgetInfo._4, widgetInfo._5.getOrElse(""), widgetInfo._6, widgetInfo._7.getOrElse(""), widgetInfo._8, Some(widgetInfo._9))
             complete(OK, ResponseJson[Seq[PutWidgetInfo]](getHeader(200, null), Seq(putWidgetInfo)))
           case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
         }
@@ -320,7 +320,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     onComplete(operation) {
       case Success(widgetAndGroup) =>
         val (widgetInfo, groupIds, admin) = widgetAndGroup
-        val putWidgetInfo = PutWidgetInfo(widgetInfo._1, widgetInfo._2, widgetInfo._3, widgetInfo._4, widgetInfo._5.orNull, widgetInfo._6, widgetInfo._7.getOrElse(""), widgetInfo._8, Some(widgetInfo._9))
+        val putWidgetInfo = PutWidgetInfo(widgetInfo._1, widgetInfo._2, widgetInfo._3, widgetInfo._4, widgetInfo._5.getOrElse(""), widgetInfo._6, widgetInfo._7.getOrElse(""), widgetInfo._8, Some(widgetInfo._9))
         val sourceFuture = shareService.getSourceInfo(putWidgetInfo.flatTable_id, groupIds, admin)
         onComplete(sourceFuture) {
           case Success(sourceInfo) =>

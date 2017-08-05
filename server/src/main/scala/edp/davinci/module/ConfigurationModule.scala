@@ -11,6 +11,7 @@ trait ConfigurationModule {
 
 trait ConfigurationModuleImpl extends ConfigurationModule {
   val userDir: String = System.getProperty("user.dir")
+  println("user dir " + userDir + "~~~~~~~~~~~~~~")
   PropertyConfigurator.configure(s"$userDir/conf/log4j.properties")
 
   private lazy val internalConfig: Config = {
