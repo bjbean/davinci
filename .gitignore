@@ -22,3 +22,4 @@ derby.log
 metastore_db
 spark-warehouse
 *.bak
+*.log
