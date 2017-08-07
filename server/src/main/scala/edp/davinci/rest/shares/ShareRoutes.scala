@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{HttpEntity, _}
 import akka.http.scaladsl.model.headers.ContentDispositionTypes.{attachment, inline}
 import akka.http.scaladsl.server.{Directives, Route, StandardRoute}
-import edp.davinci.{KV, ParamHelper}
+import edp.davinci.{DavinciConstants, KV, ParamHelper}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest.{ShareInfo, _}
@@ -24,6 +24,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import edp.davinci.DavinciConstants.conditionSeparator
+import .output
 
 
 @Api(value = "/shares", consumes = "application/json", produces = "application/json")
@@ -175,7 +176,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     get {
       val shareInfo = getShareInfo(shareInfoStr)
       if (isValidShareInfo(shareInfo, "dashboard")) {
-        val infoArr = shareInfoStr.split(conditionSeparator.toString)
+        val infoArr = java.net.URLDecoder.decode(shareInfoStr, DavinciConstants.defaultEncode).split(conditionSeparator.toString)
         if (infoArr.length > 1)
           getDashboardComplete(shareInfo.userId, shareInfo.infoId, infoArr(1))
         else getDashboardComplete(shareInfo.userId, shareInfo.infoId)
@@ -258,7 +259,8 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
 
 
   private def getShareInfo(shareInfoStr: String) = {
-    val infoArr: Array[String] = shareInfoStr.split(conditionSeparator.toString)
+    val output = java.net.URLDecoder.decode(shareInfoStr, DavinciConstants.defaultEncode)
+    val infoArr: Array[String] = output.split(conditionSeparator.toString)
     if (infoArr.head.trim != "") {
       try {
         val jsonShareInfo = AesUtils.decrypt(infoArr.head.trim, aesPassword)
@@ -272,7 +274,8 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   }
 
   private def verifyAndGetResult(shareInfoStr: String, contentType: ContentType.NonBinary, paginateAndSort: String, manualInfo: ManualInfo = null): Route = {
-    val infoArr: Array[String] = shareInfoStr.split(conditionSeparator.toString)
+    val output = java.net.URLDecoder.decode(shareInfoStr,DavinciConstants.defaultEncode)
+    val infoArr: Array[String] = output.split(conditionSeparator.toString)
     try {
       val shareInfo = getShareInfo(shareInfoStr)
       val (userId, infoId) = (shareInfo.userId, shareInfo.infoId)

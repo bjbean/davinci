@@ -25,7 +25,7 @@ class DavinciRoutes extends Directives {
   }
 
   val shareRoute: Route = get {
-    pathPrefix("share") {
+    pathPrefix("davinci-ui") {
       pathEndOrSingleSlash {
         getFromResource("davinci-ui/share.html")
       }

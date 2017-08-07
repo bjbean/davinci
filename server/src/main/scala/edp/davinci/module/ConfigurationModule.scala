@@ -15,8 +15,8 @@ trait ConfigurationModuleImpl extends ConfigurationModule {
   PropertyConfigurator.configure(s"$userDir/conf/log4j.properties")
 
   private lazy val internalConfig: Config = {
-    val configDefaults = ConfigFactory.load(this.getClass.getClassLoader, "application.conf")
-    ConfigFactory.parseFile(new File(userDir + "/conf/application.conf")).withFallback(configDefaults)
+//    val configDefaults = ConfigFactory.load(this.getClass.getClassLoader, "application.conf")
+    ConfigFactory.parseFile(new File(userDir + "/conf/application.conf"))
   }
 
   def config = internalConfig

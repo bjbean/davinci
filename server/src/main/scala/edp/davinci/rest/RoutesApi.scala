@@ -32,19 +32,19 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
 
   val routes: Route =
     corsHandler(swagger.indexRoute) ~ corsHandler(swagger.routes) ~
-      corsHandler(davinci.indexRoute) ~ corsHandler(davinci.shareRoute)~
-  pathPrefix("api" / "v1") {
-    corsHandler(login.routes) ~
-      corsHandler(users.routes) ~
-      corsHandler(changePwd.routes) ~
-      corsHandler(source.routes) ~
-      corsHandler(flatTable.routes) ~
-      corsHandler(dashboard.routes) ~
-      corsHandler(widget.routes) ~
-      corsHandler(libWidget.routes) ~
-      corsHandler(group.routes) ~
-      corsHandler(sqlLog.routes) ~
-      corsHandler(share.routes) ~
-      corsHandler(download.routes)
-  }
+      corsHandler(davinci.indexRoute) ~ corsHandler(davinci.shareRoute) ~
+      pathPrefix("api" / "v1") {
+        corsHandler(login.routes) ~
+          corsHandler(users.routes) ~
+          corsHandler(changePwd.routes) ~
+          corsHandler(source.routes) ~
+          corsHandler(flatTable.routes) ~
+          corsHandler(dashboard.routes) ~
+          corsHandler(widget.routes) ~
+          corsHandler(libWidget.routes) ~
+          corsHandler(group.routes) ~
+          corsHandler(sqlLog.routes) ~
+          corsHandler(share.routes) ~
+          corsHandler(download.routes)
+      }
 }
