@@ -2,7 +2,7 @@ package edp.davinci.rest
 
 import akka.http.scaladsl.server.{Directives, Route}
 
-class DavinciRoutes extends Directives{
+class DavinciRoutes extends Directives {
   //  override implicit val actorSystem: ActorSystem = Boot.system
   //  override implicit val materializer: ActorMaterializer = Boot.materializer
 
@@ -20,6 +20,14 @@ class DavinciRoutes extends Directives{
     pathPrefix("") {
       pathEndOrSingleSlash {
         getFromResource("davinci-ui/index.html")
+      }
+    } ~ getFromResourceDirectory("davinci-ui")
+  }
+
+  val shareRoute: Route = get {
+    pathPrefix("share") {
+      pathEndOrSingleSlash {
+        getFromResource("davinci-ui/share.html")
       }
     } ~ getFromResourceDirectory("davinci-ui")
   }

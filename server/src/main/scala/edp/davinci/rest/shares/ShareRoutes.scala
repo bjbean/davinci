@@ -174,13 +174,18 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   def getShareDashboardRoute: Route = path(routeName / "dashboard" / Segment) { shareInfoStr =>
     get {
       val shareInfo = getShareInfo(shareInfoStr)
-      if (isValidShareInfo(shareInfo,"dashboard")) getDashboardComplete(shareInfo.userId, shareInfo.infoId)
+      if (isValidShareInfo(shareInfo, "dashboard")) {
+        val infoArr = shareInfoStr.split(conditionSeparator.toString)
+        if (infoArr.length > 1)
+          getDashboardComplete(shareInfo.userId, shareInfo.infoId, infoArr(1))
+        else getDashboardComplete(shareInfo.userId, shareInfo.infoId)
+      }
       else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), "dashboard info verify failed"))
     }
   }
 
 
-  private def getDashboardComplete(userId: Long, infoId: Long) = {
+  private def getDashboardComplete(userId: Long, infoId: Long, urlOperation: String = null) = {
     val operation = for {
       group <- shareService.getUserGroup(userId)
       user <- shareService.getUserInfo(userId)
@@ -197,7 +202,8 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
             val (dashboard, widgets) = shareDashboard
             val infoSeq = widgets.map(r => {
               val aesStr = getShareURL(caseClass2json[ShareWidgetInfo](ShareWidgetInfo(userId, r._2)), userId, r._2)
-              WidgetInfo(r._1, r._2, r._3, r._4, r._5, r._6, r._7, r._8, r._9, aesStr)
+              val shareInfo = if (null != urlOperation) s"$aesStr$conditionSeparator$urlOperation" else aesStr
+              WidgetInfo(r._1, r._2, r._3, r._4, r._5, r._6, r._7, r._8, r._9, shareInfo)
             })
             val dashboardInfo = DashboardInfo(dashboard._1, dashboard._2, dashboard._3.getOrElse(""), dashboard._4, dashboard._5, infoSeq)
             complete(OK, ResponseJson[DashboardInfo](getHeader(200, null), dashboardInfo))

@@ -21,7 +21,6 @@ public class AesUtils {
 
 	public static String encrypt(String content, String password) {
 		try {
-			System.out.println("content:"+content+",password:"+password);
 			Cipher cipher = Cipher.getInstance("AES");
 			byte[] byteContent = content.getBytes("utf-8");
 			cipher.init(Cipher.ENCRYPT_MODE, setKey(password));
