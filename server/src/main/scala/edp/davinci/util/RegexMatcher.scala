@@ -54,7 +54,7 @@ trait RegexMatcher {
       val (left, right) = (expressionList.head, expressionList.last)
       val davinciVar = right.substring(right.indexOf('$') + 1, right.lastIndexOf('$')).trim
       if (kvMap.contains(davinciVar)) {
-        val values = kvMap(davinciVar).map(v => s"'$v'")
+        val values = kvMap(davinciVar)
         val refactorExprWithOr =
           if (values.size > 1) values.map(v => s"$left ${op.toString} $v").mkString("(", " OR ", ")")
           else s"$left ${op.toString} ${values.mkString("")}"

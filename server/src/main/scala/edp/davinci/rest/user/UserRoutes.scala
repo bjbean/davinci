@@ -8,11 +8,10 @@ import edp.davinci.module._
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.util.ResponseUtils.getHeader
 import edp.davinci.util.JsonProtocol._
+import edp.davinci.util.ResponseUtils.getHeader
 import io.swagger.annotations._
 import org.apache.log4j.Logger
-import org.slf4j.LoggerFactory
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}

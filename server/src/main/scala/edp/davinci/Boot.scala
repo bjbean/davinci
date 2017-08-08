@@ -6,7 +6,7 @@ import edp.davinci.rest._
 
 object Boot extends App {
   // configuring modules for application, cake pattern for DI
-  lazy val modules = ModuleInstance.getModule
+  val modules = ModuleInstance.getModule
 
   implicit lazy val system = modules.system
   implicit lazy val materializer = ActorMaterializer()

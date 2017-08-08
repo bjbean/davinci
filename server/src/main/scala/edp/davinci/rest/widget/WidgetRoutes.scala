@@ -8,11 +8,10 @@ import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModul
 import edp.davinci.persistence.entities.{PostWidgetInfo, PutWidgetInfo, Widget}
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.JsonProtocol._
+import edp.davinci.util.ResponseUtils._
 import io.swagger.annotations._
 import org.apache.log4j.Logger
-import org.slf4j.LoggerFactory
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}

@@ -5,10 +5,10 @@ import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.ContentType.NonBinary
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.{HttpEntity, _}
 import akka.http.scaladsl.model.headers.ContentDispositionTypes.{attachment, inline}
+import akka.http.scaladsl.model.{HttpEntity, _}
 import akka.http.scaladsl.server.{Directives, Route, StandardRoute}
-import edp.davinci.{DavinciConstants, KV, ParamHelper}
+import edp.davinci.DavinciConstants.conditionSeparator
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest.{ShareInfo, _}
@@ -16,15 +16,12 @@ import edp.davinci.util.JsonProtocol._
 import edp.davinci.util.JsonUtils.{caseClass2json, json2caseClass}
 import edp.davinci.util.ResponseUtils.getHeader
 import edp.davinci.util.{AesUtils, AuthorizationProvider, MD5Utils, SqlUtils}
+import edp.davinci.{DavinciConstants, KV, ParamHelper}
 import io.swagger.annotations._
-import org.slf4j.LoggerFactory
-
+import org.apache.log4j.Logger
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.util.{Failure, Success}
-import edp.davinci.DavinciConstants.conditionSeparator
-import .output
 
 
 @Api(value = "/shares", consumes = "application/json", produces = "application/json")
@@ -32,7 +29,7 @@ import .output
 class ShareRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives with SqlUtils {
   val routes: Route = getWidgetURLRoute ~ getDashboardURLRoute ~ getHtmlRoute ~ getCSVRoute ~ getShareDashboardRoute ~ getShareWidgetRoute ~ getShareResultRoute
   private lazy val shareService = new ShareService(modules)
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private val logger = Logger.getLogger(this.getClass)
   private lazy val routeName = "shares"
   private lazy val aesPassword = modules.config.getString("aes.password")
   private lazy val textHtml = MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`
@@ -176,7 +173,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     get {
       val shareInfo = getShareInfo(shareInfoStr)
       if (isValidShareInfo(shareInfo, "dashboard")) {
-        val infoArr = java.net.URLDecoder.decode(shareInfoStr, DavinciConstants.defaultEncode).split(conditionSeparator.toString)
+        val infoArr = shareInfoStr.split(conditionSeparator.toString)
         if (infoArr.length > 1)
           getDashboardComplete(shareInfo.userId, shareInfo.infoId, infoArr(1))
         else getDashboardComplete(shareInfo.userId, shareInfo.infoId)
@@ -259,8 +256,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
 
 
   private def getShareInfo(shareInfoStr: String) = {
-    val output = java.net.URLDecoder.decode(shareInfoStr, DavinciConstants.defaultEncode)
-    val infoArr: Array[String] = output.split(conditionSeparator.toString)
+    val infoArr: Array[String] = shareInfoStr.split(conditionSeparator.toString)
     if (infoArr.head.trim != "") {
       try {
         val jsonShareInfo = AesUtils.decrypt(infoArr.head.trim, aesPassword)
@@ -274,8 +270,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   }
 
   private def verifyAndGetResult(shareInfoStr: String, contentType: ContentType.NonBinary, paginateAndSort: String, manualInfo: ManualInfo = null): Route = {
-    val output = java.net.URLDecoder.decode(shareInfoStr,DavinciConstants.defaultEncode)
-    val infoArr: Array[String] = output.split(conditionSeparator.toString)
+    val infoArr: Array[String] = shareInfoStr.split(conditionSeparator.toString)
     try {
       val shareInfo = getShareInfo(shareInfoStr)
       val (userId, infoId) = (shareInfo.userId, shareInfo.infoId)
@@ -283,7 +278,8 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
         val (manualFilters, widgetParams) = (manualInfo.manualFilters.orNull, manualInfo.params.orNull)
         if (infoArr.length == 2) {
           val base64decoder = new sun.misc.BASE64Decoder
-          val base64decode: String = new String(base64decoder.decodeBuffer(infoArr.last))
+          val output = java.net.URLDecoder.decode(infoArr.last, DavinciConstants.defaultEncode)
+          val base64decode: String = new String(base64decoder.decodeBuffer(output))
           val paramAndFilter: ParamHelper = json2caseClass[ParamHelper](base64decode)
           val (urlFilters, urlParams) = (paramAndFilter.f_get, paramAndFilter.p_get)
           val filters = mergeFilters(manualFilters, urlFilters)

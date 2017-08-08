@@ -6,7 +6,6 @@ import net.sf.jsqlparser.expression.operators.relational._
 import net.sf.jsqlparser.parser.CCJSqlParserUtil
 import net.sf.jsqlparser.statement.select.{PlainSelect, Select}
 import org.apache.log4j.Logger
-import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer

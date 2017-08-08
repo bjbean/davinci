@@ -15,7 +15,6 @@ import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.{AuthorizationProvider, SqlUtils}
 import io.swagger.annotations._
 import org.apache.log4j.Logger
-import org.slf4j.LoggerFactory
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
