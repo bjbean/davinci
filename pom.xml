@@ -180,37 +180,51 @@
             <!-- license -->
             <!-- ========================================================== -->
             <!--<plugin>-->
-                <!--<groupId>com.mycila</groupId>-->
-                <!--<artifactId>license-maven-plugin</artifactId>-->
-                <!--<version>3.0</version>-->
-                <!--<inherited>false</inherited>-->
-                <!--<configuration>-->
-                    <!--<header>misc/license_header.txt</header>-->
-                    <!--<aggregate>true</aggregate>-->
-                    <!--<properties>-->
-                        <!--<inceptionYear>${project.inceptionYear}</inceptionYear>-->
-                    <!--</properties>-->
-                    <!--<includes>-->
-                        <!--<include>src/**/*.java</include>-->
-                        <!--<include>src/**/*.scala</include>-->
-                        <!--<include>src/**/*.xml</include>-->
-                    <!--</includes>-->
-                    <!--<excludes>-->
-                        <!--<exclude>**/logback.xml</exclude>-->
-                        <!--<exclude>**/logback-test.xml</exclude>-->
-                        <!--<exclude>**/src/test/resources/**</exclude>-->
-                    <!--</excludes>-->
-                <!--</configuration>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<id>check-license</id>-->
-                        <!--<phase>initialize</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>check</goal>-->
-                        <!--</goals>-->
-                    <!--</execution>-->
-                <!--</executions>-->
+            <!--<groupId>com.mycila</groupId>-->
+            <!--<artifactId>license-maven-plugin</artifactId>-->
+            <!--<version>3.0</version>-->
+            <!--<inherited>false</inherited>-->
+            <!--<configuration>-->
+            <!--<header>misc/license_header.txt</header>-->
+            <!--<aggregate>true</aggregate>-->
+            <!--<properties>-->
+            <!--<inceptionYear>${project.inceptionYear}</inceptionYear>-->
+            <!--</properties>-->
+            <!--<includes>-->
+            <!--<include>src/**/*.java</include>-->
+            <!--<include>src/**/*.scala</include>-->
+            <!--<include>src/**/*.xml</include>-->
+            <!--</includes>-->
+            <!--<excludes>-->
+            <!--<exclude>**/logback.xml</exclude>-->
+            <!--<exclude>**/logback-test.xml</exclude>-->
+            <!--<exclude>**/src/test/resources/**</exclude>-->
+            <!--</excludes>-->
+            <!--</configuration>-->
+            <!--<executions>-->
+            <!--<execution>-->
+            <!--<id>check-license</id>-->
+            <!--<phase>initialize</phase>-->
+            <!--<goals>-->
+            <!--<goal>check</goal>-->
+            <!--</goals>-->
+            <!--</execution>-->
+            <!--</executions>-->
             <!--</plugin>-->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>1.13</version>
+                <configuration>
+                    <licenseMerges>
+                        <licenseMerge>Apache 2.0|Apache 2.0 License|Apache License 2.0|ASL|Apache 2|Apache-2.0|the Apache License, ASL Version 2.0|The Apache Software License, Version 2.0|Apache License, Version 2.0|Apache Public License 2.0</licenseMerge>
+                        <licenseMerge>BSD|Two-clause BSD-style license|BSD licence|BSD New|The New BSD License|BSD 3-Clause|BSD 3-clause</licenseMerge>
+                        <licenseMerge>MIT|MIT License</licenseMerge>
+                        <licenseMerge>LGPL|GNU Library or Lesser General Public License (LGPL) V2.1</licenseMerge>
+                        <licenseMerge>CDDL|CDDL License</licenseMerge>
+                    </licenseMerges>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
