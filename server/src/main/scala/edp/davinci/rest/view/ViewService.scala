@@ -32,15 +32,18 @@ class ViewService(modules: ConfigurationModule with PersistenceModule with Busin
     db.run(query)
   }
 
-  def deleteByFlatId(idSeq: Seq[Long]): Future[Unit] = {
+  def deleteFromView(idSeq: Seq[Long]): Future[Unit] = {
     val query = DBIO.seq(idSeq.map(r => {
       flatTableTQ.filter(_.id === r).delete
     }): _*)
     db.run(query)
   }
 
-  def deleteRelId(flatTableId: Long): Future[Int] = {
-    db.run(relGFTQ.filter(_.flatTable_id === flatTableId).delete)
+  def deleteFromRel(idSeq: Seq[Long]): Future[Unit] = {
+    val query = DBIO.seq(idSeq.map(r => {
+      relGFTQ.filter(_.flatTable_id === r).delete
+    }): _*)
+    db.run(query)
   }
 
   def getGroups(flatId: Long): Future[Seq[PutRelGroupFlatTable]] = {
