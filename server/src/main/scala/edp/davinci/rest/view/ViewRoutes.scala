@@ -123,7 +123,7 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   private def putFlatTableComplete(session: SessionClass, flatTableSeq: Seq[PutFlatTableInfo]): Route = {
     val operation = for {
       updateOP <- flatTableService.updateFlatTbl(flatTableSeq, session)
-      deleteOp <- flatTableService.deleteFromRel(flatTableSeq.map(_.id))
+      deleteOp <- flatTableService.deleteFromRelByFilter(flatTableSeq.map(_.id))
     } yield (updateOP, deleteOp)
     onComplete(operation) {
       case Success(_) => val relSeq = for {rel <- flatTableSeq.head.relBG
@@ -152,7 +152,7 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
           if (session.admin) {
             val operation = for {
               deleteFlatTable <- flatTableService.deleteFromView(Seq(flatTableId))
-              deleteRel <- flatTableService.deleteFromRel(Seq(flatTableId))
+              deleteRel <- flatTableService.deleteFromRelByFilter(Seq(flatTableId))
               updateWidget <- flatTableService.updateWidget(flatTableId)
             } yield (deleteFlatTable, deleteRel, updateWidget)
             onComplete(operation) {

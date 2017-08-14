@@ -169,7 +169,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
         session =>
           if (session.admin) {
             val operation = for {
-              delDashboard <- dashboardService.deleteDashboard(dashboardId)
+              delDashboard <- dashboardService.deleteFromDashboard(dashboardId)
               delRel <- dashboardService.deleteRelByFilter(dashboardId)
             } yield (delDashboard, delRel)
             onComplete(operation) {
@@ -265,7 +265,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
           if (session.admin) {
-            onComplete(dashboardService.deleteRelDWById(relId)) {
+            onComplete(dashboardService.deleteFromRelByRelId(relId)) {
               case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session), r))
               case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
             }
