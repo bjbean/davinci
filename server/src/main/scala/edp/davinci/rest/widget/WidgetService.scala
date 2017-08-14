@@ -53,7 +53,7 @@ class WidgetService(modules: ConfigurationModule with PersistenceModule with Bus
     db.run(widgetTQ.filter(_.id === widgetId).delete)
   }
 
-  def deleteRelDW(widgetId:Long): Future[Int] ={
+  def deleteFromRelDW(widgetId:Long): Future[Int] ={
     db.run(relDW.filter(_.widget_id === widgetId).delete)
   }
 

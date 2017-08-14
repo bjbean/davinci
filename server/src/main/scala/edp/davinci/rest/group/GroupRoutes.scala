@@ -140,8 +140,8 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
           if (session.admin) {
             val operation = for {
               group <- groupService.deleteGroup(groupId)
-              relGF <- groupService.deleteRelGF(groupId)
-              relGU <- groupService.deleteRelGU(groupId)
+              relGF <- groupService.deleteFromRelGF(groupId)
+              relGU <- groupService.deleteFromRelGU(groupId)
             } yield (group, relGF, relGU)
             onComplete(operation) {
               case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))

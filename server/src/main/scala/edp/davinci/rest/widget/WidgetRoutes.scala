@@ -140,7 +140,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
             if (session.admin) {
               val operation = for {
                 user <- widgetService.deleteWidget(widgetId)
-                relGU <- widgetService.deleteRelDW(widgetId)
+                relGU <- widgetService.deleteFromRelDW(widgetId)
               } yield (user, relGU)
               onComplete(operation) {
                 case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))

@@ -39,9 +39,9 @@ class ViewService(modules: ConfigurationModule with PersistenceModule with Busin
     db.run(query)
   }
 
-  def deleteFromRelByFilter(idSeq: Seq[Long]): Future[Unit] = {
-    val query = DBIO.seq(idSeq.map(r => {
-      relGFTQ.filter(_.flatTable_id === r).delete
+  def deleteFromRelByViewId(viewIdSeq: Seq[Long]): Future[Unit] = {
+    val query = DBIO.seq(viewIdSeq.map(viewId => {
+      relGFTQ.filter(_.flatTable_id === viewId).delete
     }): _*)
     db.run(query)
   }

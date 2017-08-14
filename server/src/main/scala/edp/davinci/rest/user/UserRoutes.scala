@@ -130,7 +130,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     if (session.admin) {
       val operation = for {
         a <- userService.update(userSeq, session)
-        b <- userService.deleteAllRelByUserId(userSeq)
+        b <- userService.deleteFromRelByUserId(userSeq.map(_.id))
         c <- {
           val relSeq = for {rel <- userSeq.head.relUG
           } yield RelUserGroup(0, userSeq.head.id, rel.group_id, active = true, currentTime, session.userId, currentTime, session.userId)
@@ -197,7 +197,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
             if (session.admin) {
               val operation = for {
                 user <- userService.deleteUser(userId)
-                relGU <- userService.deleteRelGU(userId)
+                relGU <- userService.deleteFromRelByUserId(Seq(userId))
               } yield (user, relGU)
               onComplete(operation) {
                 case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))

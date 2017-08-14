@@ -42,11 +42,11 @@ class GroupService(modules: ConfigurationModule with PersistenceModule with Busi
     db.run(groupTQ.filter(_.id ===  groupId).delete)
   }
 
-  def deleteRelGF(groupId: Long): Future[Int] = {
+  def deleteFromRelGF(groupId: Long): Future[Int] = {
     db.run(relGFTQ.filter(_.group_id === groupId).delete)
   }
 
-  def deleteRelGU(groupId: Long): Future[Int] = {
+  def deleteFromRelGU(groupId: Long): Future[Int] = {
     db.run(relGUTQ.filter(_.group_id === groupId).delete)
   }
 
