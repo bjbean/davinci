@@ -12,7 +12,7 @@ import edp.davinci.util.JsonProtocol._
 import edp.davinci.util.ResponseUtils.getHeader
 import io.swagger.annotations._
 import org.apache.log4j.Logger
-
+import edp.davinci.util.ResponseUtils._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
@@ -83,12 +83,12 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
 
   private def postUserComplete(session: SessionClass, userSeq: Seq[PostUserInfo]): Route = {
     if (session.admin) {
-      val userEntity = userSeq.map(postUser => User(0, postUser.email, postUser.password, postUser.title, postUser.name, postUser.admin, active = true, null, session.userId, null, session.userId))
+      val userEntity = userSeq.map(postUser => User(0, postUser.email, postUser.password, postUser.title, postUser.name, postUser.admin, active = true, currentTime, session.userId, currentTime, session.userId))
       val operation = for {
         users <- modules.userDal.insert(userEntity)
         _ <- {
           val entities = users.flatMap(u => {
-            userSeq.head.relUG.map(rel => RelUserGroup(0, u.id, rel.group_id, active = true, null, session.userId, null, session.userId))
+            userSeq.head.relUG.map(rel => RelUserGroup(0, u.id, rel.group_id, active = true, currentTime, session.userId, currentTime, session.userId))
           })
           modules.relUserGroupDal.insert(entities)
         }
@@ -133,7 +133,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
         b <- userService.deleteAllRelByUserId(userSeq)
         c <- {
           val relSeq = for {rel <- userSeq.head.relUG
-          } yield RelUserGroup(0, userSeq.head.id, rel.group_id, active = true, null, session.userId, null, session.userId)
+          } yield RelUserGroup(0, userSeq.head.id, rel.group_id, active = true, currentTime, session.userId, currentTime, session.userId)
           modules.relUserGroupDal.insert(relSeq)
         }
       } yield (a, b, c)

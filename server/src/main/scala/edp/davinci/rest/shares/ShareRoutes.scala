@@ -278,8 +278,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
         val (manualFilters, widgetParams) = (manualInfo.manualFilters.orNull, manualInfo.params.orNull)
         if (infoArr.length == 2) {
           val base64decoder = new sun.misc.BASE64Decoder
-          val output = java.net.URLDecoder.decode(infoArr.last, DavinciConstants.defaultEncode)
-          val base64decode: String = new String(base64decoder.decodeBuffer(output))
+          val base64decode: String = new String(base64decoder.decodeBuffer(infoArr.last))
           val paramAndFilter: ParamHelper = json2caseClass[ParamHelper](base64decode)
           val (urlFilters, urlParams) = (paramAndFilter.f_get, paramAndFilter.p_get)
           val filters = mergeFilters(manualFilters, urlFilters)

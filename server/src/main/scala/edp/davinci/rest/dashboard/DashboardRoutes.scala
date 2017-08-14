@@ -109,7 +109,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   def postDashBoard(session: SessionClass, postDashboardSeq: Seq[PostDashboardInfo]): Route = {
     if (session.admin) {
-      val dashboardSeq = postDashboardSeq.map(post => Dashboard(0, post.name, Some(post.pic), post.desc, post.publish, active = true, null, session.userId, null, session.userId))
+      val dashboardSeq = postDashboardSeq.map(post => Dashboard(0, post.name, Some(post.pic), post.desc, post.publish, active = true, currentTime, session.userId, currentTime, session.userId))
       onComplete(modules.dashboardDal.insert(dashboardSeq)) {
         case Success(dashWithIdSeq) =>
           val responseDashSeq = dashWithIdSeq.map(dashboard => PutDashboardInfo(dashboard.id, dashboard.name, dashboard.pic.getOrElse(""), dashboard.desc, dashboard.publish, Some(dashboard.active)))
@@ -205,7 +205,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   def postWidget2Dashboard(session: SessionClass, postRelDWSeq: Seq[PostRelDashboardWidget]): Route = {
     if (session.admin) {
-      val relDWSeq = postRelDWSeq.map(post => RelDashboardWidget(0, post.dashboard_id, post.widget_id, post.position_x, post.position_y, post.length, post.width, post.trigger_type, post.trigger_params, active = true, null, session.userId, null, session.userId))
+      val relDWSeq = postRelDWSeq.map(post => RelDashboardWidget(0, post.dashboard_id, post.widget_id, post.position_x, post.position_y, post.length, post.width, post.trigger_type, post.trigger_params, active = true, currentTime, session.userId, currentTime, session.userId))
       onComplete(modules.relDashboardWidgetDal.insert(relDWSeq)) {
         case Success(relDWWithIdSeq) =>
           val responseRelDWSeq = relDWWithIdSeq.map(rel => PutRelDashboardWidget(rel.id, rel.dashboard_id, rel.widget_id, rel.position_x, rel.position_y, rel.length, rel.width, rel.trigger_type, rel.trigger_params))

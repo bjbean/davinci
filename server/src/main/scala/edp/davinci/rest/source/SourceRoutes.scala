@@ -12,7 +12,7 @@ import edp.davinci.util.JsonProtocol._
 import edp.davinci.util.ResponseUtils.getHeader
 import io.swagger.annotations._
 import org.apache.log4j.Logger
-
+import edp.davinci.util.ResponseUtils._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
@@ -83,7 +83,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   private def postSource(session: SessionClass, postSourceSeq: Seq[PostSourceInfo]): Route = {
     if (session.admin) {
-      val sourceSeq = postSourceSeq.map(post => Source(0, post.name, post.connection_url, post.desc, post.`type`, post.config, active = true, null, session.userId, null, session.userId))
+      val sourceSeq = postSourceSeq.map(post => Source(0, post.name, post.connection_url, post.desc, post.`type`, post.config, active = true, currentTime, session.userId, currentTime, session.userId))
       onComplete(modules.sourceDal.insert(sourceSeq)) {
         case Success(sourceWithIdSeq) =>
           val responseSourceSeq = sourceWithIdSeq.map(source => PutSourceInfo(source.id, source.name, source.connection_url, source.desc, source.`type`, source.config, Some(source.active)))

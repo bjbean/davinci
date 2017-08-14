@@ -83,13 +83,13 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   private def postFlatTable(session: SessionClass, flatTableSeq: Seq[PostFlatTableInfo]): Route = {
     if (session.admin) {
       val uniqueTableName = adHocTable + java.util.UUID.randomUUID().toString
-      val bizEntitySeq = flatTableSeq.map(biz => FlatTable(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, Some(biz.desc), biz.trigger_type, biz.frequency, biz.`catch`, active = true, null, session.userId, null, session.userId))
+      val bizEntitySeq = flatTableSeq.map(biz => FlatTable(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, Some(biz.desc), biz.trigger_type, biz.frequency, biz.`catch`, active = true, currentTime, session.userId, currentTime, session.userId))
       onComplete(modules.flatTableDal.insert(bizEntitySeq)) {
         case Success(bizSeq) =>
           val queryBiz = bizSeq.map(biz => QueryFlatTable(biz.id, biz.source_id, biz.name, biz.sql_tmpl, biz.result_table, biz.desc.getOrElse(""), biz.trigger_type, biz.frequency, biz.`catch`, biz.active))
           val relSeq = for {biz <- bizSeq
                             rel <- flatTableSeq.head.relBG
-          } yield RelGroupFlatTable(0, rel.group_id, biz.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
+          } yield RelGroupFlatTable(0, rel.group_id, biz.id, rel.sql_params, active = true, currentTime, session.userId, currentTime, session.userId)
           onComplete(modules.relGroupFlatTableDal.insert(relSeq)) {
             case Success(_) => complete(OK, ResponseSeqJson[QueryFlatTable](getHeader(200, session), queryBiz))
             case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -127,7 +127,7 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     } yield (updateOP, deleteOp)
     onComplete(operation) {
       case Success(_) => val relSeq = for {rel <- flatTableSeq.head.relBG
-      } yield RelGroupFlatTable(0, rel.group_id, flatTableSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
+      } yield RelGroupFlatTable(0, rel.group_id, flatTableSeq.head.id, rel.sql_params, active = true, currentTime, session.userId, currentTime, session.userId)
         onComplete(modules.relGroupFlatTableDal.insert(relSeq)) {
           case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
           case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
