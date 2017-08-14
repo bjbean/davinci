@@ -2,7 +2,6 @@ package edp.davinci
 
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
-import edp.davinci.module._
 import edp.davinci.rest._
 
 object Boot extends App {
