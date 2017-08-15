@@ -31,13 +31,14 @@ class MatchAndReplace extends FunSuite {
   }
 
   test("match all") {
-    val groupStr = "[{\"k\":\"v2\",\"v\":\"北京\"},{\"k\":\"v3\",\"v\":\"24\"},{\"k\":\"v2\",\"v\":\"shanghai\"},{\"k\":\"v3\",\"v\":\"45\"}]"
+    val groupStr = "[{\"k\":\"v2\",\"v\":\"'北京'\"},{\"k\":\"v3\",\"v\":\"24\"},{\"k\":\"v2\",\"v\":\"'shanghai'\"},{\"k\":\"v3\",\"v\":\"45\"}]"
     val queryStr = "[{\"k\":\"v1_\",\"v\":\"liaog\"}]"
     val flatTableSqls = "dv_groupvar @$v1_$ = mary;" +
-      "dv_groupvar @$v2$ = beijing;" +
+      "dv_groupvar @$v2$ = 'beijing';" +
       "dv_groupvar @$v3$ = 20;" +
-      "dv_queryvar @$v4$ = select;" +
-      "$v4$ where name = $ v1_$ and (city =$v2$) and (age > $v3$) or sex != '男' "
+      "dv_queryvar @$v4$ = select * from table;" +
+      "dv_queryvar @$v5$ = '女';" +
+      "$v4$ where name = $ v1_$ and (city =$v2$) and (age > $v3$) or sex != $v5$ "
     val groupParams = json2caseClass[Seq[KV]](groupStr)
     val queryParams = json2caseClass[Seq[KV]](queryStr)
 
