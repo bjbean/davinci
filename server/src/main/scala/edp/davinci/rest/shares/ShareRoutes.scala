@@ -148,8 +148,8 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       val shareInfo = getShareInfo(shareInfoStr)
       if (isValidShareInfo(shareInfo)) {
         onComplete(shareService.getWidgetById(shareInfo.infoId)) {
-          case Success(widgetInfo) =>
-            val putWidgetInfo = PutWidgetInfo(widgetInfo._1, widgetInfo._2, widgetInfo._3, widgetInfo._4, widgetInfo._5.getOrElse(""), widgetInfo._6, widgetInfo._7.getOrElse(""), widgetInfo._8, Some(widgetInfo._9))
+          case Success(widget) =>
+            val putWidgetInfo = PutWidgetInfo(widget._1, widget._2, widget._3, widget._4, widget._5.getOrElse(""), widget._6, widget._7.getOrElse(""), widget._8.getOrElse(""), widget._9, Some(widget._10))
             complete(OK, ResponseJson[Seq[PutWidgetInfo]](getHeader(200, null), Seq(putWidgetInfo)))
           case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
         }
@@ -275,7 +275,8 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       val shareInfo = getShareInfo(shareInfoStr)
       val (userId, infoId) = (shareInfo.userId, shareInfo.infoId)
       if (isValidShareInfo(shareInfo)) {
-        val (manualFilters, widgetParams) = (manualInfo.manualFilters.orNull, manualInfo.params.orNull)
+        val (manualFilters, widgetParams, adHoc) = if (null == manualInfo) (null, null, null)
+        else (manualInfo.manualFilters.orNull, manualInfo.params.orNull, manualInfo.adHoc.orNull)
         if (infoArr.length == 2) {
           val base64decoder = new sun.misc.BASE64Decoder
           val base64decode: String = new String(base64decoder.decodeBuffer(infoArr.last))
@@ -283,8 +284,8 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
           val (urlFilters, urlParams) = (paramAndFilter.f_get, paramAndFilter.p_get)
           val filters = mergeFilters(manualFilters, urlFilters)
           val params = mergeParams(widgetParams, urlParams)
-          getResultComplete(userId, infoId, contentType, filters, params, paginateAndSort, manualInfo.adHoc.orNull)
-        } else getResultComplete(userId, infoId, contentType, manualFilters, widgetParams, paginateAndSort, manualInfo.adHoc.orNull)
+          getResultComplete(userId, infoId, contentType, filters, params, paginateAndSort, adHoc)
+        } else getResultComplete(userId, infoId, contentType, manualFilters, widgetParams, paginateAndSort, adHoc)
       }
       else complete(HttpEntity(contentType, "".getBytes("UTF-8")))
     } catch {
@@ -294,18 +295,14 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
 
   private def mergeFilters(manualFilters: String, urlFilters: String) = {
     if (null != manualFilters)
-      if (null != urlFilters)
-        Set(manualFilters, urlFilters).map(f => s"($f)").mkString(" AND ")
-      else manualFilters
+      if (null != urlFilters) Set(manualFilters, urlFilters).map(f => s"($f)").mkString(" AND ") else manualFilters
     else urlFilters
   }
 
 
   private def mergeParams(widgetParams: List[KV], urlParams: List[KV]) = {
     if (null != widgetParams)
-      if (null != urlParams)
-        widgetParams ::: urlParams
-      else widgetParams
+      if (null != urlParams) widgetParams ::: urlParams else widgetParams
     else urlParams
   }
 
@@ -323,9 +320,8 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     } yield (widget, group, user)
     onComplete(operation) {
       case Success(widgetAndGroup) =>
-        val (widgetInfo, groupIds, admin) = widgetAndGroup
-        val putWidgetInfo = PutWidgetInfo(widgetInfo._1, widgetInfo._2, widgetInfo._3, widgetInfo._4, widgetInfo._5.getOrElse(""), widgetInfo._6, widgetInfo._7.getOrElse(""), widgetInfo._8, Some(widgetInfo._9))
-        val sourceFuture = shareService.getSourceInfo(putWidgetInfo.flatTable_id, groupIds, admin)
+        val (widget, groupIds, admin) = widgetAndGroup
+        val sourceFuture = shareService.getSourceInfo(widget._3, groupIds, admin)
         onComplete(sourceFuture) {
           case Success(sourceInfo) =>
             if (sourceInfo.nonEmpty) {
@@ -334,8 +330,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
                 if (sqlTemp.trim != "") {
                   val resultList = sqlExecute(urlFilters, sqlTemp, tableName, adHocSql, paginateAndSort, connectionUrl, paramSeq)
                   contentTypeMatch(resultList, contentType)
-                }
-                else complete(BadRequest, ResponseJson[String](getHeader(400, "flatTable sqls is empty", null), ""))
+                } else complete(BadRequest, ResponseJson[String](getHeader(400, "flatTable sqls is empty", null), ""))
               }
               catch {
                 case synx: SQLException => complete(BadRequest, ResponseJson[String](getHeader(400, "SQL语法错误", null), synx.getMessage))

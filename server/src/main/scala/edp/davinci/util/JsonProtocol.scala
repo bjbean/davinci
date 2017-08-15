@@ -41,9 +41,9 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatPostUserInfoSeq: RootJsonFormat[PostUserInfoSeq] = jsonFormat1(PostUserInfoSeq)
   implicit val formatPutUserInfoSeq: RootJsonFormat[PutUserInfoSeq] = jsonFormat1(PutUserInfoSeq)
 
-  implicit val formatWidget: RootJsonFormat[Widget] = jsonFormat13(Widget)
-  implicit val formatPostWidgetInfo: RootJsonFormat[PostWidgetInfo] = jsonFormat7(PostWidgetInfo)
-  implicit val formatPutWidgetInfo: RootJsonFormat[PutWidgetInfo] = jsonFormat9(PutWidgetInfo)
+  implicit val formatWidget: RootJsonFormat[Widget] = jsonFormat14(Widget)
+  implicit val formatPostWidgetInfo: RootJsonFormat[PostWidgetInfo] = jsonFormat8(PostWidgetInfo)
+  implicit val formatPutWidgetInfo: RootJsonFormat[PutWidgetInfo] = jsonFormat10(PutWidgetInfo)
   implicit val formatPutWidgetSeq: RootJsonFormat[PutWidgetInfoSeq] = jsonFormat1(PutWidgetInfoSeq)
   implicit val formatPostWidgetSeq: RootJsonFormat[PostWidgetInfoSeq] = jsonFormat1(PostWidgetInfoSeq)
 

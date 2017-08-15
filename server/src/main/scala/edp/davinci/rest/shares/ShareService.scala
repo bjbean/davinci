@@ -18,11 +18,11 @@ class ShareService(modules: ConfigurationModule with PersistenceModule with Busi
   private lazy val relGUTQ = modules.relUserGroupDal.getTableQuery
   private lazy val userTQ = modules.userDal.getTableQuery
   private lazy val relDWTQ = modules.relDashboardWidgetDal.getTableQuery
-  private lazy val dashboardTQ=modules.dashboardDal.getTableQuery
+  private lazy val dashboardTQ = modules.dashboardDal.getTableQuery
   private lazy val db = shareDal.getDB
 
-  def getWidgetById(id: Long): Future[(Long, Long, Long, String, Option[String], String, Option[String], Boolean, Boolean)] = {
-    db.run(widgetTQ.filter(_.id === id).map(w => (w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql, w.desc, w.chart_params, w.publish, w.active)).result.head)
+  def getWidgetById(id: Long): Future[(Long, Long, Long, String, Option[String], String, Option[String], Option[String], Boolean, Boolean)] = {
+    db.run(widgetTQ.filter(_.id === id).map(w => (w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql, w.desc, w.chart_params, w.query_params, w.publish, w.active)).result.head)
   }
 
   def getUserGroup(userId: Long): Future[Seq[Long]] = {
@@ -47,12 +47,13 @@ class ShareService(modules: ConfigurationModule with PersistenceModule with Busi
     val query = shareTQ.filter(_.identifier === identifier).map(s => (s.connection_url, s.widget, s.widget_sql)).result
     db.run(query)
   }
+
   def getDashBoard(dashboardId: Long): Future[(Long, String, Option[String], String, Boolean)] = {
     val query = dashboardTQ.filter(_.id === dashboardId).map(d => (d.id, d.name, d.pic, d.desc, d.publish)).result.head
     db.run(query)
   }
 
-  def getShareDashboard(dashboardId:Long,groupIds: Seq[Long], admin: Boolean): Future[Seq[(Long, Long, Long, Int, Int, Int, Int, String, String)]] ={
+  def getShareDashboard(dashboardId: Long, groupIds: Seq[Long], admin: Boolean): Future[Seq[(Long, Long, Long, Int, Int, Int, Int, String, String)]] = {
     val query = if (admin)
       (relDWTQ.filter(obj => obj.dashboard_id === dashboardId) join widgetTQ on (_.widget_id === _.id)).
         map {
