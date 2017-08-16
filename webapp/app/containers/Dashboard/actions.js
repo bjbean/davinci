@@ -17,7 +17,11 @@ import {
   EDIT_DASHBOARD_ITEMS_SUCCESS,
   DELETE_DASHBOARD_ITEM,
   DELETE_DASHBOARD_ITEM_SUCCESS,
-  CLEAR_CURRENT_DASHBOARD
+  CLEAR_CURRENT_DASHBOARD,
+  LOAD_DASHBOARD_SHARE_LINK,
+  LOAD_DASHBOARD_SHARE_LINK_SUCCESS,
+  LOAD_WIDGET_SHARE_LINK,
+  LOAD_WIDGET_SHARE_LINK_SUCCESS
 } from './constants'
 
 import { promiseActionCreator } from '../../utils/reduxPromisation'
@@ -41,6 +45,10 @@ export const editDashboardItems = promiseActionCreator(EDIT_DASHBOARD_ITEMS, ['i
 export const deleteDashboardItem = promiseActionCreator(DELETE_DASHBOARD_ITEM, ['id'])
 
 export const clearCurrentDashboard = promiseActionCreator(CLEAR_CURRENT_DASHBOARD)
+
+export const loadDashboardShareLink = promiseActionCreator(LOAD_DASHBOARD_SHARE_LINK, ['id'])
+
+export const loadWidgetShareLink = promiseActionCreator(LOAD_WIDGET_SHARE_LINK, ['id'])
 
 export function dashboardsLoaded (dashboards) {
   return {
@@ -119,6 +127,24 @@ export function dashboardItemDeleted (id) {
     type: DELETE_DASHBOARD_ITEM_SUCCESS,
     payload: {
       id
+    }
+  }
+}
+
+export function dashboardShareLinkLoaded (shareInfo) {
+  return {
+    type: LOAD_DASHBOARD_SHARE_LINK_SUCCESS,
+    payload: {
+      shareInfo
+    }
+  }
+}
+
+export function widgetShareLinkLoaded (shareInfo) {
+  return {
+    type: LOAD_WIDGET_SHARE_LINK_SUCCESS,
+    payload: {
+      shareInfo
     }
   }
 }

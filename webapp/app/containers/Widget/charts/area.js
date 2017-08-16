@@ -8,13 +8,19 @@ export default function (dataSource, flatInfo, chartParams) {
     xAxis,
     metrics,
     groups,
+    xAxisInterval,
+    xAxisRotate,
     smooth,
     step,
     stack,
     symbol,
     tooltip,
     legend,
-    toolbox
+    toolbox,
+    top,
+    bottom,
+    left,
+    right
   } = chartParams
 
   let grouped,
@@ -99,7 +105,11 @@ export default function (dataSource, flatInfo, chartParams) {
           .map(k => grouped[k])
           .reduce((longest, g) => longest.length > g.length ? longest : g, [])
           .map(item => item[xAxis])
-        : dataSource.map(d => d[xAxis])
+        : dataSource.map(d => d[xAxis]),
+      axisLabel: {
+        interval: xAxisInterval,
+        rotate: xAxisRotate
+      }
     }
   }
 
@@ -140,12 +150,10 @@ export default function (dataSource, flatInfo, chartParams) {
   // grid
   gridOptions = {
     grid: {
-      top: legend && legend.length  // FIXME
-        ? Math.ceil(metricArr.length / Math.round((document.documentElement.clientWidth - 40 - 320 - 32 - 200) / 100)) * 30 + 10
-        : 40,
-      left: 60,
-      right: 60,
-      bottom: 30
+      top: top,
+      left: left,
+      right: right,
+      bottom: bottom
     }
   }
 

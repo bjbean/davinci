@@ -4,10 +4,6 @@
 
 export default function (dataSource, flatInfo, chartParams) {
   const {
-    type
-  } = flatInfo
-
-  const {
     tooltip,
     toolbox
   } = chartParams
@@ -22,7 +18,7 @@ export default function (dataSource, flatInfo, chartParams) {
 
   let serieObj = {
     name: '数据',
-    type: type,
+    type: 'sankey',
     layout: 'none',
     data: dataSource.nodes,
     links: dataSource.links,

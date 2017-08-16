@@ -6,7 +6,7 @@ import echarts from 'echarts/lib/echarts'
 
 import chartOptionsGenerator from './chartOptionsGenerator'
 
-import { TABLE_HEADER_HEIGHT, COLUMN_WIDTH } from '../../globalConstants'
+import { TABLE_HEADER_HEIGHT, COLUMN_WIDTH, TABLE_PAGINATION_HEIGHT } from '../../globalConstants'
 import utilStyles from '../../assets/less/util.less'
 import styles from './Widget.less'
 
@@ -20,11 +20,11 @@ export class WidgetChart extends React.PureComponent {
   }
 
   componentDidMount () {
-    this.chart = echarts.init(document.getElementById('chartContainer'))
+    this.chart = echarts.init(document.getElementById('commonChart'))
     this.renderChart(this.props)
     this.setState({
       tableWidth: this.refs.widgetChart.offsetHeight,
-      tableHeight: this.refs.widgetChart.offsetHeight - TABLE_HEADER_HEIGHT
+      tableHeight: this.refs.widgetChart.offsetHeight - TABLE_HEADER_HEIGHT - TABLE_PAGINATION_HEIGHT
     })
   }
 
@@ -34,14 +34,14 @@ export class WidgetChart extends React.PureComponent {
 
   renderChart = ({ dataSource, chartInfo, chartParams }) => {
     this.chart.clear()
-    if (chartInfo.type !== 'table') {
+    if (chartInfo.name !== 'table') {
       const chartOptions = chartOptionsGenerator({
         dataSource,
         chartInfo,
         chartParams
       })
 
-      switch (chartInfo.type) {
+      switch (chartInfo.name) {
         case 'line':
         case 'bar':
         case 'scatter':
@@ -73,7 +73,7 @@ export class WidgetChart extends React.PureComponent {
     const columnKeys = dataSource.length && Object.keys(dataSource[0])
     const columns = columnKeys
       ? Object.keys(dataSource[0])
-          .filter(k => typeof dataSource[0][k] !== 'object')
+          .filter(k => typeof dataSource[0][k] !== 'object' && k !== 'antDesignTableId')
           .map(k => ({
             title: k.toUpperCase(),
             dataIndex: k,
@@ -89,23 +89,23 @@ export class WidgetChart extends React.PureComponent {
     const tableSize = Object.assign({}, tableWidthObj, { y: tableHeight })
 
     const tableClass = classnames({
-      [utilStyles.hide]: chartInfo.type !== 'table'
+      [utilStyles.hide]: chartInfo.name !== 'table'
     })
     const chartClass = classnames({
-      [utilStyles.hide]: chartInfo.type === 'table'
+      [styles.invisible]: chartInfo.name === 'table'
     })
 
     return (
       <div className={styles.widgetChart} ref="widgetChart">
         <Table
-          className={`${styles.tableContainer} ${tableClass}`}
+          className={`${styles.tableChart} ${tableClass}`}
           dataSource={dataSource}
           rowKey="antDesignTableId"
           columns={columns}
           scroll={tableSize}
           bordered
         />
-        <div id="chartContainer" className={`${styles.chartContainer} ${chartClass}`}></div>
+        <div id="commonChart" className={`${styles.commonChart} ${chartClass}`}></div>
       </div>
     )
   }

@@ -4,10 +4,6 @@
 
 export default function (dataSource, flatInfo, chartParams) {
   const {
-    type
-  } = flatInfo
-
-  const {
     title,
     gridSize,
     sizeRangeX,
@@ -58,7 +54,7 @@ export default function (dataSource, flatInfo, chartParams) {
   }, {})
 
   let serieObj = Object.assign({}, {
-    type: type,
+    type: 'wordCloud',
     textStyle: {
       normal: {
         color: function (v) {

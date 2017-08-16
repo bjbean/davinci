@@ -3,33 +3,33 @@ import 'babel-polyfill'
 import React from 'react'
 import ReactDOM from 'react-dom'
 import { Provider } from 'react-redux'
-import { applyRouterMiddleware, Router, browserHistory } from 'react-router'
+import { applyRouterMiddleware, Router, hashHistory } from 'react-router'
 import { syncHistoryWithStore } from 'react-router-redux'
 import { useScroll } from 'react-router-scroll'
 
-import Share from './index'
+import App from './containers/App/index'
 
 import { makeSelectLocationState } from 'containers/App/selectors'
 
 import LanguageProvider from 'containers/LanguageProvider'
 
-import '!file-loader?name=[name].[ext]!./favicon.ico'
-import '!file-loader?name=[name].[ext]!./manifest.json'
-import 'file-loader?name=[name].[ext]!./.htaccess'
+import '!file-loader?name=[name].[ext]!../app/favicon.ico'
+import '!file-loader?name=[name].[ext]!../app/manifest.json'
+import 'file-loader?name=[name].[ext]!../app/.htaccess'
 
 import configureStore from './store'
 
-import { translationMessages } from './i18n'
+import { translationMessages } from '../app/i18n'
 
 import createRoutes from './routes'
 
-import '../../../node_modules/antd/dist/antd.less'
-import '../../../node_modules/react-grid-layout/css/styles.css'
-import '../../../node_modules/react-resizable/css/styles.css'
-import '../../assets/fonts/iconfont.css'
-import '../../assets/override/antd.css'
-import '../../assets/override/react-grid.css'
-import '../../assets/less/style.less'
+import '../node_modules/antd/dist/antd.less'
+import '../node_modules/react-grid-layout/css/styles.css'
+import '../node_modules/react-resizable/css/styles.css'
+import '../app/assets/fonts/iconfont.css'
+import '../app/assets/override/antd.css'
+import '../app/assets/override/react-grid.css'
+import '../app/assets/less/style.less'
 
 import 'echarts/lib/chart/bar'
 import 'echarts/lib/chart/line'
@@ -38,22 +38,27 @@ import 'echarts/lib/chart/pie'
 import 'echarts/lib/chart/sankey'
 import 'echarts/lib/chart/funnel'
 import 'echarts/lib/chart/treemap'
-import './containers/Widget/temp/wordCloud'
+import '../app/containers/Widget/temp/wordCloud'
 import 'echarts/lib/component/legend'
 import 'echarts/lib/component/tooltip'
 import 'echarts/lib/component/toolbox'
 
 const initialState = {}
-const store = configureStore(initialState, browserHistory)
+const store = configureStore(initialState, hashHistory)
 
-const history = syncHistoryWithStore(browserHistory, store, {
+const history = syncHistoryWithStore(hashHistory, store, {
   selectLocationState: makeSelectLocationState()
 })
 
 const rootRoute = {
   path: '/',
-  component: Share,
-  childRoutes: createRoutes(store)
+  component: App,
+  childRoutes: createRoutes(store),
+  indexRoute: {
+    onEnter: (_, replace) => {
+      replace('/share')
+    }
+  }
 }
 
 const render = (messages) => {
@@ -79,7 +84,7 @@ const render = (messages) => {
 if (module.hot) {
   // modules.hot.accept does not accept dynamic dependencies,
   // have to be constants at compile-time
-  module.hot.accept('./i18n', () => {
+  module.hot.accept('../app/i18n', () => {
     render(translationMessages)
   })
 }

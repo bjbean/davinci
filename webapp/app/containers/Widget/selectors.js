@@ -7,13 +7,7 @@ const makeSelectWidgets = () => createSelector(
   (widgetState) => widgetState.get('widgets')
 )
 
-const makeSelectWidgetlibs = () => createSelector(
-  selectWidget,
-  (widgetState) => widgetState.get('widgetlibs')
-)
-
 export {
   selectWidget,
-  makeSelectWidgets,
-  makeSelectWidgetlibs
+  makeSelectWidgets
 }

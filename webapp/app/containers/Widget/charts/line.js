@@ -2,22 +2,24 @@
  * Line chart options generator
  */
 export default function (dataSource, flatInfo, chartParams) {
-  const {
-    type
-  } = flatInfo
-
   const hasGroups = flatInfo.groups
 
   const {
     xAxis,
     metrics,
     groups,
+    xAxisInterval,
+    xAxisRotate,
     smooth,
     step,
     symbol,
     tooltip,
     legend,
-    toolbox
+    toolbox,
+    top,
+    bottom,
+    left,
+    right
   } = chartParams
 
   let grouped,
@@ -57,7 +59,7 @@ export default function (dataSource, flatInfo, chartParams) {
             let serieObj = Object.assign({},
               {
                 name: `${k} ${m}`,
-                type: type,
+                type: 'line',
                 sampling: 'average',
                 data: grouped[k].map(g => g[m])
               },
@@ -71,7 +73,7 @@ export default function (dataSource, flatInfo, chartParams) {
         let serieObj = Object.assign({},
           {
             name: m,
-            type: type,
+            type: 'line',
             sampling: 'average',
             symbol: symbolOption,
             data: dataSource.map(d => d[m])
@@ -96,7 +98,11 @@ export default function (dataSource, flatInfo, chartParams) {
           .map(k => grouped[k])
           .reduce((longest, g) => longest.length > g.length ? longest : g, [])
           .map(item => item[xAxis])
-        : dataSource.map(d => d[xAxis])
+        : dataSource.map(d => d[xAxis]),
+      axisLabel: {
+        interval: xAxisInterval,
+        rotate: xAxisRotate
+      }
     }
   }
 
@@ -114,6 +120,7 @@ export default function (dataSource, flatInfo, chartParams) {
       legend: {
         data: metricArr.map(m => m.name),
         align: 'left',
+        top: 3,
         right: 200
       }
     } : null
@@ -130,19 +137,18 @@ export default function (dataSource, flatInfo, chartParams) {
           saveAsImage: {
             pixelRatio: 2
           }
-        }
+        },
+        right: 22
       }
     } : null
 
   // grid
   gridOptions = {
     grid: {
-      top: legend && legend.length  // FIXME
-        ? Math.ceil(metricArr.length / Math.round((document.documentElement.clientWidth - 40 - 320 - 32 - 200) / 100)) * 30 + 10
-        : 40,
-      left: 60,
-      right: 60,
-      bottom: 30
+      top: top,
+      left: left,
+      right: right,
+      bottom: bottom
     }
   }
 

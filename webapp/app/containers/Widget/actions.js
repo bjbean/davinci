@@ -8,9 +8,7 @@ import {
   EDIT_WIDGET,
   EDIT_WIDGET_SUCCESS,
   DELETE_WIDGET,
-  DELETE_WIDGET_SUCCESS,
-  LOAD_WIDGETLIBS,
-  LOAD_WIDGETLIBS_SUCCESS
+  DELETE_WIDGET_SUCCESS
 } from './constants'
 
 import { promiseActionCreator } from '../../utils/reduxPromisation'
@@ -24,8 +22,6 @@ export const loadWidgetDetail = promiseActionCreator(LOAD_WIDGET_DETAIL, ['id'])
 export const editWidget = promiseActionCreator(EDIT_WIDGET, ['widget'])
 
 export const deleteWidget = promiseActionCreator(DELETE_WIDGET, ['id'])
-
-export const loadWidgetlibs = promiseActionCreator(LOAD_WIDGETLIBS)
 
 export function widgetsLoaded (widgets) {
   return {
@@ -68,15 +64,6 @@ export function widgetDeleted (id) {
     type: DELETE_WIDGET_SUCCESS,
     payload: {
       id
-    }
-  }
-}
-
-export function widgetlibsLoaded (widgetlibs) {
-  return {
-    type: LOAD_WIDGETLIBS_SUCCESS,
-    payload: {
-      widgetlibs
     }
   }
 }

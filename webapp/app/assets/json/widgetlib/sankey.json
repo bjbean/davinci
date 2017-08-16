@@ -1,0 +1,23 @@
+{
+  "id": 6,
+  "name": "sankey",
+  "title": "桑基图",
+  "params": [
+    {
+      "name": "tools",
+      "title": "工具",
+      "items": [
+        {
+          "name": "tooltip",
+          "title": "Tooltip",
+          "component": "checkbox"
+        },
+        {
+          "name": "toolbox",
+          "title": "Toolbox",
+          "component": "checkbox"
+        }
+      ]
+    }
+  ]
+}
