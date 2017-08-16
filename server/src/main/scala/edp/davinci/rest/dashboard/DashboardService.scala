@@ -75,11 +75,11 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
   }
 
 
-  def deleteRelDWById(relId: Long): Future[Int] = {
+  def deleteFromRelByRelId(relId: Long): Future[Int] = {
     db.run(relDWTQ.filter(_.id === relId).delete)
   }
 
-  def deleteDashboard(dashboardId:Long): Future[Int] ={
+  def deleteFromDashboard(dashboardId:Long): Future[Int] ={
     db.run(dashboardTQ.filter(_.id === dashboardId).delete)
   }
 

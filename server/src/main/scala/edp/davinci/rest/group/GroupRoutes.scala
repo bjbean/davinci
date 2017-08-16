@@ -3,7 +3,7 @@ package edp.davinci.rest.group
 import javax.ws.rs.Path
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
-import edp.davinci.DavinciConstants
+import edp.davinci.util.ResponseUtils._
 import edp.davinci.module._
 import edp.davinci.persistence.entities.{PostGroupInfo, PutGroupInfo, UserGroup}
 import edp.davinci.rest._
@@ -79,7 +79,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
 
   private def postGroup(session: SessionClass, postGroupSeq: Seq[PostGroupInfo]) = {
     if (session.admin) {
-      val groupSeq = postGroupSeq.map(post => UserGroup(0, post.name, Some(post.desc), active = true, null, session.userId, null, session.userId))
+      val groupSeq = postGroupSeq.map(post => UserGroup(0, post.name, Some(post.desc), active = true, currentTime, session.userId, currentTime, session.userId))
       onComplete(modules.groupDal.insert(groupSeq)) {
         case Success(groupWithIdSeq) =>
           val responseGroup = groupWithIdSeq.map(group => PutGroupInfo(group.id, group.name, group.desc.getOrElse(""), Some(group.active)))
@@ -140,8 +140,8 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
           if (session.admin) {
             val operation = for {
               group <- groupService.deleteGroup(groupId)
-              relGF <- groupService.deleteRelGF(groupId)
-              relGU <- groupService.deleteRelGU(groupId)
+              relGF <- groupService.deleteFromRelGF(groupId)
+              relGU <- groupService.deleteFromRelGU(groupId)
             } yield (group, relGF, relGU)
             onComplete(operation) {
               case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))

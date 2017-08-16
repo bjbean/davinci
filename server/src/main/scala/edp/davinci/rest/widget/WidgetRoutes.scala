@@ -8,10 +8,11 @@ import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModul
 import edp.davinci.persistence.entities.{PostWidgetInfo, PutWidgetInfo, Widget}
 import edp.davinci.rest._
 import edp.davinci.util.AuthorizationProvider
-import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.JsonProtocol._
+import edp.davinci.util.ResponseUtils._
 import io.swagger.annotations._
-import org.slf4j.LoggerFactory
+import org.apache.log4j.Logger
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
@@ -20,7 +21,7 @@ import scala.util.{Failure, Success}
 class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
   val routes: Route = getAllWidgetsRoute ~ postWidgetRoute ~ deleteWidgetByIdRoute ~ putWidgetRoute ~ getWholeSqlByWidgetIdRoute
   private lazy val widgetService = new WidgetService(modules)
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val logger = Logger.getLogger(this.getClass)
   private lazy val routeName = "widgets"
 
   @ApiOperation(value = "list all widgets", notes = "", nickname = "", httpMethod = "GET")
@@ -47,7 +48,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   private def getAllWidgetsComplete(session: SessionClass, active: Boolean): Route = {
     onComplete(widgetService.getAll(session, active)) {
       case Success(widgetSeq) =>
-        val responseSeq: Seq[PutWidgetInfo] = widgetSeq.map(r => PutWidgetInfo(r._1, r._2, r._3, r._4, r._5.getOrElse(""), r._6, r._7.getOrElse(""), r._8, Some(r._9)))
+        val responseSeq: Seq[PutWidgetInfo] = widgetSeq.map(r => PutWidgetInfo(r._1, r._2, r._3, r._4, r._5.getOrElse(""), r._6, r._7.getOrElse(""), r._8.getOrElse(""), r._9, Some(r._10)))
         complete(OK, ResponseJson[Seq[PutWidgetInfo]](getHeader(200, session), responseSeq))
       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
@@ -77,10 +78,10 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   private def postWidgetComplete(session: SessionClass, postWidgetSeq: Seq[PostWidgetInfo]): Route = {
     if (session.admin) {
-      val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.flatTable_id, post.name, Some(post.adhoc_sql), post.desc, Some(post.chart_params), post.publish, active = true, null, session.userId, null, session.userId))
+      val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.flatTable_id, post.name, Some(post.adhoc_sql), post.desc, Some(post.chart_params), Some(post.query_params), post.publish, active = true, currentTime, session.userId, currentTime, session.userId))
       onComplete(modules.widgetDal.insert(widgetSeq)) {
         case Success(widgets) =>
-          val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql.getOrElse(""), w.desc, w.chart_params.getOrElse(""), w.publish, Some(w.active)))
+          val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql.getOrElse(""), w.desc, w.chart_params.getOrElse(""),w.query_params.getOrElse(""), w.publish, Some(w.active)))
           complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session), putWidgets))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -139,7 +140,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
             if (session.admin) {
               val operation = for {
                 user <- widgetService.deleteWidget(widgetId)
-                relGU <- widgetService.deleteRelDW(widgetId)
+                relGU <- widgetService.deleteFromRelDW(widgetId)
               } yield (user, relGU)
               onComplete(operation) {
                 case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))

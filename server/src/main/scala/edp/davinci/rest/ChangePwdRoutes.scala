@@ -10,6 +10,7 @@ import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations._
+import org.apache.log4j.Logger
 import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success}
@@ -19,7 +20,7 @@ import scala.util.{Failure, Success}
 class ChangePwdRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule) extends Directives {
 
   val routes: Route = changeLoginPwdRoute ~ changeUserPwdRoute
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val logger = Logger.getLogger(this.getClass)
 
   @Path("/login")
   @ApiOperation(value = "change login user's pwd", notes = "", nickname = "", httpMethod = "POST")

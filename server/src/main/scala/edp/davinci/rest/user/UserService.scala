@@ -41,22 +41,19 @@ class UserService(modules: ConfigurationModule with PersistenceModule with Busin
   }
 
 
-  def deleteAllRelByUserId(userSeq: Seq[PutUserInfo]): Future[Unit] = {
-    val query = DBIO.seq(userSeq.map(r => {
-      relUGTQ.filter(_.user_id === r.id).delete
+  def deleteFromRelByUserId(userIdSeq: Seq[Long]): Future[Unit] = {
+    val query = DBIO.seq(userIdSeq.map(userId => {
+      relUGTQ.filter(_.user_id === userId).delete
     }): _*)
     db.run(query)
   }
 
-  def getUserInfo(session:SessionClass): Future[Seq[(Long, String, String, String, Boolean, Boolean)]] ={
+  def getUserInfo(session: SessionClass): Future[Seq[(Long, String, String, String, Boolean, Boolean)]] = {
     db.run(userTQ.filter(_.id === session.userId).map(r => (r.id, r.email, r.title, r.name, r.admin, r.active)).result)
   }
 
-  def deleteUser(userId:Long): Future[Int] ={
+  def deleteUser(userId: Long): Future[Int] = {
     db.run(userTQ.filter(_.id === userId).delete)
   }
 
-  def deleteRelGU(userId:Long): Future[Int] ={
-    db.run(relUGTQ.filter(_.user_id === userId).delete)
-  }
 }

@@ -2,12 +2,14 @@ package edp.davinci.util
 
 import java.io.ByteArrayOutputStream
 import java.sql.{Connection, ResultSet, Statement}
+
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+import edp.davinci.DavinciConstants._
 import edp.davinci.KV
 import edp.davinci.csv.CSVWriter
+import org.apache.log4j.Logger
 import org.clapper.scalasti.{Constants, STGroupFile}
-import org.slf4j.LoggerFactory
-import edp.davinci.DavinciConstants._
+
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -16,7 +18,8 @@ object SqlUtils extends SqlUtils
 
 trait SqlUtils extends Serializable {
   lazy val dataSourceMap: mutable.HashMap[String, HikariDataSource] = new mutable.HashMap[String, HikariDataSource]
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  lazy val sqlRegex = "\\([^\\$]*\\$\\w+\\$\\s?\\)"
+  private lazy val logger = Logger.getLogger(this.getClass)
 
   def getConnection(jdbcUrl: String, username: String, password: String, maxPoolSize: Int = 5): Connection = {
     val tmpJdbcUrl = jdbcUrl.toLowerCase
@@ -67,7 +70,6 @@ trait SqlUtils extends Serializable {
     config.setJdbcUrl(jdbcUrl)
     config.setMaximumPoolSize(muxPoolSize)
     config.setMinimumIdle(1)
-    // config.setConnectionTestQuery("SELECT 1")
 
     config.addDataSourceProperty("cachePrepStmts", "true")
     config.addDataSourceProperty("prepStmtCacheSize", "250")
@@ -80,7 +82,6 @@ trait SqlUtils extends Serializable {
 
   def resetConnection(jdbcUrl: String, username: String, password: String): Unit = {
     shutdownConnection(jdbcUrl.toLowerCase)
-    //    datasourceMap -= jdbcUrl
     getConnection(jdbcUrl, username, password).close()
   }
 
@@ -97,15 +98,20 @@ trait SqlUtils extends Serializable {
                  adHocSql: String,
                  paginateAndSort: String,
                  connectionUrl: String,
-                 paramSeq: Seq[KV] = null): (ListBuffer[Seq[String]], Long) = {
+                 paramSeq: Seq[KV] = null,
+                 groupParams: Seq[KV] = null): (ListBuffer[Seq[String]], Long) = {
     var totalCount: Long = 0
     val trimSql = flatTableSqls.trim
-    logger.info(trimSql + "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sqlTemp")
+    logger.info(trimSql + "~~~~~~~~~~~~~~~~~~~~~~~~~sqlTemp")
     val sqls = if (trimSql.lastIndexOf(sqlSeparator) == trimSql.length - 1) trimSql.dropRight(1).split(sqlSeparator) else trimSql.split(sqlSeparator)
-    val resetSqlBuffer: mutable.Buffer[String] = if (paramSeq != null) resetSql(sqls, paramSeq) else sqls.toBuffer
-    resetSqlBuffer.foreach(println)
+    val sqlWithoutVar = sqls.filter(!_.contains("dv_"))
+    val groupKVMap = getGroupKVMap(sqls, groupParams)
+    val queryKVMap = getQueryKVMap(sqls, paramSeq)
+    val resetSqlBuffer = if (groupKVMap.nonEmpty || queryKVMap.nonEmpty)
+      RegexMatcher.matchAndReplace(sqlWithoutVar, groupKVMap, queryKVMap).toBuffer else sqlWithoutVar.toBuffer
+    resetSqlBuffer.foreach(logger.info)
     val projectSql = getProjectSql(resetSqlBuffer.last, filters, tableName, adHocSql, paginateAndSort)
-    logger.info(projectSql + "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^projectSql")
+    logger.info(projectSql + "^^^^^^^^^^^^^^^^^^^^^^projectSql")
     resetSqlBuffer.remove(resetSqlBuffer.length - 1)
     resetSqlBuffer.append(projectSql.split(sqlSeparator).head)
     val resultSql = resetSqlBuffer.toArray
@@ -114,46 +120,62 @@ trait SqlUtils extends Serializable {
     (getResult(connectionUrl, resultSql), totalCount)
   }
 
-  private def resetSql(sqlArr: Array[String], paramSeq: Seq[KV]) = {
-    val paramMap = mutable.HashMap.empty[String, String]
-    paramSeq.foreach(param => paramMap(param.k.toLowerCase) = param.v)
-    val resetSqls: Array[String] = sqlArr.map(sql => {
-      val lowerCaseSql = sql.trim.toLowerCase
-      if (lowerCaseSql.startsWith("set")) {
-        val setKey = lowerCaseSql.substring(lowerCaseSql.indexOf('@') + 1, lowerCaseSql.indexOf('=')).trim
-        val setSql = if (paramMap.contains(setKey)) s"SET @$setKey = '${paramMap(setKey)}'" else sql
-        logger.info(setSql + "***********************setSql")
-        setSql
-      } else sql
-    })
-    resetSqls.toBuffer
+
+  def getGroupKVMap(sqlArr: Array[String], groupParams: Seq[KV]): mutable.HashMap[String, List[String]] = {
+    val defaultVars = sqlArr.filter(_.contains("dv_group"))
+    val groupKVMap = mutable.HashMap.empty[String, List[String]]
+    if (null != groupParams && groupParams.nonEmpty)
+      groupParams.foreach(group => {
+        val (k, v) = (group.k, group.v)
+        if (groupKVMap.contains(k)) groupKVMap(k) = groupKVMap(k) ::: List(v) else groupKVMap(k) = List(v)
+      })
+    if (defaultVars.nonEmpty)
+      defaultVars.foreach(g => {
+        val k = g.substring(g.indexOf('$') + 1, g.lastIndexOf('$')).trim
+        val v = g.substring(g.indexOf("=") + 1).trim
+        if (!groupKVMap.contains(k))
+          groupKVMap(k) = List(v)
+      })
+    groupKVMap
+  }
+
+  def getQueryKVMap(sqlArr: Array[String], paramSeq: Seq[KV]): mutable.HashMap[String, String] = {
+    val defaultVars = sqlArr.filter(_.contains("dv_query"))
+    val queryKVMap = mutable.HashMap.empty[String, String]
+    if (null != paramSeq && paramSeq.nonEmpty) paramSeq.foreach(param => queryKVMap(param.k) = param.v)
+    if (defaultVars.nonEmpty)
+      defaultVars.foreach(g => {
+        val k = g.substring(g.indexOf('$') + 1, g.lastIndexOf('$')).trim
+        val v = g.substring(g.indexOf("=") + 1).trim
+        if (!queryKVMap.contains(k))
+          queryKVMap(k) = v
+      })
+    queryKVMap
   }
 
   def getResult(connectionUrl: String, sql: Array[String]): ListBuffer[Seq[String]] = {
     logger.info("the sql in getResult:")
-    sql.foreach(println)
+    sql.foreach(logger.info)
     val resultList = new ListBuffer[Seq[String]]
     val columnList = new ListBuffer[String]
     var dbConnection: Connection = null
     var statement: Statement = null
     if (connectionUrl != null) {
       val connectionInfo = connectionUrl.split(sqlUrlSeparator)
-      if (connectionInfo.size != 3) {
+        .filter(u => u.contains("user") || u.contains("password")).map(u => u.substring(u.indexOf('=') + 1))
+      if (connectionInfo.length != 2) {
         logger.info("connection is not in right format")
         throw new Exception("connection is not in right format:" + connectionUrl)
       } else {
         try {
-          dbConnection = SqlUtils.getConnection(connectionInfo(0), connectionInfo(1), connectionInfo(2))
+          dbConnection = SqlUtils.getConnection(connectionUrl, connectionInfo(0), connectionInfo(1))
           statement = dbConnection.createStatement()
-          if (sql.length > 1)
-            for (elem <- sql.dropRight(1)) statement.execute(elem)
+          if (sql.length > 1) for (elem <- sql.dropRight(1)) statement.execute(elem)
           val resultSet = statement.executeQuery(sql.last)
           val meta = resultSet.getMetaData
-          for (i <- 1 to meta.getColumnCount)
-            columnList.append(meta.getColumnLabel(i) + ":" + meta.getColumnTypeName(i))
+          for (i <- 1 to meta.getColumnCount) columnList.append(meta.getColumnLabel(i) + ":" + meta.getColumnTypeName(i))
           resultList.append(columnList)
-          while (resultSet.next())
-            resultList.append(getRow(resultSet))
+          while (resultSet.next()) resultList.append(getRow(resultSet))
           resultList
         } catch {
           case e: Throwable => logger.error("get result exception", e)
@@ -185,10 +207,10 @@ trait SqlUtils extends Serializable {
   }
 
 
-  def getHtmlStr(resultList: ListBuffer[Seq[String]], stgPath: String = "stg/tmpl.stg"): String = {
-    println(resultList.head.toBuffer +"~~~~~~~~~~~~~~~~~~~~~table head before map")
-    val columns = resultList.head.map(c => c.split(":").head)
-    println(columns.toBuffer +"~~~~~~~~~~~~~~~~~~~~~table head after map")
+  def getHTMLStr(resultList: ListBuffer[Seq[String]], stgPath: String = "stg/tmpl.stg"): String = {
+    println(resultList.head.toBuffer + "~~~~~~~~~~~~~~~~~~~~~table head before map")
+    val columns = resultList.head.map(c => c.split(CSVHeaderSeparator).head)
+    println(columns.toBuffer + "~~~~~~~~~~~~~~~~~~~~~table head after map")
     resultList.remove(0)
     resultList.prepend(columns)
     resultList.prepend(Seq(""))
@@ -205,13 +227,13 @@ trait SqlUtils extends Serializable {
 
   /**
     *
-    * @param projectSql a SQL string; eg. SELECT * FROM Table
+    * @param querySql a SQL string; eg. SELECT * FROM Table
     * @return SQL string mixing AdHoc SQL
     */
 
-  def getProjectSql(projectSql: String, filters: String, tableName: String, adHocSql: String, paginateStr: String = ""): String = {
-    logger.info(projectSql + "the initial project sql ~~~~~~~~~~~~~~~")
-    val projectSqlWithFilter = if (null != filters && filters != "") s"SELECT * FROM ($projectSql) AS PROFILTER WHERE $filters" else projectSql
+  def getProjectSql(querySql: String, filters: String, tableName: String, adHocSql: String, paginateStr: String = ""): String = {
+    logger.info(querySql + "~~~~~~~~~~~~~~~~~~~~~~~~~the initial project sql")
+    val projectSqlWithFilter = if (null != filters && filters != "") s"SELECT * FROM ($querySql) AS PROFILTER WHERE $filters" else querySql
     val mixinSql = if (null != adHocSql && adHocSql.trim != "{}" && adHocSql.trim != "") {
       try {
         val sqlArr = adHocSql.toLowerCase.split(flatTable)
@@ -250,6 +272,5 @@ trait SqlUtils extends Serializable {
       if (fieldValue == null) null.asInstanceOf[String] else fieldValue.toString
     })
   }
-
 
 }

@@ -30,12 +30,10 @@ trait PersistenceModule {
 trait PersistenceModuleImpl extends PersistenceModule with DbModule {
   this: ConfigurationModule =>
 
-  private lazy val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("mysqldb")
-  println("before~~~~~~~~~~~~~~~~~~~~~~")
+  private lazy val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("mysqldb", config)
   override implicit lazy val profile: JdbcProfile = dbConfig.profile
   override implicit lazy val db: JdbcProfile#Backend#Database = dbConfig.db
-  println("after~~~~~~~~~~~~~~~~~~~~~~~")
-
+  println("in persist")
   override lazy val groupDal = new BaseDalImpl[GroupTable, UserGroup](TableQuery[GroupTable])
   override lazy val sqlLogDal = new BaseDalImpl[SqlLogTable, SqlLog](TableQuery[SqlLogTable])
   override lazy val sourceDal = new BaseDalImpl[SourceTable, Source](TableQuery[SourceTable])
@@ -47,6 +45,6 @@ trait PersistenceModuleImpl extends PersistenceModule with DbModule {
   override lazy val libWidgetDal = new BaseDalImpl[LibWidgetTable, LibWidget](TableQuery[LibWidgetTable])
   override lazy val flatTableDal = new BaseDalImpl[FlatTbl, FlatTable](TableQuery[FlatTbl])
   override lazy val relGroupFlatTableDal = new BaseDalImpl[RelGroupFlatTblTable, RelGroupFlatTable](TableQuery[RelGroupFlatTblTable])
-  override lazy val shareInfoDal = new BaseDalImpl[ShareInfoTable,ShareInfo](TableQuery[ShareInfoTable])
+  override lazy val shareInfoDal = new BaseDalImpl[ShareInfoTable, ShareInfo](TableQuery[ShareInfoTable])
 
 }

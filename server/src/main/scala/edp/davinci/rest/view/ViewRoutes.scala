@@ -1,29 +1,31 @@
-package edp.davinci.rest.flattable
+package edp.davinci.rest.view
 
+import java.sql.SQLException
 import javax.ws.rs.Path
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.{Directives, Route}
-import edp.davinci.DavinciConstants
+import edp.davinci.KV
 import edp.davinci.module.{ConfigurationModule, PersistenceModule, _}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
 import edp.davinci.util.JsonProtocol._
+import edp.davinci.util.JsonUtils.json2caseClass
 import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.{AuthorizationProvider, SqlUtils}
 import io.swagger.annotations._
-import org.slf4j.LoggerFactory
+import org.apache.log4j.Logger
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 @Api(value = "/flattables", consumes = "application/json", produces = "application/json")
 @Path("/flattables")
-class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
+class ViewRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = postFlatTableRoute ~ putFlatTableRoute ~ getFlatTableByAllRoute ~ deleteFlatTableByIdRoute ~ getGroupsByFlatIdRoute ~ getCalculationResRoute ~ deleteRelGFById
-  private lazy val flatTableService = new FlatTableService(modules)
-  private lazy val logger = LoggerFactory.getLogger(this.getClass)
+  private lazy val flatTableService = new ViewService(modules)
+  private lazy val logger = Logger.getLogger(this.getClass)
   private lazy val adHocTable = "table"
   private lazy val routeName = "flattables"
 
@@ -47,7 +49,9 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
                 case Success(flatTableSeq) =>
                   val queryResult = flatTableSeq.map(biz => QueryFlatTable(biz._1, biz._2, biz._3, biz._4, biz._5, biz._6.getOrElse(""), biz._7, biz._8, biz._9, biz._10))
                   complete(OK, ResponseSeqJson[QueryFlatTable](getHeader(200, session), queryResult))
-                case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+                case Failure(ex) =>
+                  logger.error(" get flatTableSeq",ex)
+                  complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
               }
             } else complete(Forbidden, ResponseJson[String](getHeader(403, "user is not admin", session), ""))
         }
@@ -79,13 +83,13 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
   private def postFlatTable(session: SessionClass, flatTableSeq: Seq[PostFlatTableInfo]): Route = {
     if (session.admin) {
       val uniqueTableName = adHocTable + java.util.UUID.randomUUID().toString
-      val bizEntitySeq = flatTableSeq.map(biz => FlatTable(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, Some(biz.desc), biz.trigger_type, biz.frequency, biz.`catch`, active = true, null, session.userId, null, session.userId))
+      val bizEntitySeq = flatTableSeq.map(biz => FlatTable(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, Some(biz.desc), biz.trigger_type, biz.frequency, biz.`catch`, active = true, currentTime, session.userId, currentTime, session.userId))
       onComplete(modules.flatTableDal.insert(bizEntitySeq)) {
         case Success(bizSeq) =>
           val queryBiz = bizSeq.map(biz => QueryFlatTable(biz.id, biz.source_id, biz.name, biz.sql_tmpl, biz.result_table, biz.desc.getOrElse(""), biz.trigger_type, biz.frequency, biz.`catch`, biz.active))
           val relSeq = for {biz <- bizSeq
                             rel <- flatTableSeq.head.relBG
-          } yield RelGroupFlatTable(0, rel.group_id, biz.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
+          } yield RelGroupFlatTable(0, rel.group_id, biz.id, rel.sql_params, active = true, currentTime, session.userId, currentTime, session.userId)
           onComplete(modules.relGroupFlatTableDal.insert(relSeq)) {
             case Success(_) => complete(OK, ResponseSeqJson[QueryFlatTable](getHeader(200, session), queryBiz))
             case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -119,11 +123,11 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
   private def putFlatTableComplete(session: SessionClass, flatTableSeq: Seq[PutFlatTableInfo]): Route = {
     val operation = for {
       updateOP <- flatTableService.updateFlatTbl(flatTableSeq, session)
-      deleteOp <- flatTableService.deleteByFlatId(flatTableSeq.map(_.id))
+      deleteOp <- flatTableService.deleteFromRelByViewId(flatTableSeq.map(_.id))
     } yield (updateOP, deleteOp)
     onComplete(operation) {
       case Success(_) => val relSeq = for {rel <- flatTableSeq.head.relBG
-      } yield RelGroupFlatTable(0, rel.group_id, flatTableSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
+      } yield RelGroupFlatTable(0, rel.group_id, flatTableSeq.head.id, rel.sql_params, active = true, currentTime, session.userId, currentTime, session.userId)
         onComplete(modules.relGroupFlatTableDal.insert(relSeq)) {
           case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
           case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -147,8 +151,8 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
         session =>
           if (session.admin) {
             val operation = for {
-              deleteFlatTable <- flatTableService.deleteByFlatId(Seq(flatTableId))
-              deleteRel <- flatTableService.deleteRelId(flatTableId)
+              deleteFlatTable <- flatTableService.deleteFromView(Seq(flatTableId))
+              deleteRel <- flatTableService.deleteFromRelByViewId(Seq(flatTableId))
               updateWidget <- flatTableService.updateWidget(flatTableId)
             } yield (deleteFlatTable, deleteRel, updateWidget)
             onComplete(operation) {
@@ -230,6 +234,7 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
                 bizId,
                 manualInfo.adHoc.orNull,
                 manualInfo.manualFilters.orNull,
+                manualInfo.params.orNull,
                 paginateAndSort)
             }
           }
@@ -242,21 +247,23 @@ class FlatTableRoutes(modules: ConfigurationModule with PersistenceModule with B
                                    flatTableId: Long,
                                    adHocSql: String,
                                    manualFilters: String,
+                                   paramSeq: Seq[KV],
                                    paginateAndSort: String) = {
     onComplete(flatTableService.getSourceInfo(flatTableId, session)) {
       case Success(info) =>
         if (info.nonEmpty) {
           try {
             val (sqlTemp, tableName, connectionUrl, _) = info.head
-            val flatTablesFilters = {
-              val filterList = info.map(_._4).filter(_.trim != "").map(_.mkString("(", "", ")"))
-              if (filterList.nonEmpty) filterList.mkString("(", "OR", ")") else null
+            val group = info.map(_._4).filter(_.trim != "")
+            val groupVars = group.flatMap(g => json2caseClass[Seq[KV]](g))
+            if (sqlTemp.trim != "") {
+              val (resultList, totalCount) = SqlUtils.sqlExecute(manualFilters, sqlTemp, tableName, adHocSql, paginateAndSort, connectionUrl, paramSeq, groupVars)
+              val CSVResult = resultList.map(SqlUtils.covert2CSV)
+              complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(CSVResult, totalCount)))
             }
-            val fullFilters = if (null != manualFilters) if (null != flatTablesFilters) flatTablesFilters + s"AND ($manualFilters)" else manualFilters else flatTablesFilters
-            val (resultList, totalCount) = SqlUtils.sqlExecute(fullFilters, sqlTemp, tableName, adHocSql, paginateAndSort, connectionUrl)
-            val CSVResult = resultList.map(SqlUtils.covert2CSV)
-            complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(CSVResult, totalCount)))
+            else complete(BadRequest, ResponseJson[String](getHeader(400, "there is no valid sql", session), ""))
           } catch {
+            case synx: SQLException => complete(BadRequest, ResponseJson[String](getHeader(400, "SQL语法错误", session), synx.getMessage))
             case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }
         }

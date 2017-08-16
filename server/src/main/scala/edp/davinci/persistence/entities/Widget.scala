@@ -12,6 +12,7 @@ case class Widget(id: Long,
                   adhoc_sql: Option[String] = None,
                   desc: String,
                   chart_params: Option[String] = None,
+                  query_params: Option[String] = None,
                   publish: Boolean,
                   active: Boolean,
                   create_time: String,
@@ -26,6 +27,7 @@ case class PostWidgetInfo(widgetlib_id: Long,
                           adhoc_sql: String,
                           desc: String,
                           chart_params: String,
+                          query_params: String,
                           publish: Boolean) extends SimpleBaseEntity
 
 case class PutWidgetInfo(id: Long,
@@ -35,8 +37,9 @@ case class PutWidgetInfo(id: Long,
                          adhoc_sql: String,
                          desc: String,
                          chart_params: String,
+                         query_params: String,
                          publish: Boolean,
-                         active:Option[Boolean]=Some(true))
+                         active: Option[Boolean] = Some(true))
 
 class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
@@ -50,6 +53,8 @@ class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
   def chart_params: Rep[Option[String]] = column[Option[String]]("chart_params", O.Default(null))
 
+  def query_params: Rep[Option[String]] = column[Option[String]]("query_params", O.Default(null))
+
   def publish: Rep[Boolean] = column[Boolean]("publish")
 
   def create_time: Rep[String] = column[String]("create_time")
@@ -60,5 +65,5 @@ class WidgetTable(tag: Tag) extends BaseTable[Widget](tag, "widget") {
 
   def update_by: Rep[Long] = column[Long]("update_by")
 
-  def * : ProvenShape[Widget] = (id, widgetlib_id, flatTable_id, name, adhoc_sql, desc, chart_params, publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
+  def * : ProvenShape[Widget] = (id, widgetlib_id, flatTable_id, name, adhoc_sql, desc, chart_params,query_params, publish, active, create_time, create_by, update_time, update_by) <> (Widget.tupled, Widget.unapply)
 }
