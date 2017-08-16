@@ -3,22 +3,24 @@
  */
 
 export default function (dataSource, flatInfo, chartParams) {
-  const {
-    type
-  } = flatInfo
-
   const hasGroups = flatInfo.groups
 
   const {
     groups,
     xAxis,
     yAxis,
+    xAxisInterval,
+    xAxisRotate,
     splitLine,
     size,
     label,
     shadow,
     legend,
-    toolbox
+    toolbox,
+    top,
+    bottom,
+    left,
+    right
   } = chartParams
 
   let grouped,
@@ -72,7 +74,7 @@ export default function (dataSource, flatInfo, chartParams) {
         let serieObj = Object.assign({},
           {
             name: k,
-            type: type,
+            type: 'scatter',
             data: grouped[k].map(g => [g[xAxis], g[yAxis], g[label]])
           },
           sizeOptions,
@@ -84,7 +86,7 @@ export default function (dataSource, flatInfo, chartParams) {
     let serieObj = Object.assign({},
       {
         name: '数据',
-        type: type,
+        type: 'scatter',
         data: dataSource.map(g => [g[xAxis], g[yAxis], g[label]])
       },
       sizeOptions,
@@ -109,7 +111,11 @@ export default function (dataSource, flatInfo, chartParams) {
   // x轴数据
   xAxisOptions = {
     xAxis: Object.assign({
-      type: 'value'
+      type: 'value',
+      axisLabel: {
+        interval: xAxisInterval,
+        rotate: xAxisRotate
+      }
     }, splitLineOptions)
   }
 
@@ -149,12 +155,10 @@ export default function (dataSource, flatInfo, chartParams) {
   // grid
   gridOptions = {
     grid: {
-      top: legend && legend.length  // FIXME
-        ? Math.ceil(metricArr.length / Math.round((document.documentElement.clientWidth - 40 - 320 - 32 - 200) / 100)) * 30 + 10
-        : 40,
-      left: 60,
-      right: 60,
-      bottom: 30
+      top: top,
+      left: left,
+      right: right,
+      bottom: bottom
     }
   }
 

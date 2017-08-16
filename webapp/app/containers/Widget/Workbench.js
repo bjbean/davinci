@@ -134,8 +134,8 @@ export class Workbench extends React.Component {
           trigger_type: '',
           widgetlib_id,
           chart_params: JSON.stringify(Object.assign({}, values, {
-            widgetName: chartInfo.name,
-            widgetType: chartInfo.type
+            widgetName: chartInfo.title,
+            widgetType: chartInfo.name
           })),
           trigger_params: '',
           flatTable_id

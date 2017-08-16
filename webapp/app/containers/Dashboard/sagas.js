@@ -9,7 +9,9 @@ import {
   ADD_DASHBOARD_ITEM,
   EDIT_DASHBOARD_ITEM,
   EDIT_DASHBOARD_ITEMS,
-  DELETE_DASHBOARD_ITEM
+  DELETE_DASHBOARD_ITEM,
+  LOAD_DASHBOARD_SHARE_LINK,
+  LOAD_WIDGET_SHARE_LINK
 } from './constants'
 
 import {
@@ -21,7 +23,9 @@ import {
   dashboardItemAdded,
   dashboardItemEdited,
   dashboardItemsEdited,
-  dashboardItemDeleted
+  dashboardItemDeleted,
+  dashboardShareLinkLoaded,
+  widgetShareLinkLoaded
 } from './actions'
 
 import request from '../../utils/request'
@@ -192,6 +196,38 @@ export function* deleteDashboardItemWatcher () {
   yield fork(takeEvery, DELETE_DASHBOARD_ITEM, deleteDashboardItem)
 }
 
+export const getDashboardShareLink = promiseSagaCreator(
+  function* ({ id }) {
+    const asyncData = yield call(request, `${api.share}/dashboard/${id}`)
+    const shareInfo = readListAdapter(asyncData)
+    yield put(dashboardShareLinkLoaded(shareInfo))
+    return shareInfo
+  },
+  function (err) {
+    notifySagasError(err, 'getDashboardShareLink')
+  }
+)
+
+export function* getDashboardShareLinkWatcher () {
+  yield fork(takeLatest, LOAD_DASHBOARD_SHARE_LINK, getDashboardShareLink)
+}
+
+export const getWidgetShareLink = promiseSagaCreator(
+  function* ({ id }) {
+    const asyncData = yield call(request, `${api.share}/widget/${id}`)
+    const shareInfo = readListAdapter(asyncData)
+    yield put(widgetShareLinkLoaded(shareInfo))
+    return shareInfo
+  },
+  function (err) {
+    notifySagasError(err, 'getWidgetShareLink')
+  }
+)
+
+export function* getWidgetShareLinkWatcher () {
+  yield fork(takeLatest, LOAD_WIDGET_SHARE_LINK, getWidgetShareLink)
+}
+
 export default [
   getDashboardsWatcher,
   addDashboardWatcher,
@@ -201,5 +237,7 @@ export default [
   addDashboardItemWatcher,
   editDashboardItemWatcher,
   editDashboardItemsWatcher,
-  deleteDashboardItemWatcher
+  deleteDashboardItemWatcher,
+  getDashboardShareLinkWatcher,
+  getWidgetShareLinkWatcher
 ]

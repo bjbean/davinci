@@ -125,33 +125,6 @@ export class Bizlogic extends React.PureComponent {
           })
         })
     })
-    // this.props.onLoadBizlogicDetail(id)
-    //   .then(({ id, name, desc, source_id, sql_tmpl, groups }) => {
-    //     this.bizlogicForm.setFieldsValue({
-    //       id,
-    //       name,
-    //       desc,
-    //       source_id: `${source_id}`,  // eslint-disable-line
-    //       sql_tmpl
-    //     })
-    //
-    //     const groupTableSource = this.props.groups.map(g => {
-    //       const checkedGroup = groups.find(item => item.id === g.id)
-    //       return {
-    //         id: g.id,
-    //         key: g.id,
-    //         name: g.name,
-    //         params: checkedGroup ? checkedGroup.params : [],
-    //         checked: !!checkedGroup
-    //       }
-    //     })
-    //
-    //     this.setState({
-    //       groupTableSource: groupTableSource,
-    //       groupParamLength: groups.length ? groups[0].params.length : 0,
-    //       groupTableSelectedRowKeys: groups.map(g => g.id)
-    //     })
-    //   })
   }
 
   showGroupForm = () => {
@@ -271,7 +244,8 @@ export class Bizlogic extends React.PureComponent {
     this.setState({
       modalLoading: false,
       formVisible: false,
-      formStep: 0
+      formStep: 0,
+      groupTableSelectedRowKeys: []
     })
     this.bizlogicForm && this.bizlogicForm.resetFields()
   }

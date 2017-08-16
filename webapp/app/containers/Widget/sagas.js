@@ -5,16 +5,14 @@ import {
   ADD_WIDGET,
   DELETE_WIDGET,
   LOAD_WIDGET_DETAIL,
-  EDIT_WIDGET,
-  LOAD_WIDGETLIBS
+  EDIT_WIDGET
 } from './constants'
 import {
   widgetsLoaded,
   widgetAdded,
   widgetDeleted,
   widgetDetailLoaded,
-  widgetEdited,
-  widgetlibsLoaded
+  widgetEdited
 } from './actions'
 
 import request from '../../utils/request'
@@ -109,27 +107,10 @@ export function* editWidgetWatcher () {
   yield fork(takeEvery, EDIT_WIDGET, editWidget)
 }
 
-export const getWidgetlibs = promiseSagaCreator(
-  function* () {
-    const asyncData = yield call(request, api.widgetlib)
-    const widgetlibs = readListAdapter(asyncData)
-    yield put(widgetlibsLoaded(widgetlibs))
-    return widgetlibs
-  },
-  function (err) {
-    notifySagasError(err, 'getWidgetlibs')
-  }
-)
-
-export function* getWidgetlibsWatcher () {
-  yield fork(takeLatest, LOAD_WIDGETLIBS, getWidgetlibs)
-}
-
 export default [
   getWidgetsWatcher,
   addWidgetWatcher,
   deleteWidgetWatcher,
   getWidgetDetailWatcher,
-  editWidgetWatcher,
-  getWidgetlibsWatcher
+  editWidgetWatcher
 ]

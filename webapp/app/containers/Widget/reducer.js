@@ -8,15 +8,12 @@ import {
   LOAD_WIDGET_DETAIL,
   LOAD_WIDGET_DETAIL_SUCCESS,
   EDIT_WIDGET,
-  EDIT_WIDGET_SUCCESS,
-  LOAD_WIDGETLIBS,
-  LOAD_WIDGETLIBS_SUCCESS
+  EDIT_WIDGET_SUCCESS
 } from './constants'
 import { fromJS } from 'immutable'
 
 const initialState = fromJS({
-  widgets: false,
-  widgetlibs: false
+  widgets: false
 })
 
 function widgetReducer (state = initialState, { type, payload }) {
@@ -48,10 +45,6 @@ function widgetReducer (state = initialState, { type, payload }) {
     case EDIT_WIDGET_SUCCESS:
       widgets.splice(widgets.indexOf(widgets.find(g => g.id === payload.result.id)), 1, payload.result)
       return state.set('widgets', widgets.slice())
-    case LOAD_WIDGETLIBS:
-      return state
-    case LOAD_WIDGETLIBS_SUCCESS:
-      return state.set('widgetlibs', payload.widgetlibs)
     default:
       return state
   }

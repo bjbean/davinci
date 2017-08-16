@@ -10,18 +10,17 @@ import wordCloud from './charts/wordCloud'
 
 export default function ({ dataSource, chartInfo, chartParams }) {
   // info 去层级
-  const parsedParams = JSON.parse(chartInfo.params)
   const flatInfo = Object.assign({}, {
-    name: chartInfo.name,
-    type: chartInfo.type
-  }, parsedParams.reduce((fi, info) => {
+    title: chartInfo.title,
+    name: chartInfo.name
+  }, chartInfo.params.reduce((fi, info) => {
     info.items.forEach(i => {
       fi[i.name] = i
     })
     return fi
   }, {}))
 
-  switch (flatInfo.type) {
+  switch (flatInfo.name) {
     case 'line':
       return line(dataSource, flatInfo, chartParams)
     case 'bar':

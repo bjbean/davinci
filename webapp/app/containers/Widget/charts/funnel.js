@@ -4,10 +4,6 @@
 
 export default function (dataSource, flatInfo, chartParams) {
   const {
-    type
-  } = flatInfo
-
-  const {
     title,
     value,
     min,
@@ -45,7 +41,7 @@ export default function (dataSource, flatInfo, chartParams) {
   let serieObj = Object.assign({},
     {
       name: '数据',
-      type: type,
+      type: 'funnel',
       left: '10%',
       width: '80%',
       minSize: '0%',

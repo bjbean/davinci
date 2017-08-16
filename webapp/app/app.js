@@ -136,6 +136,11 @@ if (!window.Intl) {
 // we do not want it installed
 if (process.env.NODE_ENV === 'production') {
   require('offline-plugin/runtime').install() // eslint-disable-line global-require
+
+  // disable react developer tools in production
+  if (window.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+    window.__REACT_DEVTOOLS_GLOBAL_HOOK__.inject = function () {}
+  }
 }
 
 // if (process.env.NODE_ENV !== 'production') {

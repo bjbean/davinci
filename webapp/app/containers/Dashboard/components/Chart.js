@@ -49,7 +49,7 @@ export class Chart extends PureComponent {
     const params = JSON.parse(chartParams.chart_params)
     const { dimensionColumns, metricColumns } = params
 
-    const isTable = chartInfo.type === 'table'
+    const isTable = chartInfo.name === 'table'
 
     const chartClass = classnames({
       [utilStyles.hide]: isTable

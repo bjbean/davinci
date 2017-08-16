@@ -15,18 +15,24 @@ import Col from 'antd/lib/col'
 import Button from 'antd/lib/button'
 import Modal from 'antd/lib/modal'
 import Breadcrumb from 'antd/lib/breadcrumb'
+import Popover from 'antd/lib/popover'
+import Input from 'antd/lib/input'
+import Icon from 'antd/lib/icon'
 
+import widgetlibs from '../../assets/json/widgetlib'
 import { promiseDispatcher } from '../../utils/reduxPromisation'
-import { loadDashboardDetail, addDashboardItem, editDashboardItem, editDashboardItems, deleteDashboardItem, clearCurrentDashboard } from './actions'
+import { loadDashboardDetail, addDashboardItem, editDashboardItem, editDashboardItems, deleteDashboardItem, clearCurrentDashboard, loadDashboardShareLink, loadWidgetShareLink } from './actions'
 import { makeSelectCurrentDashboard, makeSelectCurrentItems } from './selectors'
-import { loadWidgets, loadWidgetlibs } from '../Widget/actions'
+import { loadWidgets } from '../Widget/actions'
 import { loadBizlogics, loadBizdatas } from '../Bizlogic/actions'
-import { makeSelectWidgets, makeSelectWidgetlibs } from '../Widget/selectors'
+import { makeSelectWidgets } from '../Widget/selectors'
 import { makeSelectBizlogics } from '../Bizlogic/selectors'
 import { makeSelectLoginUser } from '../App/selectors'
 import chartOptionsGenerator from '../Widget/chartOptionsGenerator'
 import { initializePosition, changePosition, diffPosition } from './components/localPositionOperator'
 
+import config, { env } from '../../globalConfig'
+const shareHost = config[env].shareHost
 import utilStyles from '../../assets/less/util.less'
 import widgetStyles from '../Widget/Widget.less'
 import styles from './Dashboard.less'
@@ -43,6 +49,7 @@ export class Grid extends React.Component {
       localPositions: [],
       modifiedPositions: false,
       editPositionSign: false,
+      shareLink: '',
 
       dashboardItemFormType: '',
       dashboardItemFormVisible: false,
@@ -66,7 +73,6 @@ export class Grid extends React.Component {
   componentWillMount () {
     const {
       onLoadWidgets,
-      onLoadWidgetlibs,
       onLoadBizlogics,
       onLoadDashboardDetail,
       params,
@@ -79,7 +85,6 @@ export class Grid extends React.Component {
     }
 
     onLoadWidgets()
-    onLoadWidgetlibs()
     onLoadDashboardDetail(params.id)
   }
 
@@ -112,8 +117,7 @@ export class Grid extends React.Component {
   renderChart = (renderType, dashboardItem, filters, sorts, offset, limit) =>
     new Promise((resolve) => {
       const {
-        widgets,
-        widgetlibs
+        widgets
       } = this.props
 
       const widget = widgets.find(w => w.id === dashboardItem.widget_id)
@@ -122,7 +126,7 @@ export class Grid extends React.Component {
       const domId = `widget_${dashboardItem.id}`
       let currentChart = this.charts[domId]
 
-      if (chartInfo.type !== 'table') {
+      if (chartInfo.name !== 'table') {
         switch (renderType) {
           case 'rerender':
             if (currentChart) {
@@ -153,7 +157,7 @@ export class Grid extends React.Component {
         .then((resultset) => {
           resolve(resultset)
 
-          if (chartInfo.type !== 'table') {
+          if (chartInfo.name !== 'table') {
             const chartOptions = chartOptionsGenerator({
               dataSource: resultset.dataSource,
               chartInfo: chartInfo,
@@ -413,6 +417,28 @@ export class Grid extends React.Component {
     this.hideFiltersForm()
   }
 
+  doShare = () => {
+    const { shareLink } = this.state
+    if (!shareLink) {
+      const {
+        currentDashboard,
+        onLoadDashboardShareLink
+      } = this.props
+
+      onLoadDashboardShareLink(currentDashboard.id)
+        .then(shareInfo => {
+          this.setState({
+            shareLink: `${shareHost}/#share?shareInfo=${encodeURI(shareInfo)}&type=dashboard`
+          })
+        })
+    }
+  }
+
+  handleShareInputSelect = () => {
+    this.refs.shareInput.refs.input.select()
+    document.execCommand('copy')
+  }
+
   render () {
     const {
       currentDashboard,
@@ -420,7 +446,7 @@ export class Grid extends React.Component {
       loginUser,
       bizlogics,
       widgets,
-      widgetlibs
+      onLoadWidgetShareLink
     } = this.props
 
     const {
@@ -428,6 +454,7 @@ export class Grid extends React.Component {
       mounted,
       localPositions,
       modifiedPositions,
+      shareLink,
       dashboardItemFormType,
       dashboardItemFormVisible,
       modalLoading,
@@ -445,7 +472,7 @@ export class Grid extends React.Component {
 
     let grids
 
-    if (widgets && widgetlibs) {
+    if (widgets) {
       let layouts = {
         lg: []
       }
@@ -479,6 +506,7 @@ export class Grid extends React.Component {
               onShowEdit={this.showEditDashboardItemForm}
               onShowWorkbench={this.showWorkbench}
               onShowFiltersForm={this.showFiltersForm}
+              onLoadWidgetShareLink={onLoadWidgetShareLink}
               onDeleteDashboardItem={this.deleteDashboardItem}
               ref={f => { this[`dashboardItem${pos.i}`] = f }}
             />
@@ -534,6 +562,8 @@ export class Grid extends React.Component {
 
     let savePosButton = ''
     let addButton = ''
+    let shareButton = ''
+    let shareContent = ''
 
     if (editPositionSign) {
       savePosButton = (
@@ -553,10 +583,45 @@ export class Grid extends React.Component {
           size="large"
           type="primary"
           icon="plus"
+          style={{marginRight: '5px'}}
           onClick={this.showAddDashboardItemForm}
         >
           新 增
         </Button>
+      )
+
+      if (shareLink) {
+        shareContent = (
+          <Input
+            className={styles.shareInput}
+            ref="shareInput"
+            value={shareLink}
+            addonAfter={
+              <span
+                style={{cursor: 'pointer'}}
+                onClick={this.handleShareInputSelect}
+              >复制</span>
+            }
+            readOnly
+          />
+        )
+      } else {
+        shareContent = (
+          <Icon type="loading" />
+        )
+      }
+
+      shareButton = (
+        <Popover placement="bottomRight" content={shareContent} trigger="click">
+          <Button
+            size="large"
+            type="primary"
+            icon="share-alt"
+            onClick={this.doShare}
+          >
+            分 享
+          </Button>
+        </Popover>
       )
     }
 
@@ -564,7 +629,7 @@ export class Grid extends React.Component {
       <Container>
         <Container.Title>
           <Row>
-            <Col md={18} sm={12}>
+            <Col sm={12}>
               <Breadcrumb className={utilStyles.breadcrumb}>
                 <Breadcrumb.Item>
                   <Link to="/visual/report/dashboard">
@@ -578,9 +643,10 @@ export class Grid extends React.Component {
                 </Breadcrumb.Item>
               </Breadcrumb>
             </Col>
-            <Col md={6} sm={12} className={utilStyles.textAlignRight}>
+            <Col sm={12} className={utilStyles.textAlignRight}>
               {savePosButton}
               {addButton}
+              {shareButton}
             </Col>
           </Row>
         </Container.Title>
@@ -617,7 +683,7 @@ export class Grid extends React.Component {
             type={workbenchVisible ? 'edit' : ''}
             widget={workbenchWidget}
             bizlogics={bizlogics || []}
-            widgetlibs={widgetlibs || []}
+            widgetlibs={widgetlibs}
             onClose={this.onWorkbenchClose}
             ref={f => { this.workbenchWrapper = f }}
           />
@@ -658,10 +724,6 @@ Grid.propTypes = {
     PropTypes.bool,
     PropTypes.array
   ]),
-  widgetlibs: PropTypes.oneOfType([
-    PropTypes.bool,
-    PropTypes.array
-  ]),
   bizlogics: PropTypes.oneOfType([
     PropTypes.bool,
     PropTypes.array
@@ -669,17 +731,17 @@ Grid.propTypes = {
   loginUser: PropTypes.object,
   params: PropTypes.any,
   onLoadWidgets: PropTypes.func,
-  onLoadWidgetlibs: PropTypes.func,
   onLoadBizlogics: PropTypes.func,
   onLoadBizdatas: PropTypes.func,
-  onClearCurrentDashboard: PropTypes.func
+  onClearCurrentDashboard: PropTypes.func,
+  onLoadDashboardShareLink: PropTypes.func,
+  onLoadWidgetShareLink: PropTypes.func
 }
 
 const mapStateToProps = createStructuredSelector({
   currentDashboard: makeSelectCurrentDashboard(),
   currentItems: makeSelectCurrentItems(),
   widgets: makeSelectWidgets(),
-  widgetlibs: makeSelectWidgetlibs(),
   bizlogics: makeSelectBizlogics(),
   loginUser: makeSelectLoginUser()
 })
@@ -692,10 +754,11 @@ export function mapDispatchToProps (dispatch) {
     onEditDashboardItems: (id, items) => promiseDispatcher(dispatch, editDashboardItems, id, items),
     onDeleteDashboardItem: (id) => promiseDispatcher(dispatch, deleteDashboardItem, id),
     onLoadWidgets: () => promiseDispatcher(dispatch, loadWidgets),
-    onLoadWidgetlibs: () => promiseDispatcher(dispatch, loadWidgetlibs),
     onLoadBizlogics: () => promiseDispatcher(dispatch, loadBizlogics),
     onLoadBizdatas: (id, sql, sorts, offset, limit) => promiseDispatcher(dispatch, loadBizdatas, id, sql, sorts, offset, limit),
-    onClearCurrentDashboard: () => promiseDispatcher(dispatch, clearCurrentDashboard)
+    onClearCurrentDashboard: () => promiseDispatcher(dispatch, clearCurrentDashboard),
+    onLoadDashboardShareLink: (id) => promiseDispatcher(dispatch, loadDashboardShareLink, id),
+    onLoadWidgetShareLink: (id) => promiseDispatcher(dispatch, loadWidgetShareLink, id)
   }
 }
 

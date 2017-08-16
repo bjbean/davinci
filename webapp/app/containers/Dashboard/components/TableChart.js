@@ -15,7 +15,13 @@ export class TableChart extends PureComponent {
     this.state = {
       sortedInfo: {},
       filterDropdownVisibles: {},
-      filterValues: {}
+      filterValues: {},
+      pagination: {
+        pageSize: 20,
+        current: 1,
+        total: 0,
+        showSizeChanger: true
+      }
     }
   }
 
@@ -32,13 +38,16 @@ export class TableChart extends PureComponent {
           return rdc
         }, {})
     }
+
+    this.state.pagination.total = nextProps.data.total
   }
 
   handleTableChange = (pagination, filters, sorter) => {
     this.setState({
+      pagination,
       sortedInfo: sorter
     }, () => {
-      this.onLoadData(pagination)
+      this.onLoadData()
     })
   }
 
@@ -81,22 +90,12 @@ export class TableChart extends PureComponent {
     })
   }
 
-  onLoadData = (newPagination) => {
-    const {
-      data
-    } = this.props
-
+  onLoadData = () => {
     const {
       sortedInfo,
-      filterValues
+      filterValues,
+      pagination
     } = this.state
-
-    const pagination = newPagination || {
-      pageSize: data.pageSize,
-      current: data.pageIndex,
-      total: data.total,
-      showSizeChanger: true
-    }
 
     let filterSql = ''
     let sorts = ''
@@ -155,19 +154,13 @@ export class TableChart extends PureComponent {
     const {
       sortedInfo,
       filterDropdownVisibles,
-      filterValues
+      filterValues,
+      pagination
     } = this.state
 
     const dataSource = data.dataSource || []
     const dataKeys = data.keys || []
     const dataTypes = data.types || []
-    const pagination = data.total
-      ? {
-        pageSize: data.pageSize,
-        current: data.pageIndex,
-        total: data.total,
-        showSizeChanger: true
-      } : false
 
     let columnKeys = null
     let columnTypes = null

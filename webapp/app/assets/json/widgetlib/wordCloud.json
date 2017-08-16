@@ -1,0 +1,54 @@
+{
+  "id": 9,
+  "name": "wordCloud",
+  "title": "词云",
+  "params": [
+    {
+      "name": "data",
+      "title": "数据项配置",
+      "items": [
+        {
+          "name": "title",
+          "title": "标题",
+          "component": "select"
+        }
+      ]
+    },
+    {
+      "name": "display",
+      "title": "显示",
+      "items": [
+        {
+          "name": "gridSize",
+          "title": "GridSize",
+          "component": "inputnumber"
+        },
+        {
+          "name": "sizeRangeX",
+          "title": "SizeRangeX",
+          "component": "inputnumber"
+        },
+        {
+          "name": "sizeRangeY",
+          "title": "SizeRangeY",
+          "component": "inputnumber"
+        },
+        {
+          "name": "rotationStep",
+          "title": "RotationStep",
+          "component": "inputnumber"
+        },
+        {
+          "name": "rotationRangeX",
+          "title": "RotationRangeX",
+          "component": "inputnumber"
+        },
+        {
+          "name": "rotationRangeY",
+          "title": "RotationRangeY",
+          "component": "inputnumber"
+        }
+      ]
+    }
+  ]
+}

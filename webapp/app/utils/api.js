@@ -9,8 +9,8 @@ export default {
   changepwd: `${host}/changepwd`,
   source: `${host}/sources`,
   bizlogic: `${host}/flattables`,
-  widgetlib: `${host}/libwidgets`,
   // bizdata: `${host}/bizdatas`,
   widget: `${host}/widgets`,
-  dashboard: `${host}/dashboards`
+  dashboard: `${host}/dashboards`,
+  share: `${host}/shares`
 }

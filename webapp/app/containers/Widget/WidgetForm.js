@@ -36,11 +36,11 @@ export class WidgetForm extends React.Component {
 
     const widgetlibOptions = widgetlibs.map(w => (
       <Option key={w.id} value={`${w.id}`}>
-        {w.name}
+        {w.title}
         {
           `${w.id}` !== form.getFieldValue('widgetlib_id')
             ? (
-              <i className={`iconfont ${chartIconMapping[w.type]} ${styles.chartSelectOption}`} />
+              <i className={`iconfont ${chartIconMapping[w.name]} ${styles.chartSelectOption}`} />
             ) : ''
         }
       </Option>
@@ -51,10 +51,8 @@ export class WidgetForm extends React.Component {
     if (chartInfo) {
       const columns = dataSource && dataSource.length ? Object.keys(dataSource[0]) : []
       // FIXME table widget 硬编码
-      if (chartInfo.type !== 'table') {
-        const parsedParams = JSON.parse(chartInfo.params)
-
-        chartParams = parsedParams.map(info => {
+      if (chartInfo.name !== 'table') {
+        chartParams = chartInfo.params.map(info => {
           const formItems = info.items.map(item => {
             let formItem = ''
 
@@ -69,9 +67,11 @@ export class WidgetForm extends React.Component {
                           onChange={onFormItemChange(item.name)}
                         >
                           {
-                            columns.map(c => (
-                              <Option key={c} value={c}>{c}</Option>
-                            ))
+                            columns
+                              .filter(c => c !== 'antDesignTableId')
+                              .map(c => (
+                                <Option key={c} value={c}>{c}</Option>
+                              ))
                           }
                         </Select>
                       )}
@@ -90,7 +90,9 @@ export class WidgetForm extends React.Component {
                           onChange={onFormItemChange(item.name)}
                         >
                           {
-                            columns.map(c => (<Option key={c} value={c}>{c}</Option>))
+                            columns
+                              .filter(c => c !== 'antDesignTableId')
+                              .map(c => (<Option key={c} value={c}>{c}</Option>))
                           }
                         </Select>
                       )}
@@ -123,7 +125,7 @@ export class WidgetForm extends React.Component {
                       })(
                         <InputNumber
                           placeholder={item.tip || item.name}
-                          min={item.min || 0}
+                          min={item.min || -1000000000000}
                           max={item.max || 1000000000000}
                           onChange={onFormItemChange(item.name)}
                         />
@@ -162,7 +164,9 @@ export class WidgetForm extends React.Component {
                       onChange={onFormItemChange('dimensionColumns')}
                     >
                       {
-                        columns.map(c => (<Option key={c} value={c}>{c}</Option>))
+                        columns
+                          .filter(c => c !== 'antDesignTableId')
+                          .map(c => (<Option key={c} value={c}>{c}</Option>))
                       }
                     </Select>
                   )}
@@ -177,7 +181,9 @@ export class WidgetForm extends React.Component {
                       onChange={onFormItemChange('metricColumns')}
                     >
                       {
-                        columns.map(c => (<Option key={c} value={c}>{c}</Option>))
+                        columns
+                          .filter(c => c !== 'antDesignTableId')
+                          .map(c => (<Option key={c} value={c}>{c}</Option>))
                       }
                     </Select>
                   )}

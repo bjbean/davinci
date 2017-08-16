@@ -152,12 +152,28 @@
   align-items: center;
 }
 
-.widgetChart,
-.tableContainer,
-.chartContainer{
+.tableContainer {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+.widgetChart {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+.tableChart,
+.commonChart{
+  width: 100%;
+  height: 100%;
+
+  &.invisible {
+    transform: translate(9999px, 0);
+    position: absolute;
+  }
 }
 
 .chartSelectOption {

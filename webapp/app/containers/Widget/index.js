@@ -13,9 +13,10 @@ import Modal from 'antd/lib/modal'
 import Popconfirm from 'antd/lib/popconfirm'
 import Breadcrumb from 'antd/lib/breadcrumb'
 
+import widgetlibs from '../../assets/json/widgetlib'
 import { promiseDispatcher } from '../../utils/reduxPromisation'
-import { loadWidgets, loadWidgetlibs, deleteWidget } from './actions'
-import { makeSelectWidgets, makeSelectWidgetlibs } from './selectors'
+import { loadWidgets, deleteWidget } from './actions'
+import { makeSelectWidgets } from './selectors'
 import { loadBizlogics } from '../Bizlogic/actions'
 import { makeSelectBizlogics } from '../Bizlogic/selectors'
 import chartIconMapping from './chartIconMapping'
@@ -36,13 +37,11 @@ export class Widget extends React.Component {
   componentWillMount () {
     const {
       onLoadWidgets,
-      onLoadBizlogics,
-      onLoadWidgetlibs
+      onLoadBizlogics
     } = this.props
 
     onLoadWidgets()
     onLoadBizlogics()
-    onLoadWidgetlibs()
   }
 
   showWorkbench = (type, widget) => () => {
@@ -73,7 +72,6 @@ export class Widget extends React.Component {
     const {
       widgets,
       bizlogics,
-      widgetlibs,
       onDeleteWidget
     } = this.props
 
@@ -150,7 +148,7 @@ export class Widget extends React.Component {
             type={workbenchType}
             widget={currentWidget}
             bizlogics={bizlogics || []}
-            widgetlibs={widgetlibs || []}
+            widgetlibs={widgetlibs}
             onClose={this.hideWorkbench}
             ref={f => { this.workbenchWrapper = f }}
           />
@@ -169,27 +167,20 @@ Widget.propTypes = {
     PropTypes.array,
     PropTypes.bool
   ]),
-  widgetlibs: PropTypes.oneOfType([
-    PropTypes.array,
-    PropTypes.bool
-  ]),
   onLoadWidgets: PropTypes.func,
   onLoadBizlogics: PropTypes.func,
-  onLoadWidgetlibs: PropTypes.func,
   onDeleteWidget: PropTypes.func
 }
 
 const mapStateToProps = createStructuredSelector({
   widgets: makeSelectWidgets(),
-  bizlogics: makeSelectBizlogics(),
-  widgetlibs: makeSelectWidgetlibs()
+  bizlogics: makeSelectBizlogics()
 })
 
 export function mapDispatchToProps (dispatch) {
   return {
     onLoadWidgets: () => promiseDispatcher(dispatch, loadWidgets),
     onLoadBizlogics: () => promiseDispatcher(dispatch, loadBizlogics),
-    onLoadWidgetlibs: () => promiseDispatcher(dispatch, loadWidgetlibs),
     onDeleteWidget: (id) => () => promiseDispatcher(dispatch, deleteWidget, id)
   }
 }

@@ -4,15 +4,13 @@
 
 export default function (dataSource, flatInfo, chartParams) {
   const {
-    type
-  } = flatInfo
-
-  const {
     xAxis,
     metrics,
     vertical,
     stack,
     label,
+    xAxisInterval,
+    xAxisRotate,
     tooltip,
     legend,
     toolbox,
@@ -63,7 +61,7 @@ export default function (dataSource, flatInfo, chartParams) {
       let serieObj = Object.assign({},
         {
           name: m,
-          type: type,
+          type: 'bar',
           sampling: 'average',
           data: dataSource.map(d => d[m])
         },
@@ -104,6 +102,10 @@ export default function (dataSource, flatInfo, chartParams) {
           lineStyle: {
             type: 'dashed'
           }
+        },
+        axisLabel: {
+          interval: xAxisInterval,
+          rotate: xAxisRotate
         }
       }
     }
@@ -113,8 +115,8 @@ export default function (dataSource, flatInfo, chartParams) {
         xAxis: {
           data: dataSource.map(d => d[xAxis]),
           axisLabel: {
-            interval: 0,
-            rotate: 45
+            interval: xAxisInterval,
+            rotate: xAxisRotate
           }
         }
       }
@@ -141,6 +143,7 @@ export default function (dataSource, flatInfo, chartParams) {
       legend: {
         data: metricArr.map(m => m.name),
         align: 'left',
+        top: 3,
         right: 200
       }
     } : null
@@ -157,7 +160,8 @@ export default function (dataSource, flatInfo, chartParams) {
           saveAsImage: {
             pixelRatio: 2
           }
-        }
+        },
+        right: 22
       }
     } : null
 

@@ -4,10 +4,6 @@
 
 export default function (dataSource, flatInfo, chartParams) {
   const {
-    type
-  } = flatInfo
-
-  const {
     title,
     value,
     circle,
@@ -45,7 +41,7 @@ export default function (dataSource, flatInfo, chartParams) {
   let serieObj = Object.assign({},
     {
       name: '数据',
-      type: type,
+      type: 'pie',
       radius: circle && circle.length ? ['50%', '70%'] : '60%',
       data: dataSource.map(d => ({
         name: d[title],

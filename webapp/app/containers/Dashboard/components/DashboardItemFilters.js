@@ -36,11 +36,13 @@ export class DashboardItemFilters extends PureComponent {
 
   initTree = (props) => {
     const { loginUser, itemId } = props
-    const filterTreeStr = localStorage.getItem(`${loginUser.id}_${itemId}_filterTree`)
-    if (filterTreeStr) {
-      const filterTree = JSON.parse(filterTreeStr)
-      this.state.filterTree = filterTree
-      this.state.flattenTree = this.initFlattenTree(filterTree, {})
+    if (loginUser) {
+      const filterTreeStr = localStorage.getItem(`${loginUser.id}_${itemId}_filterTree`)
+      if (filterTreeStr) {
+        const filterTree = JSON.parse(filterTreeStr)
+        this.state.filterTree = filterTree
+        this.state.flattenTree = this.initFlattenTree(filterTree, {})
+      }
     }
   }
 
@@ -409,7 +411,11 @@ export class DashboardItemFilters extends PureComponent {
       if (!err) {
         const { loginUser, itemId, onQuery } = this.props
         const { filterTree } = this.state
-        localStorage.setItem(`${loginUser.id}_${itemId}_filterTree`, JSON.stringify(filterTree))
+
+        if (loginUser) {
+          localStorage.setItem(`${loginUser.id}_${itemId}_filterTree`, JSON.stringify(filterTree))
+        }
+
         onQuery(this.getSqlExpresstions(filterTree))
         this.resetTree()
       }
