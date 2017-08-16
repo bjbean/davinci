@@ -44,7 +44,8 @@ class DashboardService(modules: ConfigurationModule with PersistenceModule with 
 
   def update(session: SessionClass, dashboardSeq: Seq[PutDashboardInfo]): Future[Unit] = {
     val query = DBIO.seq(dashboardSeq.map(r => {
-      dashboardTQ.filter(obj => obj.id === r.id).map(dashboard => (dashboard.name, dashboard.desc, dashboard.publish, dashboard.active, dashboard.update_by, dashboard.update_time)).update(r.name, r.desc, r.publish, r.active.getOrElse(true), session.userId, ResponseUtils.currentTime)
+      dashboardTQ.filter(obj => obj.id === r.id).map(dashboard => (dashboard.name, dashboard.desc, dashboard.publish, dashboard.active, dashboard.update_by, dashboard.update_time))
+        .update(r.name, r.desc, r.publish, r.active.getOrElse(true), session.userId, ResponseUtils.currentTime)
     }): _*)
     db.run(query)
   }

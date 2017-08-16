@@ -149,7 +149,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       if (isValidShareInfo(shareInfo)) {
         onComplete(shareService.getWidgetById(shareInfo.infoId)) {
           case Success(widget) =>
-            val putWidgetInfo = PutWidgetInfo(widget._1, widget._2, widget._3, widget._4, widget._5.getOrElse(""), widget._6, widget._7.getOrElse(""), widget._8.getOrElse(""), widget._9, Some(widget._10))
+            val putWidgetInfo = PutWidgetInfo(widget._1, widget._2, widget._3, widget._4, widget._5.getOrElse(""), widget._6, widget._7, widget._8, widget._9, Some(widget._10))
             complete(OK, ResponseJson[Seq[PutWidgetInfo]](getHeader(200, null), Seq(putWidgetInfo)))
           case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
         }

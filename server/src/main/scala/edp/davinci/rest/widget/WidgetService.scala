@@ -35,7 +35,7 @@ class WidgetService(modules: ConfigurationModule with PersistenceModule with Bus
   def update(widgetSeq: Seq[PutWidgetInfo], session: SessionClass): Future[Unit] = {
     val query = DBIO.seq(widgetSeq.map(r => {
       widgetTQ.filter(_.id === r.id).map(widget => (widget.flatTable_id, widget.widgetlib_id, widget.name, widget.adhoc_sql, widget.desc, widget.chart_params, widget.query_params, widget.publish, widget.active, widget.update_by, widget.update_time))
-        .update(r.flatTable_id, r.widgetlib_id, r.name, Some(r.adhoc_sql), r.desc, Some(r.chart_params), Some(r.query_params), r.publish, r.active.getOrElse(true), session.userId, ResponseUtils.currentTime)
+        .update(r.flatTable_id, r.widgetlib_id, r.name, Some(r.adhoc_sql), r.desc, r.chart_params, r.query_params, r.publish, r.active.getOrElse(true), session.userId, ResponseUtils.currentTime)
     }): _*)
     db.run(query)
   }
