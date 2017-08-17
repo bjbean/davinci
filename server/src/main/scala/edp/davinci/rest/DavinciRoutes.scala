@@ -15,20 +15,20 @@ class DavinciRoutes extends Directives {
   //where you want the swagger-json endpoint exposed
   //  override val info = Info("Davinci REST API")
   //  provides license and other description details
-
+  val dir: String = System.getProperty("DAVINCI_HOME")
   val indexRoute: Route = get {
     pathPrefix("") {
       pathEndOrSingleSlash {
-        getFromResource("davinci-ui/index.html")
+        getFromResource(s"$dir/davinci-ui/index.html")
       }
-    } ~ getFromResourceDirectory("davinci-ui")
+    } ~ getFromResourceDirectory(s"$dir/davinci-ui")
   }
 
   val shareRoute: Route = get {
     pathPrefix("share") {
       pathEndOrSingleSlash {
-        getFromResource("davinci-ui/share.html")
+        getFromResource(s"$dir/davinci-ui/share.html")
       }
-    } ~ getFromResourceDirectory("davinci-ui")
+    } ~ getFromResourceDirectory(s"$dir/davinci-ui")
   }
 }

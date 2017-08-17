@@ -10,13 +10,15 @@ trait ConfigurationModule {
 }
 
 trait ConfigurationModuleImpl extends ConfigurationModule {
-  val userDir: String = System.getProperty("user.dir")
-  println("user dir " + userDir + "~~~~~~~~~~~~~~")
-  PropertyConfigurator.configure(s"$userDir/conf/log4j.properties")
-
   private lazy val internalConfig: Config = {
-//    val configDefaults = ConfigFactory.load(this.getClass.getClassLoader, "application.conf")
-    ConfigFactory.parseFile(new File(userDir + "/conf/application.conf"))
+    val dir: String = System.getProperty("DAVINCI_HOME")
+    PropertyConfigurator.configure(s"$dir/conf/log4j.properties")
+    val configDefaults = ConfigFactory.load(this.getClass.getClassLoader, "application.conf")
+    if (dir != null) {
+      ConfigFactory.parseFile(new File(dir + "/conf/application.conf")).withFallback(configDefaults)
+    } else {
+      configDefaults
+    }
   }
 
   def config = internalConfig
