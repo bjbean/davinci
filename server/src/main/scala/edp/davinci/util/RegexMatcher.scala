@@ -10,7 +10,7 @@ import scala.collection.mutable.ListBuffer
 object RegexMatcher extends RegexMatcher
 
 trait RegexMatcher {
-  lazy val groupRegex = "\\([^\\$]*\\$\\w+\\$\\s?\\)"
+  lazy val groupRegex = "\\([^\\$,]*\\$\\w+\\$\\s?\\)"
   lazy val queryRegex = "\\$\\s*\\w+\\s*\\$"
   private lazy val logger = Logger.getLogger(this.getClass)
 
