@@ -47,7 +47,8 @@ class MatchAndReplace extends FunSuite {
     val sqlWithoutVar = sqls.filter(!_.contains("dv_"))
     val groupKVMap = getGroupKVMap(sqls, groupParams)
     val queryKVMap = getQueryKVMap(sqls, queryParams)
-    RegexMatcher.matchAndReplace(sqlWithoutVar, groupKVMap, queryKVMap)
+    val resultSql = RegexMatcher.matchAndReplace(sqlWithoutVar, groupKVMap, queryKVMap)
+    resultSql.foreach(println)
   }
 
 }
