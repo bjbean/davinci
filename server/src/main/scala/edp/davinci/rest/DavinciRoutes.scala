@@ -19,16 +19,16 @@ class DavinciRoutes extends Directives {
   val indexRoute: Route = get {
     pathPrefix("") {
       pathEndOrSingleSlash {
-        getFromResource(s"$dir/davinci-ui/index.html")
+        getFromFile(s"$dir/davinci-ui/index.html")
       }
-    } ~ getFromResourceDirectory(s"$dir/davinci-ui")
+    } ~ getFromDirectory(s"$dir/davinci-ui")
   }
 
   val shareRoute: Route = get {
     pathPrefix("share") {
       pathEndOrSingleSlash {
-        getFromResource(s"$dir/davinci-ui/share.html")
+        getFromFile(s"$dir/davinci-ui/share.html")
       }
-    } ~ getFromResourceDirectory(s"$dir/davinci-ui")
+    } ~ getFromDirectory(s"$dir/davinci-ui")
   }
 }

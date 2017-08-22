@@ -37,7 +37,7 @@ class LoginRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       entity(as[LoginClass]) { login =>
         onComplete(AuthorizationProvider.createSessionClass(login)) {
           case Success(sessionEither) =>
-            sessionEither.fold(authorizationError => complete(Unauthorized, ResponseJson[String](getHeader(authorizationError.statusCode, authorizationError.desc, null), "")),
+            sessionEither.fold(authorizationError => complete(BadRequest, ResponseJson[String](getHeader(authorizationError.statusCode, authorizationError.desc, null), "账号或密码错误")),
               info => complete(OK, ResponseJson[QueryUserInfo](getHeader(200, info._1), info._2))
             )
           case Failure(ex) => complete(Unauthorized, ResponseJson[String](getHeader(401, ex.getMessage, null), ""))
