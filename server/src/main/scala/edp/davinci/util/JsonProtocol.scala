@@ -102,7 +102,7 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatKV: RootJsonFormat[KV] =jsonFormat2(KV)
 
-  implicit val formatManualInfo: RootJsonFormat[ManualInfo] = jsonFormat3(ManualInfo)
+  implicit val formatManualInfo: RootJsonFormat[ManualInfo] = jsonFormat4(ManualInfo)
 
   implicit val formatShareResult: RootJsonFormat[ShareResult] = jsonFormat2(ShareResult)
 

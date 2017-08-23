@@ -104,14 +104,17 @@ trait SqlUtils extends Serializable {
     val trimSql = flatTableSqls.trim
     logger.info(trimSql + "~~~~~~~~~~~~~~~~~~~~~~~~~sqlTemp")
     val sqls = if (trimSql.lastIndexOf(sqlSeparator) == trimSql.length - 1) trimSql.dropRight(1).split(sqlSeparator) else trimSql.split(sqlSeparator)
-    val sqlWithoutVar = sqls.filter(!_.contains("dv_"))
     val groupKVMap = getGroupKVMap(sqls, groupParams)
     val queryKVMap = getQueryKVMap(sqls, paramSeq)
-    val resetSqlBuffer = if (groupKVMap.nonEmpty || queryKVMap.nonEmpty)
-      RegexMatcher.matchAndReplace(sqlWithoutVar, groupKVMap, queryKVMap).toBuffer else sqlWithoutVar.toBuffer
-    resetSqlBuffer.foreach(logger.info)
+    val sqlWithoutVar = trimSql.substring(trimSql.indexOf(STStartChar) + 1, trimSql.indexOf(STEndChar)).trim
+    logger.info("sqlWithoutVar~~~~~~~~~~~~~~" + sqlWithoutVar)
+    val mergeSql = if (groupKVMap.nonEmpty) RegexMatcher.matchAndReplace(sqlWithoutVar, groupKVMap) else sqlWithoutVar
+    logger.info("mergeSql~~~~~~~~~~~~~~" + mergeSql)
+    val renderedSql = if (queryKVMap.nonEmpty) STRenderUtils.renderSql(mergeSql, queryKVMap) else mergeSql
+    logger.info("renderedSql~~~~~~~~~~~~~~" + renderedSql)
+    val resetSqlBuffer = renderedSql.split(sqlSeparator).toBuffer
     val projectSql = getProjectSql(resetSqlBuffer.last, filters, tableName, adHocSql, paginateAndSort)
-    logger.info(projectSql + "^^^^^^^^^^^^^^^^^^^^^^projectSql")
+    logger.info(projectSql + "~~~~~~~~~~~~~~~~~~~~~~~~~projectSql")
     resetSqlBuffer.remove(resetSqlBuffer.length - 1)
     resetSqlBuffer.append(projectSql.split(sqlSeparator).head)
     val resultSql = resetSqlBuffer.toArray
@@ -122,33 +125,39 @@ trait SqlUtils extends Serializable {
 
 
   def getGroupKVMap(sqlArr: Array[String], groupParams: Seq[KV]): mutable.HashMap[String, List[String]] = {
-    val defaultVars = sqlArr.filter(_.contains("dv_group"))
+    val defaultVars = sqlArr.filter(_.contains(groupVar))
     val groupKVMap = mutable.HashMap.empty[String, List[String]]
-    if (null != groupParams && groupParams.nonEmpty)
-      groupParams.foreach(group => {
-        val (k, v) = (group.k, group.v)
-        if (groupKVMap.contains(k)) groupKVMap(k) = groupKVMap(k) ::: List(v) else groupKVMap(k) = List(v)
-      })
-    if (defaultVars.nonEmpty)
-      defaultVars.foreach(g => {
-        val k = g.substring(g.indexOf('$') + 1, g.lastIndexOf('$')).trim
-        val v = g.substring(g.indexOf("=") + 1).trim
-        if (!groupKVMap.contains(k))
-          groupKVMap(k) = List(v)
-      })
+    try {
+      if (null != groupParams && groupParams.nonEmpty)
+        groupParams.foreach(group => {
+          val (k, v) = (group.k, group.v)
+          if (groupKVMap.contains(k)) groupKVMap(k) = groupKVMap(k) ::: List(v) else groupKVMap(k) = List(v)
+        })
+      if (defaultVars.nonEmpty)
+        defaultVars.foreach(g => {
+          val k = g.substring(g.indexOf(delimiterStartChar) + 1, g.lastIndexOf(delimiterEndChar)).trim
+          val v = g.substring(g.indexOf(assignmentChar) + 1).trim
+          if (!groupKVMap.contains(k))
+            groupKVMap(k) = List(v)
+        })
+    } catch {
+      case e: Throwable => logger.error("sql template is not in right format!!!", e)
+    }
     groupKVMap
   }
 
   def getQueryKVMap(sqlArr: Array[String], paramSeq: Seq[KV]): mutable.HashMap[String, String] = {
-    val defaultVars = sqlArr.filter(_.contains("dv_query"))
+    val defaultVars = sqlArr.filter(_.contains(queryVar))
     val queryKVMap = mutable.HashMap.empty[String, String]
     if (null != paramSeq && paramSeq.nonEmpty) paramSeq.foreach(param => queryKVMap(param.k) = param.v)
     if (defaultVars.nonEmpty)
       defaultVars.foreach(g => {
-        val k = g.substring(g.indexOf('$') + 1, g.lastIndexOf('$')).trim
-        val v = g.substring(g.indexOf("=") + 1).trim
-        if (!queryKVMap.contains(k))
-          queryKVMap(k) = v
+        val k = g.substring(g.indexOf(delimiterStartChar) + 1, g.lastIndexOf(delimiterEndChar)).trim
+        if (g.indexOf(assignmentChar) >= 0) {
+          val v = g.substring(g.indexOf(assignmentChar) + 1).trim
+          if (!queryKVMap.contains(k))
+            queryKVMap(k) = v
+        }
       })
     queryKVMap
   }
@@ -206,24 +215,6 @@ trait SqlUtils extends Serializable {
     CSVStr
   }
 
-
-  def getHTMLStr(resultList: ListBuffer[Seq[String]], stgPath: String = "stg/tmpl.stg"): String = {
-    println(resultList.head.toBuffer + "~~~~~~~~~~~~~~~~~~~~~table head before map")
-    val columns = resultList.head.map(c => c.split(CSVHeaderSeparator).head)
-    println(columns.toBuffer + "~~~~~~~~~~~~~~~~~~~~~table head after map")
-    resultList.remove(0)
-    resultList.prepend(columns)
-    resultList.prepend(Seq(""))
-    val noNullResult = resultList.map(seq => seq.map(s => if (null == s) "" else s))
-    val tables = Seq(noNullResult)
-    STGroupFile(stgPath, Constants.DefaultEncoding, '$', '$').instanceOf("email_html")
-      .map(_.add("tables", tables).render().get)
-      .recover {
-        case e: Exception =>
-          logger.info("render exception ", e)
-          s"ST Error: $e"
-      }.getOrElse("")
-  }
 
   /**
     *

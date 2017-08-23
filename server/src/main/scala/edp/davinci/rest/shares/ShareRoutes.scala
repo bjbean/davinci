@@ -1,8 +1,10 @@
 package edp.davinci.rest.shares
 
+import java.net.URLDecoder
 import java.sql.SQLException
 import javax.ws.rs.Path
-
+import edp.davinci.DavinciConstants.defaultEncode
+import edp.davinci.util.STRenderUtils._
 import akka.http.scaladsl.model.ContentType.NonBinary
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.ContentDispositionTypes.{attachment, inline}
@@ -19,6 +21,7 @@ import edp.davinci.util.{AesUtils, AuthorizationProvider, MD5Utils, SqlUtils}
 import edp.davinci.{DavinciConstants, KV, ParamHelper}
 import io.swagger.annotations._
 import org.apache.log4j.Logger
+
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
@@ -278,8 +281,9 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
         val (manualFilters, widgetParams, adHoc) = if (null == manualInfo) (null, null, null)
         else (manualInfo.manualFilters.orNull, manualInfo.params.orNull, manualInfo.adHoc.orNull)
         if (infoArr.length == 2) {
+          val urlDecode = URLDecoder.decode(infoArr.last, defaultEncode)
           val base64decoder = new sun.misc.BASE64Decoder
-          val base64decode: String = new String(base64decoder.decodeBuffer(infoArr.last))
+          val base64decode: String = new String(base64decoder.decodeBuffer(urlDecode))
           val paramAndFilter: ParamHelper = json2caseClass[ParamHelper](base64decode)
           val (urlFilters, urlParams) = (paramAndFilter.f_get, paramAndFilter.p_get)
           val filters = mergeFilters(manualFilters, urlFilters)
