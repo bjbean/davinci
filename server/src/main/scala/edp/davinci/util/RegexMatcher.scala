@@ -10,8 +10,8 @@ import scala.collection.mutable.ListBuffer
 object RegexMatcher extends RegexMatcher
 
 trait RegexMatcher {
-  lazy val groupRegex = "\\([a-zA-Z0-9_]{1,}\\s?[!=<>]{1,}\\s?<\\w+>\\s?\\)"
-//  lazy val queryRegex = "\\$\\s*\\w+\\s*\\$"
+  lazy val groupRegex = "\\([a-zA-Z0-9_]{1,}\\s?\\w*[<>!=]*\\s?\\$\\w+\\$\\s?\\)"
+  //  lazy val queryRegex = "\\$\\s*\\w+\\s*\\$"
   private lazy val logger = Logger.getLogger(this.getClass)
 
   def getMatchedItemList(sqlStr: String, REGEX: String): List[String] = {
@@ -24,7 +24,7 @@ trait RegexMatcher {
   }
 
 
-  def matchAndReplace(sqlWithoutVar: String, groupKVMap: mutable.HashMap[String, List[String]]) = {
+  def matchAndReplace(sqlWithoutVar: String, groupKVMap: mutable.HashMap[String, List[String]]): String = {
 
     val exprList = getMatchedItemList(sqlWithoutVar, groupRegex)
     val parsedMap = SqlParser.getParsedMap(exprList)
@@ -35,12 +35,6 @@ trait RegexMatcher {
       replaceMap.foreach(tuple => resultSql = resultSql.replace(tuple._1, tuple._2))
       logger.info(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sql after merge\n$resultSql")
     }
-    //      val matchItemList = getMatchedItemList(resultSql, queryRegex)
-    //      val itemTupleList: List[(String, String)] = matchItemList.map(item => (item, item.substring(item.indexOf('$') + 1, item.lastIndexOf('$')).trim))
-    //      if (queryKVMap.nonEmpty) {
-    //        itemTupleList.foreach(tuple => if(queryKVMap.contains(tuple._2)) resultSql = resultSql.replace(tuple._1, queryKVMap(tuple._2)))
-    //        logger.info(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~sql after replace\n$resultSql")
-    //      }
     resultSql
   }
 
@@ -50,7 +44,7 @@ trait RegexMatcher {
     parsedMap.foreach(tuple => {
       val (expr, (op, expressionList)) = tuple
       val (left, right) = (expressionList.head, expressionList.last)
-      val gVar = right.substring(right.indexOf(delimiterStartChar) + 1, right.lastIndexOf(delimiterEndChar)).trim
+      val gVar = right.substring(right.indexOf(dollarDelimiter) + 1, right.lastIndexOf(dollarDelimiter)).trim
       if (kvMap.contains(gVar)) {
         val values = kvMap(gVar)
         val oneSizeReplace = s"$left ${op.toString} ${values.mkString("")}"

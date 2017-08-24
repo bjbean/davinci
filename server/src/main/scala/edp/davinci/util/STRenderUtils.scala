@@ -20,7 +20,7 @@ trait STRenderUtils {
     resultList.prepend(Seq(""))
     val noNullResult = resultList.map(seq => seq.map(s => if (null == s) "" else s))
     val tables = Seq(noNullResult)
-    STGroupFile(stgPath, Constants.DefaultEncoding, '$', '$').instanceOf("email_html")
+    STGroupFile(stgPath, Constants.DefaultEncoding, dollarDelimiter, dollarDelimiter).instanceOf("email_html")
       .map(_.add("tables", tables).render().get)
       .recover { case e: Exception => logger.info("render exception ", e)
         s"ST Error: $e"
@@ -31,10 +31,11 @@ trait STRenderUtils {
     val queryVars = queryKVMap.keySet.mkString("(", ",", ")")
     val sqlToRender = sqlWithoutVars.replaceAll("<>", "!=")
     val sqlTemplate =
-      s"""sqlTemplate$queryVars ::= <<
-         |$sqlToRender
-         |>>""".stripMargin
-    println(sqlTemplate)
+      """delimiters "$", "$"""" +
+        s"""sqlTemplate$queryVars ::= <<
+           |$sqlToRender
+           |>>""".stripMargin
+    logger.info("~~~~~~~~~~~~~~~~~~~~~~~~sql template after merge:\n" + sqlTemplate)
     val stg: STGroupString = new STGroupString(sqlTemplate)
     val sqlST = stg.getInstanceOf("sqlTemplate")
     queryKVMap.foreach(kv => sqlST.add(kv._1, kv._2))

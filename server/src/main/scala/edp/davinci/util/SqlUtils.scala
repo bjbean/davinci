@@ -1,14 +1,11 @@
 package edp.davinci.util
 
-import java.io.ByteArrayOutputStream
 import java.sql.{Connection, ResultSet, Statement}
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import edp.davinci.DavinciConstants._
 import edp.davinci.KV
-import edp.davinci.csv.CSVWriter
 import org.apache.log4j.Logger
-import org.clapper.scalasti.{Constants, STGroupFile}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -18,7 +15,6 @@ object SqlUtils extends SqlUtils
 
 trait SqlUtils extends Serializable {
   lazy val dataSourceMap: mutable.HashMap[String, HikariDataSource] = new mutable.HashMap[String, HikariDataSource]
-  lazy val sqlRegex = "\\([^\\$]*\\$\\w+\\$\\s?\\)"
   private lazy val logger = Logger.getLogger(this.getClass)
 
   def getConnection(jdbcUrl: String, username: String, password: String, maxPoolSize: Int = 5): Connection = {
@@ -135,7 +131,7 @@ trait SqlUtils extends Serializable {
         })
       if (defaultVars.nonEmpty)
         defaultVars.foreach(g => {
-          val k = g.substring(g.indexOf(delimiterStartChar) + 1, g.lastIndexOf(delimiterEndChar)).trim
+          val k = g.substring(g.indexOf(dollarDelimiter) + 1, g.lastIndexOf(dollarDelimiter)).trim
           val v = g.substring(g.indexOf(assignmentChar) + 1).trim
           if (!groupKVMap.contains(k))
             groupKVMap(k) = List(v)
@@ -152,7 +148,7 @@ trait SqlUtils extends Serializable {
     if (null != paramSeq && paramSeq.nonEmpty) paramSeq.foreach(param => queryKVMap(param.k) = param.v)
     if (defaultVars.nonEmpty)
       defaultVars.foreach(g => {
-        val k = g.substring(g.indexOf(delimiterStartChar) + 1, g.lastIndexOf(delimiterEndChar)).trim
+        val k = g.substring(g.indexOf(dollarDelimiter) + 1, g.lastIndexOf(dollarDelimiter)).trim
         if (g.indexOf(assignmentChar) >= 0) {
           val v = g.substring(g.indexOf(assignmentChar) + 1).trim
           if (!queryKVMap.contains(k))
@@ -198,21 +194,6 @@ trait SqlUtils extends Serializable {
       logger.info("connection is not given or is null")
       ListBuffer(Seq(""))
     }
-  }
-
-  /**
-    *
-    * @param row a row in DB represent by string
-    * @return a CSV String
-    */
-  def covert2CSV(row: Seq[String]): String = {
-    val byteArrOS = new ByteArrayOutputStream()
-    val writer = CSVWriter.open(byteArrOS)
-    writer.writeRow(row)
-    val CSVStr = byteArrOS.toString(defaultEncode)
-    byteArrOS.close()
-    writer.close()
-    CSVStr
   }
 
 

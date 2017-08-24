@@ -6,9 +6,9 @@ object DavinciConstants extends DavinciConstants with SeparatorConstants
 trait DavinciConstants {
   lazy val flatTable = "flattable"
   lazy val defaultEncode = "UTF-8"
-  lazy val groupVar = "g@var"
-  lazy val queryVar = "q@var"
-  lazy val updateVar = "u@var"
+  lazy val groupVar = "group@var"
+  lazy val queryVar = "query@var"
+  lazy val updateVar = "update@var"
 }
 
 
