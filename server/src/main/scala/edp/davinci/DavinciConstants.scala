@@ -20,6 +20,7 @@ trait SeparatorConstants {
   lazy val delimiterStartChar = '<'
   lazy val delimiterEndChar = '>'
   lazy val assignmentChar = '='
+  lazy val dollarDelimiter = '$'
   lazy val STStartChar = '{'
   lazy val STEndChar = '}'
 }

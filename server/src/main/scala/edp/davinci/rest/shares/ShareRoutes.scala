@@ -3,25 +3,24 @@ package edp.davinci.rest.shares
 import java.net.URLDecoder
 import java.sql.SQLException
 import javax.ws.rs.Path
-import edp.davinci.DavinciConstants.defaultEncode
-import edp.davinci.util.STRenderUtils._
 import akka.http.scaladsl.model.ContentType.NonBinary
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.ContentDispositionTypes.{attachment, inline}
 import akka.http.scaladsl.model.{HttpEntity, _}
 import akka.http.scaladsl.server.{Directives, Route, StandardRoute}
-import edp.davinci.DavinciConstants.conditionSeparator
+import edp.davinci.DavinciConstants.{conditionSeparator, defaultEncode}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest.{ShareInfo, _}
+import edp.davinci.util.CommonUtils.covert2CSV
 import edp.davinci.util.JsonProtocol._
 import edp.davinci.util.JsonUtils.{caseClass2json, json2caseClass}
 import edp.davinci.util.ResponseUtils.getHeader
+import edp.davinci.util.STRenderUtils._
 import edp.davinci.util.{AesUtils, AuthorizationProvider, MD5Utils, SqlUtils}
-import edp.davinci.{DavinciConstants, KV, ParamHelper}
+import edp.davinci.{KV, ParamHelper}
 import io.swagger.annotations._
 import org.apache.log4j.Logger
-
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
