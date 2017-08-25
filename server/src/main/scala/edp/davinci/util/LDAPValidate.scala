@@ -1,0 +1,62 @@
+package edp.davinci.util
+
+import java.util.Properties
+import javax.naming.{Context, NamingEnumeration}
+import javax.naming.directory.{InitialDirContext, SearchControls, SearchResult}
+
+import edp.davinci.ModuleInstance
+import org.apache.log4j.Logger
+
+import scala.util.{Failure, Success, Try}
+
+object LDAPValidate extends LDAPValidate
+
+trait LDAPValidate {
+  private lazy val logger = Logger.getLogger(this.getClass)
+  private lazy val config = ModuleInstance.getModule.config
+  private val ldapUser = config.getString("ldap.user")
+  private val ldapPwd = config.getString("ldap.pwd")
+  private val ldapUrl = config.getString("ldap.url")
+  private val ldapDc = config.getString("ldap.dc")
+  private val readTimeout = config.getString("ldap.read.timeout")
+  private val connectTimeout = config.getString("ldap.connect.timeout")
+  private val isEnable = config.getString("ldap.connect.pool")
+  private var context: InitialDirContext = _
+
+  def validate(username: String, password: String): Boolean = {
+    try {
+      propsSet(ldapUrl + ldapDc, ldapUser, ldapPwd)
+      val controls: SearchControls = new SearchControls
+      controls.setSearchScope(SearchControls.SUBTREE_SCOPE)
+      val answers: NamingEnumeration[SearchResult] = context.search("", s"userPrincipalName=$username", controls)
+      val nsName: String = answers.nextElement.getNameInNamespace
+      val result = Try {
+        this.propsSet(ldapUrl, nsName, password)
+      }
+      result match {
+        case Success(_) => true
+        case Failure(_) => false
+      }
+    } catch {
+      case e: Throwable =>
+        logger.error("LdapValidate failed===" + username + "," + password)
+        logger.error("LdapValidate failed===", e)
+        false
+    } finally {
+      context.close()
+    }
+  }
+
+  private def propsSet(url: String, nsName: String, pwd: String) = {
+    val props = new Properties
+    props.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
+    props.put(Context.PROVIDER_URL, url)
+    props.put(Context.SECURITY_AUTHENTICATION, "simple")
+    props.put(Context.SECURITY_PRINCIPAL, nsName)
+    props.put(Context.SECURITY_CREDENTIALS, pwd)
+    props.put("com.sun.jndi.ldap.read.timeout", readTimeout)
+    props.put("com.sun.jndi.ldap.connect.timeout", connectTimeout)
+    props.put("com.sun.jndi.ldap.connect.pool", isEnable)
+    context = new InitialDirContext(props)
+  }
+}
