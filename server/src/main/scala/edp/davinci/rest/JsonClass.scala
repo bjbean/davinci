@@ -19,12 +19,6 @@ case class BaseInfo(id: Long, name: String)
 
 case class ManualInfo(adHoc: Option[String] = None, manualFilters: Option[String] = None, params: Option[List[KV]] = None, shareInfo: Option[String] = None)
 
-case class ShareWidgetInfo(userId: Long, infoId: Long)
-
-case class ShareDashboardInfo(userId: Long, dashboardId: Long)
-
-case class ShareInfo(userId: Long, infoId: Long, md5: String)
-
 case class WidgetInfo(id: Long, widget_id: Long, flatTableId: Long, position_x: Int, position_y: Int, width: Int, length: Int, trigger_type: String, trigger_params: String, aesStr: String = "")
 
 case class DashboardInfo(id: Long, name: String, pic: String, desc: String, publish: Boolean, widgets: Seq[WidgetInfo])

@@ -3,6 +3,7 @@ package edp.davinci.rest.shares
 import java.net.URLDecoder
 import java.sql.SQLException
 import javax.ws.rs.Path
+
 import akka.http.scaladsl.model.ContentType.NonBinary
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.ContentDispositionTypes.{attachment, inline}
@@ -11,7 +12,7 @@ import akka.http.scaladsl.server.{Directives, Route, StandardRoute}
 import edp.davinci.DavinciConstants.{conditionSeparator, defaultEncode}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities._
-import edp.davinci.rest.{ShareInfo, _}
+import edp.davinci.rest._
 import edp.davinci.util.CommonUtils.covert2CSV
 import edp.davinci.util.JsonProtocol._
 import edp.davinci.util.JsonUtils.{caseClass2json, json2caseClass}
@@ -21,10 +22,16 @@ import edp.davinci.util.{AesUtils, AuthorizationProvider, MD5Utils, SqlUtils}
 import edp.davinci.{KV, ParamHelper}
 import io.swagger.annotations._
 import org.apache.log4j.Logger
+
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
+case class ShareInfo(userId: Long, infoId: Long, md5: String)
+
+case class ShareWidgetInfo(userId: Long, infoId: Long)
+
+case class ShareDashboardInfo(userId: Long, dashboardId: Long)
 
 @Api(value = "/shares", consumes = "application/json", produces = "application/json")
 @Path("/shares")
@@ -37,7 +44,6 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   private lazy val textHtml = MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`
   private lazy val textCSV = MediaTypes.`text/csv` withCharset HttpCharsets.`UTF-8`
   private lazy val appJson = ContentTypes.`application/json`
-
 
   @Path("/widget/{widget_id}")
   @ApiOperation(value = "get the html share url", notes = "", nickname = "", httpMethod = "GET")
