@@ -1,15 +1,21 @@
 import React, { PropTypes } from 'react'
+import classnames from 'classnames'
 
+import Table from 'antd/lib/table'
 import Form from 'antd/lib/form'
 import Input from 'antd/lib/input'
 import InputNumber from 'antd/lib/input-number'
 import Select from 'antd/lib/select'
 import Checkbox from 'antd/lib/checkbox'
+import Radio from 'antd/lib/radio'
+import Button from 'antd/lib/button'
 import Row from 'antd/lib/row'
 import Col from 'antd/lib/col'
 const FormItem = Form.Item
 const Option = Select.Option
 const CheckboxGroup = Checkbox.Group
+const RadioButton = Radio.Button
+const RadioGroup = Radio.Group
 
 import chartIconMapping from './chartIconMapping'
 
@@ -24,10 +30,16 @@ export class WidgetForm extends React.Component {
       widgetlibs,
       dataSource,
       chartInfo,
+      queryParams,
+      segmentControlActiveIndex,
       onBizlogicChange,
       onWidgetTypeChange,
-      onFormItemChange
+      onFormItemChange,
+      onSegmentControlChange,
+      onShowVariableConfigTable,
+      onDeleteControl
     } = this.props
+
     const { getFieldDecorator } = form
 
     const bizlogicOptions = bizlogics.map(b => (
@@ -46,13 +58,13 @@ export class WidgetForm extends React.Component {
       </Option>
     ))
 
-    let chartParams = ''
+    let chartConfigElements = ''
 
     if (chartInfo) {
       const columns = dataSource && dataSource.length ? Object.keys(dataSource[0]) : []
       // FIXME table widget 硬编码
       if (chartInfo.name !== 'table') {
-        chartParams = chartInfo.params.map(info => {
+        chartConfigElements = chartInfo.params.map(info => {
           const formItems = info.items.map(item => {
             let formItem = ''
 
@@ -142,19 +154,19 @@ export class WidgetForm extends React.Component {
           })
 
           return (
-            <div className={styles.chartParams} key={info.name}>
-              <h4 className={styles.paramsTitle}>{info.title}</h4>
-              <Row className={styles.paramsRegion}>
+            <div className={styles.formUnit} key={info.name}>
+              <h4 className={styles.unitTitle}>{info.title}</h4>
+              <Row className={styles.unitContent}>
                 {formItems}
               </Row>
             </div>
           )
         })
       } else {
-        chartParams = (
-          <div className={styles.chartParams}>
-            <h4 className={styles.paramsTitle}>Column Config</h4>
-            <Row className={styles.paramsRegion}>
+        chartConfigElements = (
+          <div className={styles.formUnit}>
+            <h4 className={styles.unitTitle}>Column Config</h4>
+            <Row className={styles.unitContent}>
               <Col span={24}>
                 <FormItem label="维度列">
                   {getFieldDecorator('dimensionColumns', {})(
@@ -194,6 +206,62 @@ export class WidgetForm extends React.Component {
         )
       }
     }
+
+    const controlTypes = [
+      { text: '文本输入框', value: 'input' },
+      { text: '数字输入框', value: 'inputNumber' },
+      { text: '单选下拉菜单', value: 'select' },
+      { text: '多选下拉菜单', value: 'multiSelect' },
+      { text: '日期选择', value: 'date' },
+      { text: '日期时间选择', value: 'datetime' },
+      { text: '日期范围选择', value: 'dateRange' },
+      { text: '日期时间范围选择', value: 'datetimeRange' }
+    ]
+
+    // const controlTypeOptions = controlTypes.map(o => (
+    //   <Option key={o.value} value={o.value}>{o.text}</Option>
+    // ))
+
+    const queryConfigColumns = [{
+      title: '控件',
+      dataIndex: 'type',
+      key: 'type',
+      render: (text, record) => controlTypes.find(c => c.value === text).text
+    }, {
+      title: '关联',
+      dataIndex: 'variables',
+      key: 'variables',
+      render: (text, record) => record.variables.join(',')
+    }, {
+      title: '操作',
+      key: 'action',
+      width: 100,
+      className: `${utilStyles.textAlignCenter}`,
+      render: (text, record) => (
+        <span className="ant-table-action-column">
+          <Button
+            size="small"
+            shape="circle"
+            icon="edit"
+            onClick={onShowVariableConfigTable(record.id)}
+          />
+          <Button
+            size="small"
+            shape="circle"
+            icon="delete"
+            onClick={onDeleteControl(record.id)}
+          />
+        </span>
+      )
+    }]
+
+    const chartConfigClass = classnames({
+      [utilStyles.hide]: !!segmentControlActiveIndex
+    })
+
+    const queryConfigClass = classnames({
+      [utilStyles.hide]: !segmentControlActiveIndex
+    })
 
     return (
       <Form className={styles.formView}>
@@ -250,7 +318,39 @@ export class WidgetForm extends React.Component {
             </FormItem>
           </Col>
         </Row>
-        {chartParams}
+        <Row>
+          <Col span={24} className={styles.scCol}>
+            <RadioGroup
+              defaultValue={segmentControlActiveIndex ? '2' : '1'}
+              onChange={onSegmentControlChange}
+            >
+              <RadioButton value="1">Chart配置</RadioButton>
+              <RadioButton value="2">变量配置</RadioButton>
+            </RadioGroup>
+          </Col>
+        </Row>
+        <div className={chartConfigClass}>
+          {chartConfigElements}
+        </div>
+        <div className={queryConfigClass}>
+          <Row>
+            <Col span={24} className={styles.addCol}>
+              <Button
+                type="primary"
+                icon="plus"
+                onClick={onShowVariableConfigTable()}
+              >
+                新增
+              </Button>
+            </Col>
+          </Row>
+          <Table
+            dataSource={queryParams}
+            columns={queryConfigColumns}
+            rowKey="id"
+            pagination={false}
+          />
+        </div>
       </Form>
     )
   }
@@ -268,9 +368,14 @@ WidgetForm.propTypes = {
     PropTypes.bool,
     PropTypes.object
   ]),
+  queryParams: PropTypes.array,
+  segmentControlActiveIndex: PropTypes.number,
   onBizlogicChange: PropTypes.func,
   onWidgetTypeChange: PropTypes.func,
-  onFormItemChange: PropTypes.func
+  onFormItemChange: PropTypes.func,
+  onSegmentControlChange: PropTypes.func,
+  onShowVariableConfigTable: PropTypes.func,
+  onDeleteControl: PropTypes.func
 }
 
 export default Form.create({withRef: true})(WidgetForm)

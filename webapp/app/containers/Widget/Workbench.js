@@ -1,8 +1,10 @@
 import React, { PropTypes } from 'react'
 import { connect } from 'react-redux'
 
+import VariableConfigForm from './VariableConfigForm'
 import WidgetForm from './WidgetForm'
 import SplitView from './SplitView'
+import Modal from 'antd/lib/modal'
 
 import { loadBizdatas } from '../Bizlogic/actions'
 import { addWidget, editWidget } from './actions'
@@ -17,8 +19,14 @@ export class Workbench extends React.Component {
       data: false,
       chartInfo: false,
       chartParams: {},
+      queryInfo: false,
+      queryParams: [],
+      formSegmentControlActiveIndex: 0,
       tableLoading: false,
       adhocSql: props.type === 'edit' ? props.widget.adhoc_sql : '',
+
+      variableConfigModalVisible: false,
+      variableConfigControl: {},
 
       tableHeight: 0
     }
@@ -70,13 +78,22 @@ export class Workbench extends React.Component {
         const formValues = Object.assign({}, info, params)
 
         this.state.chartParams = formValues
+        // FIXME
+        this.state.queryParams = JSON.parse(widget.query_params)
 
         this.widgetForm.setFieldsValue(formValues)
       })
   }
 
   bizlogicChange = (val, sql) => {
-    this.setState({ tableLoading: true })
+    const sqlTemplate = this.props.bizlogics.find(bl => bl.id === Number(val)).sql_tmpl
+    const queryArr = sqlTemplate.match(/query@var\s\$\w+\$/g) || []
+
+    this.setState({
+      tableLoading: true,
+      queryInfo: queryArr.map(q => q.substring(q.indexOf('$') + 1, q.lastIndexOf('$'))),
+      queryParams: []
+    })
 
     this.props.onLoadBizdatas(val, { adHoc: sql })
       .then(resultset => {
@@ -112,7 +129,7 @@ export class Workbench extends React.Component {
   saveWidget = () => new Promise((resolve, reject) => {
     this.widgetForm.validateFieldsAndScroll((err, values) => {
       if (!err) {
-        const { chartInfo, adhocSql } = this.state
+        const { chartInfo, queryParams, adhocSql } = this.state
 
         let id = values.id
         let name = values.name
@@ -137,6 +154,7 @@ export class Workbench extends React.Component {
             widgetName: chartInfo.title,
             widgetType: chartInfo.name
           })),
+          query_params: JSON.stringify(queryParams),
           trigger_params: '',
           flatTable_id
         }
@@ -165,6 +183,8 @@ export class Workbench extends React.Component {
       data: false,
       chartInfo: false,
       chartParams: {},
+      queryInfo: false,
+      queryParams: [],
       adhocSql: ''
     })
   }
@@ -175,6 +195,55 @@ export class Workbench extends React.Component {
     })
   }
 
+  formSegmentControlChange = (e) => {
+    this.setState({
+      formSegmentControlActiveIndex: e.target.value === '1' ? 0 : 1
+    })
+  }
+
+  saveControl = (control) => {
+    const { queryParams } = this.state
+    const itemIndex = queryParams.findIndex(q => q.id === control.id)
+
+    if (itemIndex >= 0) {
+      queryParams.splice(itemIndex, 1, control)
+
+      this.setState({
+        queryParams: queryParams.slice()
+      })
+    } else {
+      this.setState({
+        queryParams: queryParams.concat(control)
+      })
+    }
+  }
+
+  deleteControl = (id) => () => {
+    this.setState({
+      queryParams: this.state.queryParams.filter(q => q.id !== id)
+    })
+  }
+
+  showVariableConfigTable = (id) => () => {
+    this.setState({
+      variableConfigModalVisible: true,
+      variableConfigControl: id
+        ? this.state.queryParams.find(q => q.id === id)
+        : {}
+    })
+  }
+
+  hideVariableConfigTable = () => {
+    this.setState({
+      variableConfigModalVisible: false,
+      variableConfigControl: {}
+    })
+  }
+
+  resetVariableConfigForm = () => {
+    this.variableConfigForm.refs.wrappedComponent.refs.formWrappedComponent.resetForm()
+  }
+
   render () {
     const {
       bizlogics,
@@ -183,9 +252,14 @@ export class Workbench extends React.Component {
     const {
       data,
       chartInfo,
+      queryInfo,
       chartParams,
+      queryParams,
+      formSegmentControlActiveIndex,
       tableLoading,
-      adhocSql
+      adhocSql,
+      variableConfigModalVisible,
+      variableConfigControl
     } = this.state
 
     return (
@@ -195,9 +269,15 @@ export class Workbench extends React.Component {
           widgetlibs={widgetlibs}
           dataSource={data ? data.dataSource : []}
           chartInfo={chartInfo}
+          queryInfo={queryInfo}
+          queryParams={queryParams}
+          segmentControlActiveIndex={formSegmentControlActiveIndex}
           onBizlogicChange={this.bizlogicChange}
           onWidgetTypeChange={this.widgetTypeChange}
           onFormItemChange={this.formItemChange}
+          onSegmentControlChange={this.formSegmentControlChange}
+          onShowVariableConfigTable={this.showVariableConfigTable}
+          onDeleteControl={this.deleteControl}
           ref={f => { this.widgetForm = f }}
         />
         <SplitView
@@ -210,6 +290,22 @@ export class Workbench extends React.Component {
           onAdhocSqlInputChange={this.adhocSqlInputChange}
           onAdhocSqlQuery={this.adhocSqlQuery}
         />
+        <Modal
+          title="变量配置"
+          wrapClassName="ant-modal-large"
+          visible={variableConfigModalVisible}
+          onCancel={this.resetVariableConfigForm}
+          footer={false}
+          maskClosable={false}
+        >
+          <VariableConfigForm
+            queryInfo={queryInfo}
+            control={variableConfigControl}
+            onSave={this.saveControl}
+            onClose={this.hideVariableConfigTable}
+            ref={f => { this.variableConfigForm = f }}
+          />
+        </Modal>
       </div>
     )
   }
