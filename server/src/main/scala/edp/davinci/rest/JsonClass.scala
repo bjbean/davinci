@@ -43,8 +43,6 @@ case class PostDashboardInfoSeq(payload: Seq[PostDashboardInfo])
 
 case class PostGroupInfoSeq(payload: Seq[PostGroupInfo])
 
-case class SimpleLibWidgetSeq(payload: Seq[LibWidget])
-
 case class PostSourceInfoSeq(payload: Seq[PostSourceInfo])
 
 case class SimpleSqlLogSeq(payload: Seq[SimpleSqlLog])
@@ -58,8 +56,6 @@ case class PutFlatTableInfoSeq(payload: Seq[PutFlatTableInfo])
 case class PutDashboardSeq(payload: Seq[PutDashboardInfo])
 
 case class PutGroupInfoSeq(payload: Seq[PutGroupInfo])
-
-case class QueryLibWidgetSeq(payload: Seq[QueryLibWidget])
 
 case class PutSourceInfoSeq(payload: Seq[PutSourceInfo])
 
