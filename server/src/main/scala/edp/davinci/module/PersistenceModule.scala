@@ -7,12 +7,32 @@ import slick.jdbc.JdbcProfile
 import slick.lifted.TableQuery
 
 
-trait DbModule {
-  val profile: JdbcProfile
-  val db: JdbcProfile#Backend#Database
+object DbModule extends ConfigurationModuleImpl {
+  private lazy val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("mysqldb", config)
+  //  private val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("h2db")
+
+  lazy val profile: JdbcProfile = dbConfig.profile
+  println("profile == " + config.getString("mysqldb.profile"))
+
+  lazy val db: JdbcProfile#Backend#Database = dbConfig.db
+  println("db == " + config.getString("mysqldb.db.url"))
+
 }
 
 trait PersistenceModule {
+  val groupQuery: TableQuery[GroupTable] = TableQuery[GroupTable]
+  val sqlLogQuery: TableQuery[SqlLogTable] = TableQuery[SqlLogTable]
+  val sourceQuery: TableQuery[SourceTable] = TableQuery[SourceTable]
+  val relDWQuery: TableQuery[RelDashboardWidgetTable] = TableQuery[RelDashboardWidgetTable]
+  val userQuery: TableQuery[UserTable] = TableQuery[UserTable]
+  val relUserGroupQuery: TableQuery[RelUserGroupTable] = TableQuery[RelUserGroupTable]
+  val dashboardQuery: TableQuery[DashboardTable] = TableQuery[DashboardTable]
+  val widgetQuery: TableQuery[WidgetTable] = TableQuery[WidgetTable]
+  val libWidgetQuery: TableQuery[LibWidgetTable] = TableQuery[LibWidgetTable]
+  val viewQuery: TableQuery[ViewTbl] = TableQuery[ViewTbl]
+  val relGroupViewQuery: TableQuery[RelGroupViewTable] = TableQuery[RelGroupViewTable]
+
+
   val groupDal: BaseDal[GroupTable, UserGroup]
   val sqlLogDal: BaseDal[SqlLogTable, SqlLog]
   val sourceDal: BaseDal[SourceTable, Source]
@@ -22,18 +42,13 @@ trait PersistenceModule {
   val relDashboardWidgetDal: BaseDal[RelDashboardWidgetTable, RelDashboardWidget]
   val widgetDal: BaseDal[WidgetTable, Widget]
   val libWidgetDal: BaseDal[LibWidgetTable, LibWidget]
-  val flatTableDal: BaseDal[FlatTbl, FlatTable]
-  val relGroupFlatTableDal: BaseDal[RelGroupFlatTblTable, RelGroupFlatTable]
-  val shareInfoDal: BaseDal[ShareInfoTable, ShareInfo]
+  val viewDal: BaseDal[ViewTbl, ViewTable]
+  val relGroupViewDal: BaseDal[RelGroupViewTable, RelGroupView]
 }
 
-trait PersistenceModuleImpl extends PersistenceModule with DbModule {
+trait PersistenceModuleImpl extends PersistenceModule {
   this: ConfigurationModule =>
 
-  private lazy val dbConfig: DatabaseConfig[JdbcProfile] = DatabaseConfig.forConfig("mysqldb", config)
-  override implicit lazy val profile: JdbcProfile = dbConfig.profile
-  override implicit lazy val db: JdbcProfile#Backend#Database = dbConfig.db
-  println("in persist")
   override lazy val groupDal = new BaseDalImpl[GroupTable, UserGroup](TableQuery[GroupTable])
   override lazy val sqlLogDal = new BaseDalImpl[SqlLogTable, SqlLog](TableQuery[SqlLogTable])
   override lazy val sourceDal = new BaseDalImpl[SourceTable, Source](TableQuery[SourceTable])
@@ -43,8 +58,7 @@ trait PersistenceModuleImpl extends PersistenceModule with DbModule {
   override lazy val relDashboardWidgetDal = new BaseDalImpl[RelDashboardWidgetTable, RelDashboardWidget](TableQuery[RelDashboardWidgetTable])
   override lazy val widgetDal = new BaseDalImpl[WidgetTable, Widget](TableQuery[WidgetTable])
   override lazy val libWidgetDal = new BaseDalImpl[LibWidgetTable, LibWidget](TableQuery[LibWidgetTable])
-  override lazy val flatTableDal = new BaseDalImpl[FlatTbl, FlatTable](TableQuery[FlatTbl])
-  override lazy val relGroupFlatTableDal = new BaseDalImpl[RelGroupFlatTblTable, RelGroupFlatTable](TableQuery[RelGroupFlatTblTable])
-  override lazy val shareInfoDal = new BaseDalImpl[ShareInfoTable, ShareInfo](TableQuery[ShareInfoTable])
+  override lazy val viewDal = new BaseDalImpl[ViewTbl, ViewTable](TableQuery[ViewTbl])
+  override lazy val relGroupViewDal = new BaseDalImpl[RelGroupViewTable, RelGroupView](TableQuery[RelGroupViewTable])
 
 }

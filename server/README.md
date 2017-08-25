@@ -2,7 +2,6 @@
 
 https://davinci.corp/api/v1/domains/(domain_id)
 
-# sub url
 
 - /dashboards (POST/DELETE/PUT/GET(by all/id/filter))
 - /widgets (POST/DELETE/PUT/GET(by all/id/filter))
@@ -19,7 +18,6 @@ filter /users?sortby=name&order=asc
 - /bindings/groups_bizlogics (POST)
 - /bindings/users_groups (POST)
 
-# example
 
 GET /zoos: List all Zoos (ID and Name, not too much detail)
 POST /zoos: Create a new Zoo
@@ -47,7 +45,7 @@ DELETE /zoos/ZID/employees/EID: Fire an Employee from a specific Zoo
 ?animal_type_id=1: Filter records which match the following condition (WHERE animal_type_id = 1)
 ?sortby=name&order=asc: Sort the results based on the specified attribute (ORDER BY name ASC)
 
-# authentication url
+
 POST https://davinci..corp/api/v1/login
 POST https://davinci..corp/api/v1/changepwd
 POST https://davinci..corp/api/v1/logout

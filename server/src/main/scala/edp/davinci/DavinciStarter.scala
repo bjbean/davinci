@@ -4,7 +4,7 @@ import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import edp.davinci.rest._
 
-object Boot extends App {
+object DavinciStarter extends App {
   // configuring modules for application, cake pattern for DI
   val modules = ModuleInstance.getModule
 

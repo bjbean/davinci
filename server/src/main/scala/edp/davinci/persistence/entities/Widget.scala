@@ -26,8 +26,8 @@ case class PostWidgetInfo(widgetlib_id: Long,
                           name: String,
                           adhoc_sql: String,
                           desc: String,
-                          chart_params: String,
-                          query_params: String,
+                          chart_params: Option[String] = Some(""),
+                          query_params: Option[String] = Some(""),
                           publish: Boolean) extends SimpleBaseEntity
 
 case class PutWidgetInfo(id: Long,
@@ -36,8 +36,8 @@ case class PutWidgetInfo(id: Long,
                          name: String,
                          adhoc_sql: String,
                          desc: String,
-                         chart_params: String,
-                         query_params: String,
+                         chart_params: Option[String] = Some(""),
+                         query_params: Option[String] = Some(""),
                          publish: Boolean,
                          active: Option[Boolean] = Some(true))
 

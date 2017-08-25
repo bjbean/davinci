@@ -17,13 +17,7 @@ case class SqlInfo(sqls: Array[String])
 
 case class BaseInfo(id: Long, name: String)
 
-case class ManualInfo(adHoc: Option[String] = None, manualFilters: Option[String] = None, params: Option[List[KV]] = None)
-
-case class ShareWidgetInfo(userId: Long, infoId: Long)
-
-case class ShareDashboardInfo(userId: Long, dashboardId: Long)
-
-case class ShareInfo(userId: Long, infoId: Long, md5: String)
+case class ManualInfo(adHoc: Option[String] = None, manualFilters: Option[String] = None, params: Option[List[KV]] = None, shareInfo: Option[String] = None)
 
 case class WidgetInfo(id: Long, widget_id: Long, flatTableId: Long, position_x: Int, position_y: Int, width: Int, length: Int, trigger_type: String, trigger_params: String, aesStr: String = "")
 
@@ -49,8 +43,6 @@ case class PostDashboardInfoSeq(payload: Seq[PostDashboardInfo])
 
 case class PostGroupInfoSeq(payload: Seq[PostGroupInfo])
 
-case class SimpleLibWidgetSeq(payload: Seq[LibWidget])
-
 case class PostSourceInfoSeq(payload: Seq[PostSourceInfo])
 
 case class SimpleSqlLogSeq(payload: Seq[SimpleSqlLog])
@@ -64,8 +56,6 @@ case class PutFlatTableInfoSeq(payload: Seq[PutFlatTableInfo])
 case class PutDashboardSeq(payload: Seq[PutDashboardInfo])
 
 case class PutGroupInfoSeq(payload: Seq[PutGroupInfo])
-
-case class QueryLibWidgetSeq(payload: Seq[QueryLibWidget])
 
 case class PutSourceInfoSeq(payload: Seq[PutSourceInfo])
 

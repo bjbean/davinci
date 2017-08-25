@@ -1,5 +1,6 @@
 package edp.davinci.rest.shares
 
+import java.net.URLDecoder
 import java.sql.SQLException
 import javax.ws.rs.Path
 
@@ -8,21 +9,29 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.ContentDispositionTypes.{attachment, inline}
 import akka.http.scaladsl.model.{HttpEntity, _}
 import akka.http.scaladsl.server.{Directives, Route, StandardRoute}
-import edp.davinci.DavinciConstants.conditionSeparator
+import edp.davinci.DavinciConstants.{conditionSeparator, defaultEncode}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities._
-import edp.davinci.rest.{ShareInfo, _}
+import edp.davinci.rest._
+import edp.davinci.util.CommonUtils.covert2CSV
 import edp.davinci.util.JsonProtocol._
 import edp.davinci.util.JsonUtils.{caseClass2json, json2caseClass}
 import edp.davinci.util.ResponseUtils.getHeader
+import edp.davinci.util.STRenderUtils._
 import edp.davinci.util.{AesUtils, AuthorizationProvider, MD5Utils, SqlUtils}
-import edp.davinci.{DavinciConstants, KV, ParamHelper}
+import edp.davinci.{KV, ParamHelper}
 import io.swagger.annotations._
 import org.apache.log4j.Logger
+
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
+case class ShareInfo(userId: Long, infoId: Long, md5: String)
+
+case class ShareWidgetInfo(userId: Long, infoId: Long)
+
+case class ShareDashboardInfo(userId: Long, dashboardId: Long)
 
 @Api(value = "/shares", consumes = "application/json", produces = "application/json")
 @Path("/shares")
@@ -35,7 +44,6 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   private lazy val textHtml = MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`
   private lazy val textCSV = MediaTypes.`text/csv` withCharset HttpCharsets.`UTF-8`
   private lazy val appJson = ContentTypes.`application/json`
-
 
   @Path("/widget/{widget_id}")
   @ApiOperation(value = "get the html share url", notes = "", nickname = "", httpMethod = "GET")
@@ -149,7 +157,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       if (isValidShareInfo(shareInfo)) {
         onComplete(shareService.getWidgetById(shareInfo.infoId)) {
           case Success(widget) =>
-            val putWidgetInfo = PutWidgetInfo(widget._1, widget._2, widget._3, widget._4, widget._5.getOrElse(""), widget._6, widget._7.getOrElse(""), widget._8.getOrElse(""), widget._9, Some(widget._10))
+            val putWidgetInfo = PutWidgetInfo(widget._1, widget._2, widget._3, widget._4, widget._5.getOrElse(""), widget._6, widget._7, widget._8, widget._9, Some(widget._10))
             complete(OK, ResponseJson[Seq[PutWidgetInfo]](getHeader(200, null), Seq(putWidgetInfo)))
           case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
         }
@@ -278,8 +286,9 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
         val (manualFilters, widgetParams, adHoc) = if (null == manualInfo) (null, null, null)
         else (manualInfo.manualFilters.orNull, manualInfo.params.orNull, manualInfo.adHoc.orNull)
         if (infoArr.length == 2) {
+          val urlDecode = URLDecoder.decode(infoArr.last, defaultEncode)
           val base64decoder = new sun.misc.BASE64Decoder
-          val base64decode: String = new String(base64decoder.decodeBuffer(infoArr.last))
+          val base64decode: String = new String(base64decoder.decodeBuffer(urlDecode))
           val paramAndFilter: ParamHelper = json2caseClass[ParamHelper](base64decode)
           val (urlFilters, urlParams) = (paramAndFilter.f_get, paramAndFilter.p_get)
           val filters = mergeFilters(manualFilters, urlFilters)

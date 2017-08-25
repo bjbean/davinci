@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.github.swagger.akka.{HasActorSystem, SwaggerHttpService}
-import edp.davinci.Boot
+import edp.davinci.DavinciStarter
 import edp.davinci.rest.view.ViewRoutes
 import edp.davinci.rest.dashboard.DashboardRoutes
 import edp.davinci.rest.download.DownloadRoutes
@@ -19,8 +19,8 @@ import edp.davinci.rest.widget.WidgetRoutes
 import scala.reflect.runtime.universe._
 
 class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
-  override implicit val actorSystem: ActorSystem = Boot.system
-  override implicit val materializer: ActorMaterializer = Boot.materializer
+  override implicit val actorSystem: ActorSystem = DavinciStarter.system
+  override implicit val materializer: ActorMaterializer = DavinciStarter.materializer
   override val apiTypes = Seq(
     typeOf[LoginRoutes],
     typeOf[UserRoutes],
@@ -36,7 +36,7 @@ class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
     typeOf[DownloadRoutes]
   )
 
-  override val host: String = Boot.host + ":" + Boot.port
+  override val host: String = DavinciStarter.host + ":" + DavinciStarter.port
   //the url of your api, not swagger's json endpoint
   override val basePath = "/api/v1"
   //the basePath for the API you are exposing

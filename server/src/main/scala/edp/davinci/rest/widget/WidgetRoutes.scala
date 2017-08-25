@@ -48,7 +48,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   private def getAllWidgetsComplete(session: SessionClass, active: Boolean): Route = {
     onComplete(widgetService.getAll(session, active)) {
       case Success(widgetSeq) =>
-        val responseSeq: Seq[PutWidgetInfo] = widgetSeq.map(r => PutWidgetInfo(r._1, r._2, r._3, r._4, r._5.getOrElse(""), r._6, r._7.getOrElse(""), r._8.getOrElse(""), r._9, Some(r._10)))
+        val responseSeq: Seq[PutWidgetInfo] = widgetSeq.map(r => PutWidgetInfo(r._1, r._2, r._3, r._4, r._5.getOrElse(""), r._6, r._7, r._8, r._9, Some(r._10)))
         complete(OK, ResponseJson[Seq[PutWidgetInfo]](getHeader(200, session), responseSeq))
       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
@@ -78,10 +78,10 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   private def postWidgetComplete(session: SessionClass, postWidgetSeq: Seq[PostWidgetInfo]): Route = {
     if (session.admin) {
-      val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.flatTable_id, post.name, Some(post.adhoc_sql), post.desc, Some(post.chart_params), Some(post.query_params), post.publish, active = true, currentTime, session.userId, currentTime, session.userId))
+      val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.flatTable_id, post.name, Some(post.adhoc_sql), post.desc, post.chart_params, post.query_params, post.publish, active = true, currentTime, session.userId, currentTime, session.userId))
       onComplete(modules.widgetDal.insert(widgetSeq)) {
         case Success(widgets) =>
-          val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql.getOrElse(""), w.desc, w.chart_params.getOrElse(""),w.query_params.getOrElse(""), w.publish, Some(w.active)))
+          val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql.getOrElse(""), w.desc, w.chart_params,w.query_params, w.publish, Some(w.active)))
           complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session), putWidgets))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }

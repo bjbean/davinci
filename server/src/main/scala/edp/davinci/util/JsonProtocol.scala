@@ -76,9 +76,6 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatLibWidget: RootJsonFormat[LibWidget] = jsonFormat9(LibWidget)
   implicit val formatQueryLibWidget: RootJsonFormat[QueryLibWidget] = jsonFormat5(QueryLibWidget)
-  implicit val formatLibWidgetSeq: RootJsonFormat[QueryLibWidgetSeq] = jsonFormat1(QueryLibWidgetSeq)
-
-  implicit val formatLibWidgetClassSeq: RootJsonFormat[QueryLibWidgetSeq] = jsonFormat1(QueryLibWidgetSeq)
 
   implicit val formatSqlInfo: RootJsonFormat[SqlInfo] = jsonFormat1(SqlInfo)
 
@@ -100,9 +97,9 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatResponsePayload: RootJsonFormat[ResponsePayload] = jsonFormat1(ResponsePayload)
 
-  implicit val formatKV: RootJsonFormat[KV] =jsonFormat2(KV)
+  implicit val formatKV: RootJsonFormat[KV] = jsonFormat2(KV)
 
-  implicit val formatManualInfo: RootJsonFormat[ManualInfo] = jsonFormat3(ManualInfo)
+  implicit val formatManualInfo: RootJsonFormat[ManualInfo] = jsonFormat4(ManualInfo)
 
   implicit val formatShareResult: RootJsonFormat[ShareResult] = jsonFormat2(ShareResult)
 
