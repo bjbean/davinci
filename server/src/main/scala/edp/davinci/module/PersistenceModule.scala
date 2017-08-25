@@ -24,7 +24,6 @@ trait PersistenceModule {
   val libWidgetDal: BaseDal[LibWidgetTable, LibWidget]
   val flatTableDal: BaseDal[FlatTbl, FlatTable]
   val relGroupFlatTableDal: BaseDal[RelGroupFlatTblTable, RelGroupFlatTable]
-  val shareInfoDal: BaseDal[ShareInfoTable, ShareInfo]
 }
 
 trait PersistenceModuleImpl extends PersistenceModule with DbModule {
@@ -45,6 +44,5 @@ trait PersistenceModuleImpl extends PersistenceModule with DbModule {
   override lazy val libWidgetDal = new BaseDalImpl[LibWidgetTable, LibWidget](TableQuery[LibWidgetTable])
   override lazy val flatTableDal = new BaseDalImpl[FlatTbl, FlatTable](TableQuery[FlatTbl])
   override lazy val relGroupFlatTableDal = new BaseDalImpl[RelGroupFlatTblTable, RelGroupFlatTable](TableQuery[RelGroupFlatTblTable])
-  override lazy val shareInfoDal = new BaseDalImpl[ShareInfoTable, ShareInfo](TableQuery[ShareInfoTable])
 
 }
