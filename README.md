@@ -5,6 +5,8 @@ how to make a dist package
 --------------------------
 mvn clean install package -Pdist
 
+mvn clean install -DskipTests package -Pdist
+
 how to generate THIRD-PARTY.txt?
 ------
 mvn clean install -DskipTests
