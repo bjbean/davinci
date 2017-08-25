@@ -35,7 +35,8 @@ class LoginRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   def accessTokenRoute: Route = path("login") {
     post {
       entity(as[LoginClass]) { login =>
-        onComplete(AuthorizationProvider.createSessionClass(login)) {
+        val ldapIsEnable = modules.config.getBoolean("ldap.isEnable")
+        onComplete(AuthorizationProvider.createSessionClass(login, ldapIsEnable)) {
           case Success(sessionEither) =>
             sessionEither.fold(authorizationError => complete(BadRequest, ResponseJson[String](getHeader(authorizationError.statusCode, authorizationError.desc, null), "账号或密码错误")),
               info => complete(OK, ResponseJson[QueryUserInfo](getHeader(200, info._1), info._2))
@@ -45,5 +46,6 @@ class LoginRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       }
     }
   }
+
 
 }
