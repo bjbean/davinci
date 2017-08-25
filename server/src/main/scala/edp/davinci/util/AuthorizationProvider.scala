@@ -22,7 +22,7 @@ object AuthorizationProvider {
   private lazy val module = ModuleInstance.modules
   private lazy val logger = Logger.getLogger(this.getClass)
   private lazy val db = module.userDal.getDB
-  private lazy val realm = "davinci"
+  lazy val realm = "davinci"
 
   def createSessionClass(login: LoginClass, enableLDAP: Boolean): Future[Either[AuthorizationError, (SessionClass, QueryUserInfo)] with Product with Serializable] = {
     try {
