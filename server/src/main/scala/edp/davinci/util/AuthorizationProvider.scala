@@ -21,9 +21,8 @@ class passwordError(statusCode: Int = 400, desc: String = "pwd is wrong") extend
 object AuthorizationProvider {
   private lazy val module = ModuleInstance.modules
   private lazy val logger = Logger.getLogger(this.getClass)
-  lazy val realm = "davinci"
-
   private lazy val db = module.userDal.getDB
+  private lazy val realm = "davinci"
 
   def createSessionClass(login: LoginClass, enableLDAP: Boolean): Future[Either[AuthorizationError, (SessionClass, QueryUserInfo)] with Product with Serializable] = {
     try {
