@@ -9,6 +9,8 @@ import slick.jdbc.MySQLProfile.api._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import edp.davinci.util.ResponseUtils.currentTime
+import edp.davinci.util.LDAPValidate.validate
 
 abstract class AuthorizationError(val statusCode: Int = 401, val desc: String = "authentication error") extends Exception
 
@@ -21,12 +23,14 @@ object AuthorizationProvider {
   private lazy val logger = Logger.getLogger(this.getClass)
   lazy val realm = "davinci"
 
-  def createSessionClass(login: LoginClass): Future[Either[AuthorizationError, (SessionClass, QueryUserInfo)] with Product with Serializable] = {
+  private lazy val db = module.userDal.getDB
+
+  def createSessionClass(login: LoginClass, enableLDAP: Boolean): Future[Either[AuthorizationError, (SessionClass, QueryUserInfo)] with Product with Serializable] = {
     try {
-      val user = findUser(login)
+      val user = if (enableLDAP) if (validate(login.username, login.password)) findUserByLDAP(login) else findUser(login) else findUser(login)
       user.flatMap {
         user =>
-          module.relUserGroupDal.findByFilter(rel => rel.user_id === user.id && rel.active).map {
+          module.relUserGroupDal.findByFilter(rel => rel.user_id === user.id).map {
             relSeq =>
               val groupIdList = new ListBuffer[Long]
               if (relSeq.nonEmpty) relSeq.foreach(groupIdList += _.group_id)
@@ -47,6 +51,23 @@ object AuthorizationProvider {
 
   }
 
+  def findUserByLDAP(login: LoginClass): Future[User] = {
+    val ldapUser = User(0, login.username, login.password, "", login.username, admin = false, active = true, currentTime, 0, currentTime, 0)
+    module.userDal.findByFilter(user => user.email === login.username && user.active === true).map[User] {
+      userSeq =>
+        userSeq.headOption match {
+          case Some(_) =>
+            db.run(module.userDal.getTableQuery.filter(_.email === login.username).map(_.password).update(login.password))
+            ldapUser
+          case None =>
+            logger.info("user not found")
+            module.userDal.insert(ldapUser)
+            ldapUser
+        }
+    }
+  }
+
+
   def authorize(credentials: Credentials): Future[Option[SessionClass]] =
     credentials match {
       case p@Credentials.Provided(token) =>
@@ -64,7 +85,6 @@ object AuthorizationProvider {
             if (verifyPwd(user.password, login.password)) user
             else throw new passwordError()
           case None =>
-            println("not found")
             logger.info("user not found")
             throw new UserNotFoundError()
         }

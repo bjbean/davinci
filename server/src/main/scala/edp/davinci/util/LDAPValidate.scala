@@ -3,10 +3,8 @@ package edp.davinci.util
 import java.util.Properties
 import javax.naming.{Context, NamingEnumeration}
 import javax.naming.directory.{InitialDirContext, SearchControls, SearchResult}
-
 import edp.davinci.ModuleInstance
 import org.apache.log4j.Logger
-
 import scala.util.{Failure, Success, Try}
 
 object LDAPValidate extends LDAPValidate
