@@ -135,7 +135,7 @@ export class TableChart extends PureComponent {
       sorts = sorts.concat(order.join(':'))
     }
 
-    this.props.onChange(filterSql, sorts, offset, limit)
+    this.props.onChange(filterSql, [], sorts, offset, limit)
   }
 
   render () {

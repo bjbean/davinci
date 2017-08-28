@@ -104,7 +104,7 @@ export class Share extends React.Component {
     }, {})
   }
 
-  renderChart = (renderType, dashboardItem, filters, sorts, offset, limit) =>
+  renderChart = (renderType, dashboardItem, filters, params, sorts, offset, limit) =>
     new Promise((resolve) => {
       const widget = this.state.widgets.find(w => w.id === dashboardItem.widget_id)
       const chartInfo = widgetlibs.find(wl => wl.id === widget.widgetlib_id)
@@ -135,7 +135,8 @@ export class Share extends React.Component {
 
       const adhocAndFilters = {
         adHoc: widget.adhoc_sql,
-        manualFilters: filters
+        manualFilters: filters,
+        params: params
       }
 
       this.props.onLoadResultset(dashboardItem.aesStr, adhocAndFilters, sorts, offset, limit)
@@ -160,7 +161,7 @@ export class Share extends React.Component {
         })
     })
 
-  setFrequent = (dashboardItem, filters, sorts, offset, limit) => {
+  setFrequent = (dashboardItem, filters, params, sorts, offset, limit) => {
     let intervalId = `widget_${dashboardItem.id}`
     let currentFrequent = this.frequent[intervalId]
 
@@ -170,16 +171,16 @@ export class Share extends React.Component {
 
     if (dashboardItem.trigger_type === 'frequent') {
       currentFrequent = setInterval(() => {
-        this.renderChart('dynamic', dashboardItem, filters, sorts, offset, limit)
+        this.renderChart('dynamic', dashboardItem, filters, params, sorts, offset, limit)
       }, Number(dashboardItem.trigger_params) * 1000)
 
       this.frequent[intervalId] = currentFrequent
     }
   }
 
-  renderChartAndSetFrequent = (renderType, dashboardItem, filters, sorts, offset, limit) => {
-    const promise = this.renderChart(renderType, dashboardItem, filters, sorts, offset, limit)
-    this.setFrequent(dashboardItem, filters, sorts, offset, limit)
+  renderChartAndSetFrequent = (renderType, dashboardItem, filters, params, sorts, offset, limit) => {
+    const promise = this.renderChart(renderType, dashboardItem, filters, params, sorts, offset, limit)
+    this.setFrequent(dashboardItem, filters, params, sorts, offset, limit)
     return promise
   }
 
@@ -221,7 +222,6 @@ export class Share extends React.Component {
     } = this.props
 
     const {
-      type,
       title,
       cols,
       mounted,

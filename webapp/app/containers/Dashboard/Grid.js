@@ -9,6 +9,7 @@ import DashboardItemForm from './components/DashboardItemForm'
 import Workbench from '../Widget/Workbench'
 import DashboardItem from './components/DashboardItem'
 import DashboardItemFilters from './components/DashboardItemFilters'
+import SharePanel from '../../components/SharePanel'
 import { Responsive, WidthProvider } from 'react-grid-layout'
 import Row from 'antd/lib/row'
 import Col from 'antd/lib/col'
@@ -16,13 +17,14 @@ import Button from 'antd/lib/button'
 import Modal from 'antd/lib/modal'
 import Breadcrumb from 'antd/lib/breadcrumb'
 import Popover from 'antd/lib/popover'
-import Input from 'antd/lib/input'
 import Icon from 'antd/lib/icon'
+import Dropdown from 'antd/lib/dropdown'
+import Menu from 'antd/lib/menu'
 
 import widgetlibs from '../../assets/json/widgetlib'
 import { promiseDispatcher } from '../../utils/reduxPromisation'
-import { loadDashboardDetail, addDashboardItem, editDashboardItem, editDashboardItems, deleteDashboardItem, clearCurrentDashboard, loadDashboardShareLink, loadWidgetShareLink } from './actions'
-import { makeSelectCurrentDashboard, makeSelectCurrentItems } from './selectors'
+import { loadDashboards, loadDashboardDetail, addDashboardItem, editDashboardItem, editDashboardItems, deleteDashboardItem, clearCurrentDashboard } from './actions'
+import { makeSelectDashboards, makeSelectCurrentDashboard, makeSelectCurrentItems } from './selectors'
 import { loadWidgets } from '../Widget/actions'
 import { loadBizlogics, loadBizdatas } from '../Bizlogic/actions'
 import { makeSelectWidgets } from '../Widget/selectors'
@@ -31,8 +33,6 @@ import { makeSelectLoginUser } from '../App/selectors'
 import chartOptionsGenerator from '../Widget/chartOptionsGenerator'
 import { initializePosition, changePosition, diffPosition } from './components/localPositionOperator'
 
-import config, { env } from '../../globalConfig'
-const shareHost = config[env].shareHost
 import utilStyles from '../../assets/less/util.less'
 import widgetStyles from '../Widget/Widget.less'
 import styles from './Dashboard.less'
@@ -49,7 +49,6 @@ export class Grid extends React.Component {
       localPositions: [],
       modifiedPositions: false,
       editPositionSign: false,
-      shareLink: '',
 
       dashboardItemFormType: '',
       dashboardItemFormVisible: false,
@@ -72,6 +71,7 @@ export class Grid extends React.Component {
 
   componentWillMount () {
     const {
+      onLoadDashboards,
       onLoadWidgets,
       onLoadBizlogics,
       onLoadDashboardDetail,
@@ -84,19 +84,31 @@ export class Grid extends React.Component {
       onLoadBizlogics()
     }
 
+    onLoadDashboards()
     onLoadWidgets()
     onLoadDashboardDetail(params.id)
   }
 
-  componentWillReceiveProps (props, states) {
-    const { loginUser, currentDashboard, currentItems } = props
+  componentWillReceiveProps (nextProps) {
+    const {
+      loginUser,
+      currentDashboard,
+      currentItems,
+      params
+    } = nextProps
+    const { onLoadDashboardDetail } = this.props
     const { modifiedPositions } = this.state
+
     if (currentItems) {
       const localPositions = initializePosition(loginUser, currentDashboard, currentItems)
       if (!modifiedPositions) {
         this.state.modifiedPositions = localPositions.map(item => Object.assign({}, item))
       }
       this.state.localPositions = localPositions
+    }
+
+    if (params.id !== this.props.params.id) {
+      onLoadDashboardDetail(params.id)
     }
   }
 
@@ -114,12 +126,11 @@ export class Grid extends React.Component {
     this.props.onClearCurrentDashboard()
   }
 
-  renderChart = (renderType, dashboardItem, filters, sorts, offset, limit) =>
+  renderChart = (renderType, dashboardItem, filters, params, sorts, offset, limit) =>
     new Promise((resolve) => {
       const {
         widgets
       } = this.props
-
       const widget = widgets.find(w => w.id === dashboardItem.widget_id)
       const chartInfo = widgetlibs.find(wl => wl.id === widget.widgetlib_id)
 
@@ -150,7 +161,8 @@ export class Grid extends React.Component {
 
       const adhocAndFilters = {
         adHoc: widget.adhoc_sql,
-        manualFilters: filters
+        manualFilters: filters,
+        params: params
       }
 
       this.props.onLoadBizdatas(widget.flatTable_id, adhocAndFilters, sorts, offset, limit)
@@ -175,7 +187,7 @@ export class Grid extends React.Component {
         })
     })
 
-  setFrequent = (dashboardItem, filters, sorts, offset, limit) => {
+  setFrequent = (dashboardItem, filters, params, sorts, offset, limit) => {
     let intervalId = `widget_${dashboardItem.id}`
     let currentFrequent = this.frequent[intervalId]
 
@@ -185,16 +197,16 @@ export class Grid extends React.Component {
 
     if (dashboardItem.trigger_type === 'frequent') {
       currentFrequent = setInterval(() => {
-        this.renderChart('dynamic', dashboardItem, filters, sorts, offset, limit)
+        this.renderChart('dynamic', dashboardItem, filters, params, sorts, offset, limit)
       }, Number(dashboardItem.trigger_params) * 1000)
 
       this.frequent[intervalId] = currentFrequent
     }
   }
 
-  renderChartAndSetFrequent = (renderType, dashboardItem, filters, sorts, offset, limit) => {
-    const promise = this.renderChart(renderType, dashboardItem, filters, sorts, offset, limit)
-    this.setFrequent(dashboardItem, filters, sorts, offset, limit)
+  renderChartAndSetFrequent = (renderType, dashboardItem, filters, params, sorts, offset, limit) => {
+    const promise = this.renderChart(renderType, dashboardItem, filters, params, sorts, offset, limit)
+    this.setFrequent(dashboardItem, filters, params, sorts, offset, limit)
     return promise
   }
 
@@ -417,36 +429,18 @@ export class Grid extends React.Component {
     this.hideFiltersForm()
   }
 
-  doShare = () => {
-    const { shareLink } = this.state
-    if (!shareLink) {
-      const {
-        currentDashboard,
-        onLoadDashboardShareLink
-      } = this.props
-
-      onLoadDashboardShareLink(currentDashboard.id)
-        .then(shareInfo => {
-          this.setState({
-            shareLink: `${shareHost}/#share?shareInfo=${encodeURI(shareInfo)}&type=dashboard`
-          })
-        })
-    }
-  }
-
-  handleShareInputSelect = () => {
-    this.refs.shareInput.refs.input.select()
-    document.execCommand('copy')
+  navDropdownClick = (e) => {
+    this.props.router.push(`/visual/report/grid/${e.key}`)
   }
 
   render () {
     const {
+      dashboards,
       currentDashboard,
       currentItems,
       loginUser,
       bizlogics,
-      widgets,
-      onLoadWidgetShareLink
+      widgets
     } = this.props
 
     const {
@@ -454,7 +448,6 @@ export class Grid extends React.Component {
       mounted,
       localPositions,
       modifiedPositions,
-      shareLink,
       dashboardItemFormType,
       dashboardItemFormVisible,
       modalLoading,
@@ -470,7 +463,22 @@ export class Grid extends React.Component {
       filtersTypes
     } = this.state
 
-    let grids
+    let navDropdown = (<span></span>)
+    let grids = ''
+
+    if (dashboards) {
+      const navDropdownItems = dashboards.map(d => (
+        <Menu.Item key={d.id}>
+          {d.name}
+        </Menu.Item>
+      ))
+
+      navDropdown = (
+        <Menu onClick={this.navDropdownClick}>
+          {navDropdownItems}
+        </Menu>
+      )
+    }
 
     if (widgets) {
       let layouts = {
@@ -506,7 +514,6 @@ export class Grid extends React.Component {
               onShowEdit={this.showEditDashboardItemForm}
               onShowWorkbench={this.showWorkbench}
               onShowFiltersForm={this.showFiltersForm}
-              onLoadWidgetShareLink={onLoadWidgetShareLink}
               onDeleteDashboardItem={this.deleteDashboardItem}
               ref={f => { this[`dashboardItem${pos.i}`] = f }}
             />
@@ -563,7 +570,6 @@ export class Grid extends React.Component {
     let savePosButton = ''
     let addButton = ''
     let shareButton = ''
-    let shareContent = ''
 
     if (editPositionSign) {
       savePosButton = (
@@ -590,39 +596,23 @@ export class Grid extends React.Component {
         </Button>
       )
 
-      if (shareLink) {
-        shareContent = (
-          <Input
-            className={styles.shareInput}
-            ref="shareInput"
-            value={shareLink}
-            addonAfter={
-              <span
-                style={{cursor: 'pointer'}}
-                onClick={this.handleShareInputSelect}
-              >复制</span>
-            }
-            readOnly
-          />
-        )
-      } else {
-        shareContent = (
-          <Icon type="loading" />
-        )
-      }
-
-      shareButton = (
-        <Popover placement="bottomRight" content={shareContent} trigger="click">
-          <Button
-            size="large"
-            type="primary"
-            icon="share-alt"
-            onClick={this.doShare}
+      shareButton = currentDashboard
+        ? (
+          <Popover
+            placement="bottomRight"
+            content={<SharePanel id={currentDashboard.id} type="dashboard" />}
+            trigger="click"
           >
-            分 享
-          </Button>
-        </Popover>
-      )
+            <Button
+              size="large"
+              type="primary"
+              icon="share-alt"
+            >
+              分 享
+            </Button>
+          </Popover>
+        )
+        : ''
     }
 
     return (
@@ -637,9 +627,12 @@ export class Grid extends React.Component {
                   </Link>
                 </Breadcrumb.Item>
                 <Breadcrumb.Item>
-                  <Link>
-                    {currentDashboard && currentDashboard.name}
-                  </Link>
+                  <Dropdown overlay={navDropdown} trigger={['click']}>
+                    <Link>
+                      {currentDashboard && `${currentDashboard.name} `}
+                      <Icon type="down" />
+                    </Link>
+                  </Dropdown>
                 </Breadcrumb.Item>
               </Breadcrumb>
             </Col>
@@ -710,11 +703,16 @@ export class Grid extends React.Component {
 }
 
 Grid.propTypes = {
+  dashboards: PropTypes.oneOfType([
+    PropTypes.bool,
+    PropTypes.array
+  ]),
   currentDashboard: PropTypes.object,
   currentItems: PropTypes.oneOfType([
     PropTypes.bool,
     PropTypes.array
   ]),
+  onLoadDashboards: PropTypes.func,
   onLoadDashboardDetail: PropTypes.func,
   onAddDashboardItem: PropTypes.func,
   onEditDashboardItem: PropTypes.func,
@@ -729,16 +727,16 @@ Grid.propTypes = {
     PropTypes.array
   ]),
   loginUser: PropTypes.object,
+  router: PropTypes.any,
   params: PropTypes.any,
   onLoadWidgets: PropTypes.func,
   onLoadBizlogics: PropTypes.func,
   onLoadBizdatas: PropTypes.func,
-  onClearCurrentDashboard: PropTypes.func,
-  onLoadDashboardShareLink: PropTypes.func,
-  onLoadWidgetShareLink: PropTypes.func
+  onClearCurrentDashboard: PropTypes.func
 }
 
 const mapStateToProps = createStructuredSelector({
+  dashboards: makeSelectDashboards(),
   currentDashboard: makeSelectCurrentDashboard(),
   currentItems: makeSelectCurrentItems(),
   widgets: makeSelectWidgets(),
@@ -748,6 +746,7 @@ const mapStateToProps = createStructuredSelector({
 
 export function mapDispatchToProps (dispatch) {
   return {
+    onLoadDashboards: () => promiseDispatcher(dispatch, loadDashboards),
     onLoadDashboardDetail: (id) => promiseDispatcher(dispatch, loadDashboardDetail, id),
     onAddDashboardItem: (id, item) => promiseDispatcher(dispatch, addDashboardItem, id, item),
     onEditDashboardItem: (id, item) => promiseDispatcher(dispatch, editDashboardItem, id, item),
@@ -756,9 +755,7 @@ export function mapDispatchToProps (dispatch) {
     onLoadWidgets: () => promiseDispatcher(dispatch, loadWidgets),
     onLoadBizlogics: () => promiseDispatcher(dispatch, loadBizlogics),
     onLoadBizdatas: (id, sql, sorts, offset, limit) => promiseDispatcher(dispatch, loadBizdatas, id, sql, sorts, offset, limit),
-    onClearCurrentDashboard: () => promiseDispatcher(dispatch, clearCurrentDashboard),
-    onLoadDashboardShareLink: (id) => promiseDispatcher(dispatch, loadDashboardShareLink, id),
-    onLoadWidgetShareLink: (id) => promiseDispatcher(dispatch, loadWidgetShareLink, id)
+    onClearCurrentDashboard: () => promiseDispatcher(dispatch, clearCurrentDashboard)
   }
 }
 

@@ -18,7 +18,7 @@ export class DashboardItemControlPanel extends Component {
     return (
       <div className={panelClass}>
         <div className={formClass}>
-
+          {this.props.children}
         </div>
       </div>
     )
@@ -26,7 +26,8 @@ export class DashboardItemControlPanel extends Component {
 }
 
 DashboardItemControlPanel.propTypes = {
-  show: PropTypes.bool
+  show: PropTypes.bool,
+  children: PropTypes.node
 }
 
 export default DashboardItemControlPanel

@@ -40,6 +40,11 @@
           "tip": "倍数"
         },
         {
+          "name": "dataZoomThreshold",
+          "title": "超出后缩放",
+          "component": "inputnumber"
+        },
+        {
           "name": "xAxisRotate",
           "title": "x轴文字旋转角度",
           "component": "inputnumber"

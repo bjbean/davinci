@@ -39,6 +39,11 @@
           "name": "xAxisInterval",
           "title": "x轴刻度显示间隔",
           "component": "inputnumber"
+        },
+        {
+          "name": "dataZoomThreshold",
+          "title": "超出后缩放",
+          "component": "inputnumber"
         }
       ]
     },

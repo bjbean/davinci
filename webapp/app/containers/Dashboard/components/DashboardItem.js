@@ -2,16 +2,15 @@ import React, { PropTypes, PureComponent } from 'react'
 import Animate from 'rc-animate'
 
 import DashboardItemControlPanel from './DashboardItemControlPanel'
+import DashboardItemControlForm from './DashboardItemControlForm'
+import SharePanel from '../../../components/SharePanel'
 
 import Chart from './Chart'
 import Icon from 'antd/lib/icon'
 import Tooltip from 'antd/lib/tooltip'
 import Popconfirm from 'antd/lib/popconfirm'
 import Popover from 'antd/lib/popover'
-import Input from 'antd/lib/input'
 
-import config, { env } from '../../../globalConfig'
-const shareHost = config[env].shareHost
 import styles from '../Dashboard.less'
 
 export class DashboardItem extends PureComponent {
@@ -20,7 +19,6 @@ export class DashboardItem extends PureComponent {
     this.state = {
       info: {},
       loading: false,
-      shareLink: '',
       controlPanelVisible: false
     }
   }
@@ -59,7 +57,13 @@ export class DashboardItem extends PureComponent {
       })
   }
 
-  onTableSearch = (filters, sorts, offset, limit) => {
+  onTableSearch = (filters, params, sorts, offset, limit) =>
+    this.doSearch('refresh', filters, params, sorts, offset, limit)
+
+  onControlSearch = (filters, params, sorts, offset, limit) =>
+    this.doSearch('rerender', filters, params, sorts, offset, limit)
+
+  doSearch = (renderType, filters, params, sorts, offset, limit) => {
     const {
       item,
       onRenderChart
@@ -67,35 +71,13 @@ export class DashboardItem extends PureComponent {
 
     this.setState({ loading: true })
 
-    return onRenderChart('refresh', item, filters, sorts, offset, limit)
+    return onRenderChart(renderType, item, filters, params, sorts, offset, limit)
       .then(resultset => {
         this.setState({
           info: resultset,
           loading: false
         })
       })
-  }
-
-  doShare = () => {
-    const { shareLink } = this.state
-    if (!shareLink) {
-      const {
-        item,
-        onLoadWidgetShareLink
-      } = this.props
-
-      onLoadWidgetShareLink(item.widget_id)
-        .then(shareInfo => {
-          this.setState({
-            shareLink: `${shareHost}/#share?shareInfo=${encodeURI(shareInfo)}&type=widget`
-          })
-        })
-    }
-  }
-
-  handleShareInputSelect = () => {
-    this.refs.shareInput.refs.input.select()
-    document.execCommand('copy')
   }
 
   toggleControlPanel = () => {
@@ -121,14 +103,12 @@ export class DashboardItem extends PureComponent {
     const {
       info,
       loading,
-      shareLink,
       controlPanelVisible
     } = this.state
 
     let editButton = ''
     let widgetButton = ''
     let shareButton = ''
-    let shareContent = ''
     let deleteButton = ''
 
     if (isAdmin) {
@@ -142,32 +122,10 @@ export class DashboardItem extends PureComponent {
           <Icon type="setting" onClick={onShowWorkbench(item, widget)} />
         </Tooltip>
       )
-
-      if (shareLink) {
-        shareContent = (
-          <Input
-            className={styles.shareInput}
-            ref="shareInput"
-            value={shareLink}
-            addonAfter={
-              <span
-                style={{cursor: 'pointer'}}
-                onClick={this.handleShareInputSelect}
-              >复制</span>
-            }
-            readOnly
-          />
-        )
-      } else {
-        shareContent = (
-          <Icon type="loading" />
-        )
-      }
-
       shareButton = (
         <Tooltip title="分享">
-          <Popover placement="bottomRight" content={shareContent} trigger="click">
-            <Icon type="share-alt" onClick={this.doShare} />
+          <Popover placement="bottomRight" content={<SharePanel id={widget.id} type="widget" />} trigger="click">
+            <Icon type="share-alt" />
           </Popover>
         </Tooltip>
       )
@@ -184,6 +142,19 @@ export class DashboardItem extends PureComponent {
       )
     }
 
+    const controls = widget.query_params
+      ? JSON.parse(widget.query_params).filter(c => c.type)
+      : []
+    const controlPanelHandle = controls.length
+      ? (
+        <Tooltip title="选择参数">
+          <Icon
+            type={controlPanelVisible ? 'up-square-o' : 'down-square-o'}
+            onClick={this.toggleControlPanel}
+          />
+        </Tooltip>
+      ) : ''
+
     const controlPanelTransitionName = {
       enter: styles.controlPanelEnter,
       enterActive: styles.controlPanelEnterActive,
@@ -194,13 +165,8 @@ export class DashboardItem extends PureComponent {
     return (
       <div className={styles.gridItem}>
         <h4 className={styles.title}>
+          {controlPanelHandle}
           {widget.name}
-          <Tooltip title="选择参数">
-            <Icon
-              type={controlPanelVisible ? 'up-square-o' : 'down-square-o'}
-              onClick={this.toggleControlPanel}
-            />
-          </Tooltip>
         </h4>
         <div className={styles.tools}>
           <Tooltip title="移动">
@@ -221,9 +187,13 @@ export class DashboardItem extends PureComponent {
           showProp="show"
           transitionName={controlPanelTransitionName}
         >
-          <DashboardItemControlPanel
-            show={controlPanelVisible}
-          />
+          <DashboardItemControlPanel show={controlPanelVisible}>
+            <DashboardItemControlForm
+              controls={controls}
+              onSearch={this.onControlSearch}
+              onHide={this.toggleControlPanel}
+            />
+          </DashboardItemControlPanel>
         </Animate>
         <Chart
           id={`${item.id}`}
@@ -252,7 +222,6 @@ DashboardItem.propTypes = {
   onShowEdit: PropTypes.func,
   onShowWorkbench: PropTypes.func,
   onShowFiltersForm: PropTypes.func,
-  onLoadWidgetShareLink: PropTypes.func,
   onDeleteDashboardItem: PropTypes.func
 }
 
