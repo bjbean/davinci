@@ -11,7 +11,7 @@ import edp.davinci.util.AuthorizationProvider
 import edp.davinci.util.ResponseUtils._
 import edp.davinci.util.JsonProtocol._
 import io.swagger.annotations.{ApiImplicitParams, _}
-import edp.davinci.DavinciConstants.conditionSeparator
+import edp.davinci.rest.dashboard.DashboardService._
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -20,7 +20,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = getWidgetByDashboardIdRoute ~ postDashboardRoute ~ putDashboardRoute ~ postWidget2DashboardRoute ~ getDashboardByAllRoute ~ deleteDashboardByIdRoute ~ deleteWidgetFromDashboardRoute ~ postWidget2DashboardRoute ~ putWidgetInDashboardRoute
-  private lazy val dashboardService = new DashboardService(modules)
   private lazy val routeName = "dashboards"
 
 
@@ -45,8 +44,8 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   def getDashboardById(dashboardId: Long, session: SessionClass): Route = {
     val operation = for {
-      inside <- dashboardService.getInsideInfo(session, dashboardId)
-      dashboard <- dashboardService.getDashBoard(dashboardId)
+      inside <- getInsideInfo(session, dashboardId)
+      dashboard <- getDashBoard(dashboardId)
     } yield (inside, dashboard)
 
     onComplete(operation) {
@@ -75,9 +74,9 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
       parameter('active.as[Boolean].?) { active =>
         authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
           session =>
-            onComplete(dashboardService.getAll(session, active.getOrElse(true))) {
+            onComplete(getAll(session)) {
               case Success(dashboardSeq) =>
-                val dashboards = dashboardSeq.map(d => PutDashboardInfo(d._1, d._2, d._3.getOrElse(""), d._4, d._5, Some(d._6)))
+                val dashboards = dashboardSeq.map(d => PutDashboardInfo(d._1, d._2, d._3.getOrElse(""), d._4, d._5))
                 complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), dashboards))
               case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
             }
@@ -144,7 +143,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   def putDashboardComplete(session: SessionClass, dashboardSeq: Seq[PutDashboardInfo]): Route = {
     if (session.admin) {
-      onComplete(dashboardService.update(session, dashboardSeq)) {
+      onComplete(update(session, dashboardSeq)) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -169,8 +168,8 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
         session =>
           if (session.admin) {
             val operation = for {
-              delDashboard <- dashboardService.deleteFromDashboard(dashboardId)
-              delRel <- dashboardService.deleteRelByFilter(dashboardId)
+              delDashboard <- deleteDashboard(dashboardId)
+              delRel <- deleteRelByFilter(dashboardId)
             } yield (delDashboard, delRel)
             onComplete(operation) {
               case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
@@ -240,7 +239,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
 
   def updateWidgetInDashboard(session: SessionClass, relSeq: Seq[PutRelDashboardWidget]): Route = {
     if (session.admin) {
-      onComplete(dashboardService.updateRelDashboardWidget(session, relSeq)) {
+      onComplete(updateRelDashboardWidget(session, relSeq)) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -265,7 +264,7 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
           if (session.admin) {
-            onComplete(dashboardService.deleteFromRelByRelId(relId)) {
+            onComplete(deleteRelDWById(relId)) {
               case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session), r))
               case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
             }

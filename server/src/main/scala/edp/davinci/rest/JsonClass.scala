@@ -65,7 +65,7 @@ case class PutUserInfoSeq(payload: Seq[PutUserInfo])
 
 case class PutWidgetInfoSeq(payload: Seq[PutWidgetInfo])
 
-case class FlatTableResult(result: Seq[String] = null, totalCount: Long)
+case class ViewResult(result: Seq[String] = null, totalCount: Long)
 
 case class ShareResult(result: Seq[String], totalCount: Long)
 

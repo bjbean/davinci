@@ -13,6 +13,7 @@ import edp.davinci.DavinciConstants.{conditionSeparator, defaultEncode}
 import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModule, RoutesModuleImpl}
 import edp.davinci.persistence.entities._
 import edp.davinci.rest._
+import edp.davinci.rest.widget.WidgetService
 import edp.davinci.util.CommonUtils.covert2CSV
 import edp.davinci.util.JsonProtocol._
 import edp.davinci.util.JsonUtils.{caseClass2json, json2caseClass}
@@ -155,9 +156,9 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     get {
       val shareInfo = getShareInfo(shareInfoStr)
       if (isValidShareInfo(shareInfo)) {
-        onComplete(shareService.getWidgetById(shareInfo.infoId)) {
-          case Success(widget) =>
-            val putWidgetInfo = PutWidgetInfo(widget._1, widget._2, widget._3, widget._4, widget._5.getOrElse(""), widget._6, widget._7, widget._8, widget._9, Some(widget._10))
+        onComplete(WidgetService.getWidgetById(shareInfo.infoId)) {
+          case Success(widgetInfo) =>
+            val putWidgetInfo = PutWidgetInfo(widgetInfo._1, widgetInfo._2, widgetInfo._3, widgetInfo._4, widgetInfo._5.orNull, widgetInfo._6, widgetInfo._7, widgetInfo._8)
             complete(OK, ResponseJson[Seq[PutWidgetInfo]](getHeader(200, null), Seq(putWidgetInfo)))
           case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
         }
@@ -165,7 +166,6 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), "widget info verify failed"))
     }
   }
-
 
   @Path("/dashboard/{share_info}")
   @ApiOperation(value = "get shared dashboard by share info", notes = "", nickname = "", httpMethod = "GET")

@@ -259,7 +259,7 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
             if (sqlTemp.trim != "") {
               val (resultList, totalCount) = SqlUtils.sqlExecute(manualFilters, sqlTemp, tableName, adHocSql, paginateAndSort, connectionUrl, paramSeq, groupVars)
               val CSVResult = resultList.map(covert2CSV)
-              complete(OK, ResponseJson[FlatTableResult](getHeader(200, session), FlatTableResult(CSVResult, totalCount)))
+              complete(OK, ResponseJson[ViewResult](getHeader(200, session), ViewResult(CSVResult, totalCount)))
             }
             else complete(BadRequest, ResponseJson[String](getHeader(400, "there is no valid sql", session), ""))
           } catch {

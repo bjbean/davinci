@@ -13,13 +13,13 @@ import edp.davinci.util.ResponseUtils.getHeader
 import io.swagger.annotations._
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
+import  edp.davinci.rest.group.GroupService._
 
 @Api(value = "/groups", consumes = "application/json", produces = "application/json")
 @Path("/groups")
 class GroupRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = getGroupByAllRoute ~ postGroupRoute ~ putGroupRoute ~ deleteGroupByIdRoute
-  private lazy val groupService = new GroupService(modules)
   private lazy val routeName = "groups"
 
   @ApiOperation(value = "get all group with the same domain", notes = "", nickname = "", httpMethod = "GET")
@@ -45,9 +45,9 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
 
   private def getAllGroupsComplete(session: SessionClass, active: Boolean): Route = {
     if (session.admin) {
-      onComplete(groupService.getAll(session, active)) {
+      onComplete(getAll(session)) {
         case Success(groupSeq) =>
-          val purGroups = groupSeq.map(g => PutGroupInfo(g._1, g._2, g._3.getOrElse(""), Some(g._4)))
+          val purGroups = groupSeq.map(g => PutGroupInfo(g._1, g._2, g._3.getOrElse("")))
           complete(OK, ResponseSeqJson[PutGroupInfo](getHeader(200, session), purGroups))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -114,7 +114,7 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
 
   private def putGroupComplete(session: SessionClass, groupSeq: Seq[PutGroupInfo]): Route = {
     if (session.admin) {
-      val future = groupService.update(groupSeq, session)
+      val future = update(groupSeq, session)
       onComplete(future) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -139,9 +139,9 @@ class GroupRoutes(modules: ConfigurationModule with PersistenceModule with Busin
         session =>
           if (session.admin) {
             val operation = for {
-              group <- groupService.deleteGroup(groupId)
-              relGF <- groupService.deleteFromRelGF(groupId)
-              relGU <- groupService.deleteFromRelGU(groupId)
+              group <- deleteGroup(groupId)
+              relGF <- deleteRelGF(groupId)
+              relGU <- deleteRelGU(groupId)
             } yield (group, relGF, relGU)
             onComplete(operation) {
               case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))

@@ -1,6 +1,8 @@
 package edp.davinci
 
-object DavinciConstants extends DavinciConstants with SeparatorConstants
+import akka.http.scaladsl.model.{ContentTypes, HttpCharsets, MediaTypes}
+
+object DavinciConstants extends DavinciConstants with SeparatorConstants with ContentType
 
 
 trait DavinciConstants {
@@ -23,4 +25,10 @@ trait SeparatorConstants {
   lazy val dollarDelimiter = '$'
   lazy val STStartChar = '{'
   lazy val STEndChar = '}'
+}
+
+trait ContentType {
+  lazy val textHtml = MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`
+  lazy val textCSV = MediaTypes.`text/csv` withCharset HttpCharsets.`UTF-8`
+  lazy val appJson = ContentTypes.`application/json`
 }
