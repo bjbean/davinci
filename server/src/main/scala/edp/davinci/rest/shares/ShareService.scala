@@ -10,8 +10,6 @@ import scala.concurrent.Future
 class ShareService(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) {
   private lazy val wDal = modules.widgetDal
   private lazy val widgetTQ = wDal.getTableQuery
-  private lazy val shareDal = modules.shareInfoDal
-  private lazy val shareTQ = shareDal.getTableQuery
   private lazy val flatTableTQ = modules.flatTableDal.getTableQuery
   private lazy val relGFTQ = modules.relGroupFlatTableDal.getTableQuery
   private lazy val sourceTQ = modules.sourceDal.getTableQuery
@@ -19,7 +17,7 @@ class ShareService(modules: ConfigurationModule with PersistenceModule with Busi
   private lazy val userTQ = modules.userDal.getTableQuery
   private lazy val relDWTQ = modules.relDashboardWidgetDal.getTableQuery
   private lazy val dashboardTQ = modules.dashboardDal.getTableQuery
-  private lazy val db = shareDal.getDB
+  private lazy val db = wDal.getDB
 
   def getWidgetById(id: Long): Future[(Long, Long, Long, String, Option[String], String, Option[String], Option[String], Boolean, Boolean)] = {
     db.run(widgetTQ.filter(_.id === id).map(w => (w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql, w.desc, w.chart_params, w.query_params, w.publish, w.active)).result.head)
@@ -29,8 +27,8 @@ class ShareService(modules: ConfigurationModule with PersistenceModule with Busi
     db.run(relGUTQ.filter(_.user_id === userId).map(_.group_id).result)
   }
 
-  def getUserInfo(userId: Long): Future[Boolean] = {
-    db.run(userTQ.filter(_.id === userId).map(_.admin).result.head)
+  def getUserInfo(userId: Long): Future[(Boolean, String)] = {
+    db.run(userTQ.filter(_.id === userId).map(u => (u.admin, u.email)).result.head)
   }
 
   def getSourceInfo(flatTableId: Long, groupIds: Seq[Long], admin: Boolean): Future[Seq[(String, String, String, String)]] = {
@@ -43,10 +41,6 @@ class ShareService(modules: ConfigurationModule with PersistenceModule with Busi
     db.run(query)
   }
 
-  def getShareInfo(identifier: String): Future[Seq[(String, String, String)]] = {
-    val query = shareTQ.filter(_.identifier === identifier).map(s => (s.connection_url, s.widget, s.widget_sql)).result
-    db.run(query)
-  }
 
   def getDashBoard(dashboardId: Long): Future[(Long, String, Option[String], String, Boolean)] = {
     val query = dashboardTQ.filter(_.id === dashboardId).map(d => (d.id, d.name, d.pic, d.desc, d.publish)).result.head
