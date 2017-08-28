@@ -27,9 +27,9 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
-case class ShareInfo(userId: Long, infoId: Long, authId: Long, md5: String)
+case class ShareInfo(userId: Long, infoId: Long, authName: String, md5: String)
 
-case class ShareAuthInfo(userId: Long, infoId: Long, authId: Long)
+case class ShareAuthInfo(userId: Long, infoId: Long, authName: String)
 
 @Api(value = "/shares", consumes = "application/json", produces = "application/json")
 @Path("/shares")
@@ -47,7 +47,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   @ApiOperation(value = "get the share widget url", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "widget_id", value = "the entity id to share", required = true, dataType = "integer", paramType = "path"),
-    new ApiImplicitParam(name = "auth_id", value = "the authorized user id", required = true, dataType = "integer", paramType = "query")
+    new ApiImplicitParam(name = "auth_name", value = "the authorized user name", required = false, dataType = "string", paramType = "query")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
@@ -59,8 +59,8 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     get {
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
-          parameter('auth_id.as[Long].?) { auth_id =>
-            val aesStr = getShareURL(session.userId, widgetId, auth_id.getOrElse(-1L))
+          parameter('auth_name.as[String].?) { authName =>
+            val aesStr = getShareURL(session.userId, widgetId, authName.getOrElse(""))
             complete(OK, ResponseJson[String](getHeader(200, "url token", null), aesStr))
           }
       }
@@ -72,7 +72,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   @ApiOperation(value = "get the html share url", notes = "", nickname = "", httpMethod = "GET")
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "dashboard_id", value = "the entity id to share", required = true, dataType = "integer", paramType = "path"),
-    new ApiImplicitParam(name = "auth_id", value = "the authorized user id", required = true, dataType = "integer", paramType = "query")
+    new ApiImplicitParam(name = "auth_name", value = "the authorized user name", required = false, dataType = "string", paramType = "query")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "OK"),
@@ -84,8 +84,8 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     get {
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
-          parameter('auth_id.as[Long].?) { auth_id =>
-            val aesStr = getShareURL(session.userId, dashboardId, auth_id.getOrElse(-1L))
+          parameter('auth_name.as[String].?) { authName =>
+            val aesStr = getShareURL(session.userId, dashboardId, authName.getOrElse(""))
             complete(OK, ResponseJson[String](getHeader(200, "url token", null), aesStr))
           }
       }
@@ -93,10 +93,10 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   }
 
 
-  private def getShareURL(userId: Long, infoId: Long, authId: Long) = {
-    val shareAuthInfo = caseClass2json[ShareAuthInfo](ShareAuthInfo(userId, infoId, authId))
+  private def getShareURL(userId: Long, infoId: Long, authorizedName: String): String = {
+    val shareAuthInfo = caseClass2json[ShareAuthInfo](ShareAuthInfo(userId, infoId, authorizedName))
     val MD5Info = MD5Utils.getMD5(shareAuthInfo)
-    val shareQueryInfo = ShareInfo(userId, infoId, authId, MD5Info)
+    val shareQueryInfo = ShareInfo(userId, infoId, authorizedName, MD5Info)
     val password = modules.config.getString("aes.password")
     AesUtils.encrypt(caseClass2json(shareQueryInfo), password)
   }
@@ -157,7 +157,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   def getShareWidgetRoute: Route = path(routeName / "widget" / Segment) { shareInfoStr =>
     get {
       val shareInfo = getShareInfo(shareInfoStr)
-      val authId = shareInfo.authId
+      val authName = shareInfo.authName
 
       def getWidgetInfo = {
         if (isValidShareInfo(shareInfo)) {
@@ -172,11 +172,15 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
 
       }
 
-      if (authId != -1) {
+      if (authName != "") {
         authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
           session =>
-            if (authId == session.userId) getWidgetInfo
-            else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), "Not the authorized user,login and verify again!!!"))
+            onComplete(shareService.getUserInfo(session.userId)) {
+              case Success(user) =>
+                if (authName == user._2) getWidgetInfo
+                else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), "Not the authorized user,login and verify again!!!"))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+            }
         }
       } else getWidgetInfo
     }
@@ -196,31 +200,35 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   def getShareDashboardRoute: Route = path(routeName / "dashboard" / Segment) { shareInfoStr =>
     get {
       val shareInfo = getShareInfo(shareInfoStr)
-      val authId = shareInfo.authId
+      val authName = shareInfo.authName
 
       def getDashboardInfo = {
         if (isValidShareInfo(shareInfo)) {
           val infoArr = shareInfoStr.split(conditionSeparator.toString)
           if (infoArr.length > 1)
-            getDashboardComplete(shareInfo.userId, shareInfo.infoId, shareInfo.authId, infoArr(1))
-          else getDashboardComplete(shareInfo.userId, shareInfo.infoId, shareInfo.authId)
+            getDashboardComplete(shareInfo.userId, shareInfo.infoId, shareInfo.authName, infoArr(1))
+          else getDashboardComplete(shareInfo.userId, shareInfo.infoId, shareInfo.authName)
         }
         else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), "dashboard info verify failed"))
 
       }
 
-      if (authId != -1) {
+      if (authName != "") {
         authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
           session =>
-            if (authId == session.userId) getDashboardInfo
-            else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), "Not the authorized user,login and verify again!!!"))
+            onComplete(shareService.getUserInfo(session.userId)) {
+              case Success(user) =>
+                if (authName == user._2) getDashboardInfo
+                else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), "Not the authorized user,login and verify again!!!"))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+            }
         }
       } else getDashboardInfo
     }
   }
 
 
-  private def getDashboardComplete(userId: Long, infoId: Long, authId: Long, urlOperation: String = null): Route = {
+  private def getDashboardComplete(userId: Long, infoId: Long, authName: String, urlOperation: String = null): Route = {
     val operation = for {
       group <- shareService.getUserGroup(userId)
       user <- shareService.getUserInfo(userId)
@@ -230,13 +238,13 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
         val (groupIds, admin) = userGroup
         val dashboardInfo = for {
           dashboard <- shareService.getDashBoard(infoId)
-          widgetInfo <- shareService.getShareDashboard(infoId, groupIds, admin)
+          widgetInfo <- shareService.getShareDashboard(infoId, groupIds, admin._1)
         } yield (dashboard, widgetInfo)
         onComplete(dashboardInfo) {
           case Success(shareDashboard) =>
             val (dashboard, widgets) = shareDashboard
             val infoSeq = widgets.map(r => {
-              val aesStr = getShareURL(userId, r._2, authId)
+              val aesStr = getShareURL(userId, r._2, authName)
               val shareInfo = if (null != urlOperation) s"$aesStr$conditionSeparator$urlOperation" else aesStr
               WidgetInfo(r._1, r._2, r._3, r._4, r._5, r._6, r._7, r._8, r._9, shareInfo)
             })
@@ -303,12 +311,16 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     }
 
     val shareInfo = getShareInfo(shareInfoStr)
-    val authId = shareInfo.authId
-    if (authId != -1) {
+    val authName = shareInfo.authName
+    if (authName != "") {
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
-          if (authId == session.userId) verifyAndGetResult
-          else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), "Not the authorized user,login and verify again!!!"))
+          onComplete(shareService.getUserInfo(session.userId)) {
+            case Success(user) =>
+              if (authName == user._2) verifyAndGetResult
+              else complete(BadRequest, ResponseJson[String](getHeader(400, "bad request", null), "Not the authorized user,login and verify again!!!"))
+            case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+          }
       }
     } else verifyAndGetResult
   }
@@ -317,7 +329,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
   private def isValidShareInfo(shareInfo: ShareInfo) = {
     if (null == shareInfo) false
     else {
-      val MD5Info = MD5Utils.getMD5(caseClass2json(ShareAuthInfo(shareInfo.userId, shareInfo.infoId, shareInfo.authId)))
+      val MD5Info = MD5Utils.getMD5(caseClass2json(ShareAuthInfo(shareInfo.userId, shareInfo.infoId, shareInfo.authName)))
       if (MD5Info == shareInfo.md5) true else false
     }
   }
@@ -366,7 +378,7 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     onComplete(operation) {
       case Success(widgetAndGroup) =>
         val (widget, groupIds, admin) = widgetAndGroup
-        val sourceFuture = shareService.getSourceInfo(widget._3, groupIds, admin)
+        val sourceFuture = shareService.getSourceInfo(widget._3, groupIds, admin._1)
         onComplete(sourceFuture) {
           case Success(sourceInfo) =>
             if (sourceInfo.nonEmpty) {

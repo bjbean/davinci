@@ -27,8 +27,8 @@ class ShareService(modules: ConfigurationModule with PersistenceModule with Busi
     db.run(relGUTQ.filter(_.user_id === userId).map(_.group_id).result)
   }
 
-  def getUserInfo(userId: Long): Future[Boolean] = {
-    db.run(userTQ.filter(_.id === userId).map(_.admin).result.head)
+  def getUserInfo(userId: Long): Future[(Boolean, String)] = {
+    db.run(userTQ.filter(_.id === userId).map(u => (u.admin, u.email)).result.head)
   }
 
   def getSourceInfo(flatTableId: Long, groupIds: Seq[Long], admin: Boolean): Future[Seq[(String, String, String, String)]] = {
