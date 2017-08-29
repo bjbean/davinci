@@ -11,6 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import edp.davinci.util.ResponseUtils.currentTime
 import edp.davinci.util.LDAPValidate.validate
+import edp.davinci.module.DbModule._
 
 abstract class AuthorizationError(val statusCode: Int = 401, val desc: String = "authentication error") extends Exception
 
@@ -21,7 +22,6 @@ class passwordError(statusCode: Int = 400, desc: String = "pwd is wrong") extend
 object AuthorizationProvider {
   private lazy val module = ModuleInstance.modules
   private lazy val logger = Logger.getLogger(this.getClass)
-  private lazy val db = module.userDal.getDB
   lazy val realm = "davinci"
 
   def createSessionClass(login: LoginClass, enableLDAP: Boolean): Future[Either[AuthorizationError, (SessionClass, QueryUserInfo)] with Product with Serializable] = {
@@ -56,7 +56,7 @@ object AuthorizationProvider {
       userSeq =>
         userSeq.headOption match {
           case Some(_) =>
-            db.run(module.userDal.getTableQuery.filter(_.email === login.username).map(_.password).update(login.password))
+            db.run(module.userQuery.filter(_.email === login.username).map(_.password).update(login.password))
             ldapUser
           case None =>
             logger.info("user not found")
