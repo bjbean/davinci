@@ -108,7 +108,9 @@ trait SqlUtils extends Serializable {
     logger.info("mergeSql~~~~~~~~~~~~~~" + mergeSql)
     val renderedSql = if (queryKVMap.nonEmpty) STRenderUtils.renderSql(mergeSql, queryKVMap) else mergeSql
     logger.info("renderedSql~~~~~~~~~~~~~~" + renderedSql)
-    val resetSqlBuffer = renderedSql.split(sqlSeparator).toBuffer
+    val trimRenderSql = renderedSql.trim
+    val resetSql = if (trimRenderSql.lastIndexOf(sqlSeparator) == trimRenderSql.length - 1) trimRenderSql.dropRight(1).split(sqlSeparator) else trimRenderSql.split(sqlSeparator)
+    val resetSqlBuffer = resetSql.toBuffer
     val projectSql = getProjectSql(resetSqlBuffer.last, filters, tableName, adHocSql, paginateAndSort)
     logger.info(projectSql + "~~~~~~~~~~~~~~~~~~~~~~~~~projectSql")
     resetSqlBuffer.remove(resetSqlBuffer.length - 1)
