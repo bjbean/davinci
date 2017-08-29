@@ -62,11 +62,18 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   ))
   def postSqlLogRoute: Route = path(routeName) {
     post {
-      entity(as[SimpleSqlLogSeq]) {
-        sqlLogSeq =>
-          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
-            session => modules.SqlLogRoutes.postComplete(session, sqlLogSeq.payload)
+      entity(as[SimpleSqlLogSeq]) { simpleSqlLogSeq =>
+        authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) { session =>
+          if (session.admin) {
+            val sqlLog = simpleSqlLogSeq.payload.map(s => SqlLog(0, s.user_id, s.user_email, s.sql, s.start_time, s.end_time, s.success, s.error))
+            onComplete(modules.sqlLogDal.insert(sqlLog)) {
+              case Success(_) =>
+                complete(OK, ResponseJson[String](getHeader(200, session), ""))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+            }
           }
+          else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+        }
       }
     }
   }

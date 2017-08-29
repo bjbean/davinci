@@ -13,7 +13,6 @@ object ViewService extends ViewService
 trait ViewService {
   private lazy val modules = ModuleInstance.getModule
 
-
   def getAllViews: Future[Seq[(Long, Long, String, String, Option[String], String, String, String, String)]] = {
     db.run(modules.viewQuery.map(r => (r.id, r.source_id, r.name, r.sql_tmpl, r.desc, r.trigger_type, r.frequency, r.`catch`, r.result_table)).result)
   }

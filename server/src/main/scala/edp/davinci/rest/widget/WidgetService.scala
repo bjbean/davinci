@@ -13,15 +13,15 @@ object WidgetService extends WidgetService
 trait WidgetService {
   private lazy val modules = ModuleInstance.getModule
 
-  def getAll(session: SessionClass): Future[Seq[(Long, Long, Long, String, Option[String], String, Option[String], Boolean)]] = {
+  def getAll(session: SessionClass): Future[Seq[(Long, Long, Long, String, Option[String], String, Option[String], Option[String], Boolean)]] = {
     if (session.admin)
-      db.run(modules.widgetQuery.map(r => (r.id, r.widgetlib_id, r.flatTable_id, r.name, r.adhoc_sql, r.desc, r.chart_params, r.publish)).result)
+      db.run(modules.widgetQuery.map(r => (r.id, r.widgetlib_id, r.flatTable_id, r.name, r.adhoc_sql, r.desc, r.chart_params,r.query_params, r.publish)).result)
     else {
       val query = (modules.widgetQuery.filter(_.publish)
         join modules.relGroupViewQuery.filter(r => r.group_id inSet session.groupIdList)
         on (_.flatTable_id === _.flatTable_id))
         .map {
-          case (w, _) => (w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql, w.desc, w.chart_params, w.publish)
+          case (w, _) => (w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql, w.desc, w.chart_params,w.query_params, w.publish)
         }.result
       db.run(query)
     }

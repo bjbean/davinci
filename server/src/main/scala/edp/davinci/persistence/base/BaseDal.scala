@@ -1,6 +1,6 @@
 package edp.davinci.persistence.base
 
-import edp.davinci.module.DbModule
+import edp.davinci.module.DbModule._
 import edp.davinci.rest.BaseInfo
 import slick.jdbc.{JdbcBackend, JdbcProfile}
 import slick.jdbc.MySQLProfile.api._
@@ -41,7 +41,7 @@ trait BaseDal[T<: BaseTable[A], A<: BaseEntity] {
   //  def paginate[C: CanBeQueryCondition](f: (T) => C)(offset: Int, limit: Int): Future[Seq[A]]
 }
 
-class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])(implicit val db: JdbcProfile#Backend#Database, implicit val profile: JdbcProfile) extends BaseDal[T, A] with DbModule {
+class BaseDalImpl[T <: BaseTable[A], A <: BaseEntity](tableQ: TableQuery[T])extends BaseDal[T, A]{
 
   import profile.api._
 

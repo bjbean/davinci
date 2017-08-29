@@ -42,7 +42,7 @@ trait PersistenceModule {
   val relDashboardWidgetDal: BaseDal[RelDashboardWidgetTable, RelDashboardWidget]
   val widgetDal: BaseDal[WidgetTable, Widget]
   val libWidgetDal: BaseDal[LibWidgetTable, LibWidget]
-  val viewDal: BaseDal[ViewTbl, ViewTable]
+  val viewDal: BaseDal[ViewTbl, View]
   val relGroupViewDal: BaseDal[RelGroupViewTable, RelGroupView]
 }
 
@@ -58,7 +58,7 @@ trait PersistenceModuleImpl extends PersistenceModule {
   override lazy val relDashboardWidgetDal = new BaseDalImpl[RelDashboardWidgetTable, RelDashboardWidget](TableQuery[RelDashboardWidgetTable])
   override lazy val widgetDal = new BaseDalImpl[WidgetTable, Widget](TableQuery[WidgetTable])
   override lazy val libWidgetDal = new BaseDalImpl[LibWidgetTable, LibWidget](TableQuery[LibWidgetTable])
-  override lazy val viewDal = new BaseDalImpl[ViewTbl, ViewTable](TableQuery[ViewTbl])
+  override lazy val viewDal = new BaseDalImpl[ViewTbl, View](TableQuery[ViewTbl])
   override lazy val relGroupViewDal = new BaseDalImpl[RelGroupViewTable, RelGroupView](TableQuery[RelGroupViewTable])
 
 }

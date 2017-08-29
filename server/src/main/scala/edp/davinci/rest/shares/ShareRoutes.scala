@@ -386,47 +386,9 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
       case Success(widgetAndGroup) =>
         val (widget, groupIds, admin) = widgetAndGroup
         val sourceFuture = ViewService.getSqlInfo(widget._3, groupIds, admin._1)
-        onComplete(sourceFuture) {
-          case Success(sourceInfo) =>
-            if (sourceInfo.nonEmpty) {
-              try {
-                val (sqlTemp, tableName, connectionUrl, _) = sourceInfo.head
-                if (sqlTemp.trim != "") {
-                  val resultList = sqlExecute(urlFilters, sqlTemp, tableName, adHocSql, paginateAndSort, connectionUrl, paramSeq)
-                  contentTypeMatch(resultList, contentType)
-                } else complete(BadRequest, ResponseJson[String](getHeader(400, "flatTable sqls is empty", null), ""))
-              }
-              catch {
-                case synx: SQLException => complete(BadRequest, ResponseJson[String](getHeader(400, "SQL语法错误", null), synx.getMessage))
-                case ex: Throwable => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
-              }
-            } else complete(BadRequest, ResponseJson[String](getHeader(400, "", null), "source info is empty"))
-          case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
-        }
+        RouteHelper.getResultBySource(sourceFuture, contentType, urlFilters, paramSeq, paginateAndSort, adHocSql)
       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, null), ""))
     }
-  }
-
-
-  private def contentTypeMatch(resultList: (ListBuffer[Seq[String]], Long), contentType: NonBinary): StandardRoute = {
-    val contentDisposition = if (contentType == textHtml) headers.`Content-Disposition`(inline, Map("filename" -> s"share.html")).asInstanceOf[HttpHeader]
-    else headers.`Content-Disposition`(attachment, Map("filename" -> s"share.CSV")).asInstanceOf[HttpHeader]
-    val route = contentType match {
-      case `textHtml` =>
-        complete(HttpResponse(headers = List(contentDisposition), entity = HttpEntity(textHtml, getHTMLStr(resultList._1))))
-      case `textCSV` =>
-        val responseEntity = HttpEntity(textCSV, resultList._1.map(row => {
-          val mapRow = row.map(_.split(CSVHeaderSeparator).head)
-          covert2CSV(mapRow)
-        }).mkString("\n"))
-        complete(HttpResponse(headers = List(contentDisposition), entity = responseEntity))
-      case `appJson` =>
-        val CSVResult = resultList._1.map(covert2CSV)
-        complete(OK, ResponseJson[ShareResult](getHeader(200, null), ShareResult(CSVResult, resultList._2)))
-      case _ => logger.info("unsupported contentType")
-        complete(BadRequest, ResponseJson[String](getHeader(400, "", null), "unsupported contentType"))
-    }
-    route
   }
 
 }

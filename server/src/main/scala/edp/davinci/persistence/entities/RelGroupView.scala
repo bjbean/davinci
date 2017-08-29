@@ -14,7 +14,19 @@ case class RelGroupView(id: Long,
                         update_by: Long) extends BaseEntity
 
 
-case class PutRelGroupView(id: Option[Long]=Some(0),
+case class SimpleRelGroupView(group_id: Long,
+                              flatTable_id: Long,
+                              sql_params: String,
+                              active: Boolean,
+                              create_time: String,
+                              create_by: Long,
+                              update_time: String,
+                              update_by: Long) extends SimpleBaseEntity
+
+case class PostRelGroupView(group_id: Long,
+                            sql_params: String) extends SimpleBaseEntity
+
+case class PutRelGroupView(id: Long,
                            group_id: Long,
                            sql_params: String)
 

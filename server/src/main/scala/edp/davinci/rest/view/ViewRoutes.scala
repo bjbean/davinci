@@ -41,8 +41,8 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
           if (session.admin) {
             onComplete(ViewService.getAllViews) {
               case Success(viewSeq) =>
-                val queryResult = viewSeq.map(biz => PutViewInfo(Some(biz._1), biz._2, biz._3, biz._4, biz._5.getOrElse(""), biz._6, biz._7, biz._8))
-                complete(OK, ResponseSeqJson[PutViewInfo](getHeader(200, session), queryResult))
+                val queryResult = viewSeq.map(v => QueryView(v._1, v._2, v._3, v._4, v._5.getOrElse(""), v._6, v._7,v._8,v._9,active=true))
+                complete(OK, ResponseSeqJson[QueryView](getHeader(200, session), queryResult))
               case Failure(ex) =>
                 logger.error(" get views exception", ex)
                 complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -54,7 +54,7 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
 
 
   @ApiOperation(value = "Add new view to the system", notes = "", nickname = "", httpMethod = "POST")
-  @ApiImplicitParams(Array(new ApiImplicitParam(name = "flattables", value = "FlatTable objects to be added", required = true, dataType = "edp.davinci.rest.PutViewInfoSeq", paramType = "body")))
+  @ApiImplicitParams(Array(new ApiImplicitParam(name = "views", value = "view objects to be added", required = true, dataType = "edp.davinci.rest.PutViewInfoSeq", paramType = "body")))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -69,15 +69,15 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
           val viewSeq = putViewSeq.payload
           if (session.admin) {
             val uniqueTableName = adHocTable + java.util.UUID.randomUUID().toString
-            val bizEntitySeq = viewSeq.map(biz => ViewTable(0, biz.source_id, biz.name, biz.sql_tmpl, uniqueTableName, Some(biz.desc), biz.trigger_type, biz.frequency, biz.`catch`, active = true, null, session.userId, null, session.userId))
+            val bizEntitySeq = viewSeq.map(v => View(0, v.source_id, v.name, v.sql_tmpl, uniqueTableName, Some(v.desc), v.trigger_type, v.frequency, v.`catch`, active = true, null, session.userId, null, session.userId))
             onComplete(modules.viewDal.insert(bizEntitySeq)) {
               case Success(bizSeq) =>
-                val queryBiz = bizSeq.map(biz => PutViewInfo(Some(biz.id), biz.source_id, biz.name, biz.sql_tmpl, biz.desc.getOrElse(""), biz.trigger_type, biz.frequency, biz.`catch`, Some(biz.result_table)))
+                val queryBiz = bizSeq.map(v => QueryView(v.id, v.source_id, v.name, v.sql_tmpl, v.desc.getOrElse(""), v.trigger_type, v.frequency, v.`catch`, v.result_table,active=true))
                 val relSeq = for {biz <- bizSeq
-                                  rel <- viewSeq.head.relBG.get
+                                  rel <- viewSeq.head.relBG
                 } yield RelGroupView(0, rel.group_id, biz.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
                 onComplete(modules.relGroupViewDal.insert(relSeq)) {
-                  case Success(_) => complete(OK, ResponseSeqJson[PutViewInfo](getHeader(200, session), queryBiz))
+                  case Success(_) => complete(OK, ResponseSeqJson[QueryView](getHeader(200, session), queryBiz))
                   case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
                 }
               case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -89,13 +89,13 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   }
 
   @ApiOperation(value = "update views in the system", notes = "", nickname = "", httpMethod = "PUT")
-  @ApiImplicitParams(Array(new ApiImplicitParam(name = "flatTable", value = "FlatTable objects to be updated", required = true, dataType = "edp.davinci.rest.PutFlatTableInfoSeq", paramType = "body")))
+  @ApiImplicitParams(Array(new ApiImplicitParam(name = "view", value = "view objects to be updated", required = true, dataType = "edp.davinci.rest.PutViewInfoSeq", paramType = "body")))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "put success"),
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request"),
     new ApiResponse(code = 403, message = "user is not admin"),
-    new ApiResponse(code = 405, message = "put flatTable error")
+    new ApiResponse(code = 405, message = "put view error")
   ))
   def putViewRoute: Route = path(routeName) {
     put {
@@ -104,11 +104,11 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
           val viewSeq = putViewSeq.payload
           val operation = for {
             updateOP <- ViewService.updateFlatTbl(viewSeq, session)
-            deleteOp <- ViewService.deleteByViewId(viewSeq.map(_.id.get))
+            deleteOp <- ViewService.deleteByViewId(viewSeq.map(_.id))
           } yield (updateOP, deleteOp)
           onComplete(operation) {
-            case Success(_) => val relSeq = for {rel <- viewSeq.head.relBG.get
-            } yield RelGroupView(0, rel.group_id, viewSeq.head.id.get, rel.sql_params, active = true, null, session.userId, null, session.userId)
+            case Success(_) => val relSeq = for {rel <- viewSeq.head.relBG
+            } yield RelGroupView(0, rel.group_id, viewSeq.head.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
               onComplete(modules.relGroupViewDal.insert(relSeq)) {
                 case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
                 case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -122,22 +122,22 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
 
   @Path("/{id}")
   @ApiOperation(value = "delete view by id", notes = "", nickname = "", httpMethod = "DELETE")
-  @ApiImplicitParams(Array(new ApiImplicitParam(name = "id", value = "flat table id", required = true, dataType = "integer", paramType = "path")))
+  @ApiImplicitParams(Array(new ApiImplicitParam(name = "id", value = "view id", required = true, dataType = "integer", paramType = "path")))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "delete success"),
     new ApiResponse(code = 403, message = "user is not admin"),
     new ApiResponse(code = 401, message = "authorization error"),
     new ApiResponse(code = 400, message = "bad request")
   ))
-  def deleteViewByIdRoute: Route = path(routeName / LongNumber) { flatTableId =>
+  def deleteViewByIdRoute: Route = path(routeName / LongNumber) { viewId =>
     delete {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
         session =>
           if (session.admin) {
             val operation = for {
-              deleteFlatTable <- ViewService.deleteByViewId(Seq(flatTableId))
-              deleteRel <- ViewService.deleteRelId(flatTableId)
-              updateWidget <- ViewService.updateWidget(flatTableId)
+              deleteFlatTable <- ViewService.deleteByViewId(Seq(viewId))
+              deleteRel <- ViewService.deleteRelId(viewId)
+              updateWidget <- ViewService.updateWidget(viewId)
             } yield (deleteFlatTable, deleteRel, updateWidget)
             onComplete(operation) {
               case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
@@ -188,7 +188,7 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
           val future = ViewService.getGroups(viewId)
           onComplete(future) {
             case Success(relSeq) =>
-              val putRelSeq = relSeq.map(r => PutRelGroupView(Some(r._1), r._2, r._3))
+              val putRelSeq = relSeq.map(r => PutRelGroupView(r._1, r._2, r._3))
               complete(OK, ResponseSeqJson[PutRelGroupView](getHeader(200, session), putRelSeq))
             case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
           }
@@ -200,7 +200,7 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   @Path("/{id}/resultset")
   @ApiOperation(value = "get calculation results by biz id", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "id", value = "flattable id", required = true, dataType = "integer", paramType = "path"),
+    new ApiImplicitParam(name = "id", value = "view id", required = true, dataType = "integer", paramType = "path"),
     new ApiImplicitParam(name = "manualInfo", value = "manualInfo", required = false, dataType = "edp.davinci.rest.ManualInfo", paramType = "body"),
     new ApiImplicitParam(name = "offset", value = "offset", required = false, dataType = "integer", paramType = "query"),
     new ApiImplicitParam(name = "limit", value = "limit", required = false, dataType = "integer", paramType = "query"),

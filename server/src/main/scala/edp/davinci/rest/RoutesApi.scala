@@ -5,7 +5,6 @@ import edp.davinci.module.{BusinessModule, ConfigurationModule, PersistenceModul
 import edp.davinci.rest.dashboard.DashboardRoutes
 import edp.davinci.rest.download.DownloadRoutes
 import edp.davinci.rest.group.GroupRoutes
-import edp.davinci.rest.libwidget.LibWidgetRoutes
 import edp.davinci.rest.shares.ShareRoutes
 import edp.davinci.rest.source.SourceRoutes
 import edp.davinci.rest.sqllog.SqlLogRoutes
@@ -23,7 +22,6 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
   val flatTable = new ViewRoutes(modules)
   val dashboard = new DashboardRoutes(modules)
   val widget = new WidgetRoutes(modules)
-  val libWidget = new LibWidgetRoutes(modules)
   val group = new GroupRoutes(modules)
   val sqlLog = new SqlLogRoutes(modules)
   val share = new ShareRoutes(modules)
@@ -41,7 +39,6 @@ class RoutesApi(modules: ConfigurationModule with PersistenceModule with Busines
           corsHandler(flatTable.routes) ~
           corsHandler(dashboard.routes) ~
           corsHandler(widget.routes) ~
-          corsHandler(libWidget.routes) ~
           corsHandler(group.routes) ~
           corsHandler(sqlLog.routes) ~
           corsHandler(share.routes) ~

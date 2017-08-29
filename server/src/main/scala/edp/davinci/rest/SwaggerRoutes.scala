@@ -5,15 +5,14 @@ import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.github.swagger.akka.{HasActorSystem, SwaggerHttpService}
 import edp.davinci.DavinciStarter
-import edp.davinci.rest.view.ViewRoutes
 import edp.davinci.rest.dashboard.DashboardRoutes
 import edp.davinci.rest.download.DownloadRoutes
 import edp.davinci.rest.group.GroupRoutes
-import edp.davinci.rest.libwidget.LibWidgetRoutes
 import edp.davinci.rest.shares.ShareRoutes
 import edp.davinci.rest.source.SourceRoutes
 import edp.davinci.rest.sqllog.SqlLogRoutes
 import edp.davinci.rest.user.UserRoutes
+import edp.davinci.rest.view.ViewRoutes
 import edp.davinci.rest.widget.WidgetRoutes
 
 import scala.reflect.runtime.universe._
@@ -29,7 +28,6 @@ class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
     typeOf[DashboardRoutes],
     typeOf[WidgetRoutes],
     typeOf[SourceRoutes],
-    typeOf[LibWidgetRoutes],
     typeOf[GroupRoutes],
     typeOf[SqlLogRoutes],
     typeOf[ShareRoutes],

@@ -31,13 +31,13 @@ case class PostRelDashboardWidgetSeq(payload: Seq[PostRelDashboardWidget])
 
 case class PutRelDashboardWidgetSeq(payload: Seq[PutRelDashboardWidget])
 
-case class PostRelGroupFlatTableSeq(payload: Seq[PostRelGroupFlatTable])
+case class PostRelGroupFlatTableSeq(payload: Seq[PostRelGroupView])
 
-case class PutRelGroupFlatTableSeq(payload: Seq[PutRelGroupFlatTable])
+case class PutRelGroupViewSeq(payload: Seq[PutRelGroupView])
 
 case class PostUserInfoSeq(payload: Seq[PostUserInfo])
 
-case class PostFlatTableInfoSeq(payload: Seq[PostFlatTableInfo])
+case class PostViewInfoSeq(payload: Seq[PostViewInfo])
 
 case class PostDashboardInfoSeq(payload: Seq[PostDashboardInfo])
 
@@ -51,7 +51,7 @@ case class PostWidgetInfoSeq(payload: Seq[PostWidgetInfo])
 
 case class SimpleRelUserGroupSeq(payload: Seq[SimpleRelUserGroup])
 
-case class PutFlatTableInfoSeq(payload: Seq[PutFlatTableInfo])
+case class PutViewInfoSeq(payload: Seq[PutViewInfo])
 
 case class PutDashboardSeq(payload: Seq[PutDashboardInfo])
 

@@ -71,16 +71,14 @@ class DashboardRoutes(modules: ConfigurationModule with PersistenceModule with B
   ))
   def getDashboardByAllRoute: Route = path(routeName) {
     get {
-      parameter('active.as[Boolean].?) { active =>
-        authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
-          session =>
-            onComplete(getAll(session)) {
-              case Success(dashboardSeq) =>
-                val dashboards = dashboardSeq.map(d => PutDashboardInfo(d._1, d._2, d._3.getOrElse(""), d._4, d._5))
-                complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), dashboards))
-              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
-            }
-        }
+      authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
+        session =>
+          onComplete(getAll(session)) {
+            case Success(dashboardSeq) =>
+              val dashboards = dashboardSeq.map(d => PutDashboardInfo(d._1, d._2, d._3.getOrElse(""), d._4, d._5))
+              complete(OK, ResponseSeqJson[PutDashboardInfo](getHeader(200, session), dashboards))
+            case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+          }
       }
     }
   }
