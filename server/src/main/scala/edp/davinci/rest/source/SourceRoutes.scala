@@ -22,7 +22,6 @@ import scala.util.{Failure, Success}
 class SourceRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = getSourceByAllRoute ~ postSourceRoute ~ putSourceRoute ~ deleteSourceByIdRoute
-  private lazy val sourceService = new SourceService(modules)
   private lazy val logger = Logger.getLogger(this.getClass)
   private lazy val routeName = "sources"
 
@@ -49,9 +48,9 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   private def getAllSourcesComplete(session: SessionClass, active: Boolean): Route = {
     if (session.admin) {
-      onComplete(sourceService.getAll(active)) {
+      onComplete(SourceService.getAll) {
         case Success(sourceSeq) =>
-          val responseSource = sourceSeq.map(s => PutSourceInfo(s._1, s._2, s._3, s._4, s._5, s._6, Some(s._7)))
+          val responseSource = sourceSeq.map(s => PutSourceInfo(s._1, s._2, s._3, s._4, s._5, s._6, Some(true)))
           complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), responseSource))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -118,7 +117,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   private def putSourceComplete(session: SessionClass, sourceSeq: Seq[PutSourceInfo]): Route = {
     if (session.admin) {
-      val future = sourceService.update(sourceSeq, session)
+      val future = SourceService.update(sourceSeq, session)
       onComplete(future) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -141,11 +140,12 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   def deleteSourceByIdRoute: Route = path(routeName / LongNumber) { sourceId =>
     delete {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session =>if (session.admin) {
+        session =>
+          if (session.admin) {
             val operation = for {
-              source <- sourceService.deleteSource(sourceId)
-              flatTable <- sourceService.updateFlatTable(sourceId)
-            } yield (source,flatTable)
+              source <- SourceService.deleteSource(sourceId)
+              flatTable <- SourceService.updateView(sourceId)
+            } yield (source, flatTable)
             onComplete(operation) {
               case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
               case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))

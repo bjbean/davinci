@@ -27,8 +27,8 @@ trait WidgetService {
     }
   }
 
-  def getWidgetById(id: Long): Future[(Long, Long, Long, String, Option[String], String, Option[String], Boolean)] = {
-    db.run(modules.widgetQuery.filter(_.id === id).map(w => (w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql, w.desc, w.chart_params, w.publish)).result.head)
+  def getWidgetById(id: Long): Future[(Long, Long, Long, String, Option[String], String, Option[String], Option[String], Boolean, Boolean)] = {
+    db.run(modules.widgetQuery.filter(_.id === id).map(w => (w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql, w.desc, w.chart_params,w.query_params, w.publish,w.active)).result.head)
   }
 
   def getFlatTableId(widgetId: Long): Future[(Long, Option[String])] = {
@@ -37,8 +37,8 @@ trait WidgetService {
 
   def update(widgetSeq: Seq[PutWidgetInfo], session: SessionClass): Future[Unit] = {
     val query = DBIO.seq(widgetSeq.map(r => {
-      modules.widgetQuery.filter(_.id === r.id).map(widget => (widget.flatTable_id, widget.widgetlib_id, widget.name, widget.adhoc_sql, widget.desc, widget.chart_params, widget.publish, widget.update_by, widget.update_time))
-        .update(r.flatTable_id, r.widgetlib_id, r.name, Some(r.adhoc_sql), r.desc, Some(r.chart_params), r.publish, session.userId, ResponseUtils.currentTime)
+      modules.widgetQuery.filter(_.id === r.id).map(w => (w.flatTable_id, w.widgetlib_id, w.name, w.adhoc_sql, w.desc, w.chart_params, w.query_params, w.publish, w.update_by, w.update_time))
+        .update(r.flatTable_id, r.widgetlib_id, r.name, Some(r.adhoc_sql), r.desc, r.chart_params, r.query_params, r.publish, session.userId, ResponseUtils.currentTime)
     }): _*)
     db.run(query)
   }

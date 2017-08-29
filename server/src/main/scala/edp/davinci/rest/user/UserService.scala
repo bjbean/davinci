@@ -26,8 +26,8 @@ trait UserService {
     db.run(modules.relUserGroupQuery.filter(_.user_id === userId).map(_.group_id).result)
   }
 
-  def getUserInfo(userId: Long): Future[Boolean] = {
-    db.run(modules.userQuery.filter(_.id === userId).map(_.admin).result.head)
+  def getUserInfo(userId: Long): Future[(Boolean, String)] = {
+    db.run(modules.userQuery.filter(_.id === userId).map(u=>(u.admin,u.email)).result.head)
   }
 
   def update(userSeq: Seq[PutUserInfo], session: SessionClass): Future[Unit] = {

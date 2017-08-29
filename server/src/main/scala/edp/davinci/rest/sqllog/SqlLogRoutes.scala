@@ -19,7 +19,6 @@ import scala.util.{Failure, Success}
 class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = getSqlByAllRoute ~ postSqlLogRoute ~ putSqlLogRoute
-  private lazy val sqlLogService = new SqlLogService(modules)
   private lazy val logger = Logger.getLogger(this.getClass)
   private lazy val routeName = "sqllogs"
 
@@ -42,7 +41,7 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   private def getAllLogsComplete(session: SessionClass): Route = {
     if (session.admin) {
-      onComplete(sqlLogService.getAll(session)) {
+      onComplete(SqlLogService.getAll(session)) {
         case Success(logSeq) => complete(OK, ResponseSeqJson[SqlLog](getHeader(200, session), logSeq))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -66,7 +65,7 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       entity(as[SimpleSqlLogSeq]) {
         sqlLogSeq =>
           authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
-            session => modules.sqlLogRoutes.postComplete(session, sqlLogSeq.payload)
+            session => modules.SqlLogRoutes.postComplete(session, sqlLogSeq.payload)
           }
       }
     }
@@ -98,7 +97,7 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   private def putSqlLogComplete(session: SessionClass, sqlLogSeq: Seq[SqlLog]): Route = {
     if (session.admin) {
-      val future = sqlLogService.update(sqlLogSeq, session)
+      val future = SqlLogService.update(sqlLogSeq, session)
       onComplete(future) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))

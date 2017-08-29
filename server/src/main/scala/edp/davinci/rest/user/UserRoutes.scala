@@ -21,7 +21,6 @@ import scala.util.{Failure, Success}
 class UserRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = postUserRoute ~ putUserRoute ~ putLoginUserRoute ~ getUserByAllRoute ~ deleteUserByIdRoute ~ getGroupsByUserIdRoute ~ deleteUserFromGroupRoute ~ getUserInfoByToken
-  private lazy val userService = new UserService(modules)
   private lazy val logger = Logger.getLogger(this.getClass)
   private lazy val routeName = "users"
 
@@ -48,9 +47,9 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
 
   private def getAllUsersComplete(session: SessionClass, active: Boolean): Route = {
     if (session.admin) {
-      onComplete(userService.getAll(session, active)) {
+      onComplete(UserService.getAll(session)) {
         case Success(userSeq) =>
-          val responseUser = userSeq.map(u => QueryUserInfo(u._1, u._2, u._3, u._4, u._5, u._6))
+          val responseUser = userSeq.map(u => QueryUserInfo(u._1, u._2, u._3, u._4, u._5, active = true))
           complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), responseUser))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -129,8 +128,8 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   private def putUserComplete(session: SessionClass, userSeq: Seq[PutUserInfo]): Route = {
     if (session.admin) {
       val operation = for {
-        a <- userService.update(userSeq, session)
-        b <- userService.deleteFromRelByUserId(userSeq.map(_.id))
+        a <- UserService.update(userSeq, session)
+        b <- UserService.deleteAllRelByUserId(userSeq)
         c <- {
           val relSeq = for {rel <- userSeq.head.relUG
           } yield RelUserGroup(0, userSeq.head.id, rel.group_id, active = true, currentTime, session.userId, currentTime, session.userId)
@@ -169,7 +168,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   }
 
   private def putLoginUserComplete(session: SessionClass, user: LoginUserInfo): Route = {
-    val future = userService.updateLoginUser(user, session)
+    val future = UserService.updateLoginUser(user, session)
     onComplete(future) {
       case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -196,8 +195,8 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
           session =>
             if (session.admin) {
               val operation = for {
-                user <- userService.deleteUser(userId)
-                relGU <- userService.deleteFromRelByUserId(Seq(userId))
+                user <- UserService.deleteUser(userId)
+                relGU <- UserService.deleteRelGU(userId)
               } yield (user, relGU)
               onComplete(operation) {
                 case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
@@ -231,7 +230,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   }
 
   private def getGroupsByUserIdComplete(session: SessionClass, userId: Long): Route = {
-    val future = userService.getAllGroups(userId)
+    val future = UserService.getAllGroups(userId)
     onComplete(future) {
       case Success(relSeq) => complete(OK, ResponseSeqJson[PutRelUserGroup](getHeader(200, session), relSeq))
       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -253,7 +252,13 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   def deleteUserFromGroupRoute: Route = path(routeName / "groups" / LongNumber) { relId =>
     delete {
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
-        session => modules.relUserGroupRoutes.deleteByIdComplete(relId, session)
+        session =>
+          if (session.admin) {
+            onComplete(modules.relUserGroupDal.deleteById(relId).mapTo[Int]) {
+              case Success(r) => complete(OK, ResponseJson[Int](getHeader(200, session), r))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+            }
+          } else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
       }
     }
   }
@@ -271,7 +276,7 @@ class UserRoutes(modules: ConfigurationModule with PersistenceModule with Busine
     get {
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
-          onComplete(userService.getUserInfo(session)) {
+          onComplete(UserService.getUserInfo(session)) {
             case Success(userSeq) =>
               val responseUser = userSeq.map(u => QueryUserInfo(u._1, u._2, u._3, u._4, u._5, u._6))
               complete(OK, ResponseSeqJson[QueryUserInfo](getHeader(200, session), responseUser))
