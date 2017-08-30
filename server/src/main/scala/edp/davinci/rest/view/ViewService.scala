@@ -25,11 +25,11 @@ trait ViewService {
     db.run(query)
   }
 
-  def deleteByViewId(idSeq: Seq[Long]): Future[Int] = {
+  def deleteFromView(idSeq: Seq[Long]): Future[Int] = {
     modules.viewDal.deleteById(idSeq)
   }
 
-  def deleteRelId(viewId: Long): Future[Int] = {
+  def deleteFromRel(viewId: Long): Future[Int] = {
     modules.relGroupViewDal.deleteByFilter(_.flatTable_id === viewId)
   }
 

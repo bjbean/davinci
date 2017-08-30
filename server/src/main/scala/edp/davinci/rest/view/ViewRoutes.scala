@@ -41,7 +41,7 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
           if (session.admin) {
             onComplete(ViewService.getAllViews) {
               case Success(viewSeq) =>
-                val queryResult = viewSeq.map(v => QueryView(v._1, v._2, v._3, v._4, v._5.getOrElse(""), v._6, v._7,v._8,v._9,active=true))
+                val queryResult = viewSeq.map(v => QueryView(v._1, v._2, v._3, v._4, v._5.getOrElse(""), v._6, v._7, v._8, v._9, active = true))
                 complete(OK, ResponseSeqJson[QueryView](getHeader(200, session), queryResult))
               case Failure(ex) =>
                 logger.error(" get views exception", ex)
@@ -54,7 +54,7 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
 
 
   @ApiOperation(value = "Add new view to the system", notes = "", nickname = "", httpMethod = "POST")
-  @ApiImplicitParams(Array(new ApiImplicitParam(name = "views", value = "view objects to be added", required = true, dataType = "edp.davinci.rest.PutViewInfoSeq", paramType = "body")))
+  @ApiImplicitParams(Array(new ApiImplicitParam(name = "views", value = "view objects to be added", required = true, dataType = "edp.davinci.rest.PostViewInfoSeq", paramType = "body")))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -64,7 +64,7 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
   ))
   def postViewRoute: Route = path(routeName) {
     post {
-      entity(as[PutViewInfoSeq]) { putViewSeq =>
+      entity(as[PostViewInfoSeq]) { putViewSeq =>
         authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) { session =>
           val viewSeq = putViewSeq.payload
           if (session.admin) {
@@ -72,7 +72,7 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
             val bizEntitySeq = viewSeq.map(v => View(0, v.source_id, v.name, v.sql_tmpl, uniqueTableName, Some(v.desc), v.trigger_type, v.frequency, v.`catch`, active = true, null, session.userId, null, session.userId))
             onComplete(modules.viewDal.insert(bizEntitySeq)) {
               case Success(bizSeq) =>
-                val queryBiz = bizSeq.map(v => QueryView(v.id, v.source_id, v.name, v.sql_tmpl, v.desc.getOrElse(""), v.trigger_type, v.frequency, v.`catch`, v.result_table,active=true))
+                val queryBiz = bizSeq.map(v => QueryView(v.id, v.source_id, v.name, v.sql_tmpl, v.desc.getOrElse(""), v.trigger_type, v.frequency, v.`catch`, v.result_table, active = true))
                 val relSeq = for {biz <- bizSeq
                                   rel <- viewSeq.head.relBG
                 } yield RelGroupView(0, rel.group_id, biz.id, rel.sql_params, active = true, null, session.userId, null, session.userId)
@@ -104,7 +104,7 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
           val viewSeq = putViewSeq.payload
           val operation = for {
             updateOP <- ViewService.updateFlatTbl(viewSeq, session)
-            deleteOp <- ViewService.deleteByViewId(viewSeq.map(_.id))
+            deleteOp <- modules.relGroupViewDal.deleteById(viewSeq.map(_.id))
           } yield (updateOP, deleteOp)
           onComplete(operation) {
             case Success(_) => val relSeq = for {rel <- viewSeq.head.relBG
@@ -135,8 +135,8 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
         session =>
           if (session.admin) {
             val operation = for {
-              deleteFlatTable <- ViewService.deleteByViewId(Seq(viewId))
-              deleteRel <- ViewService.deleteRelId(viewId)
+              deleteFlatTable <- modules.viewDal.deleteById(viewId)
+              deleteRel <- ViewService.deleteFromRel(viewId)
               updateWidget <- ViewService.updateWidget(viewId)
             } yield (deleteFlatTable, deleteRel, updateWidget)
             onComplete(operation) {
