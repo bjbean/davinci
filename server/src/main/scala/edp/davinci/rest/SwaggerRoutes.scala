@@ -46,8 +46,8 @@ class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
   val indexRoute: Route = get {
     pathPrefix("swagger") {
       pathEndOrSingleSlash {
-        getFromResource(s"$dir/swagger-ui/index.html")
+        getFromFile(s"$dir/swagger-ui/index.html")
       }
-    } ~ getFromResourceDirectory(s"$dir/swagger-ui")
+    } ~ getFromDirectory(s"$dir/swagger-ui")
   }
 }
