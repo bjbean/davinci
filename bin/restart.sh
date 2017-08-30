@@ -1,3 +1,3 @@
 #!/bin/bash
-./stop-server.sh
-./start-server.sh
+sh /stop-server.sh
+sh /start-server.sh
