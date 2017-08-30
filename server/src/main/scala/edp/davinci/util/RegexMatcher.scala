@@ -25,7 +25,6 @@ trait RegexMatcher {
 
 
   def matchAndReplace(sqlWithoutVar: String, groupKVMap: mutable.HashMap[String, List[String]]): String = {
-
     val exprList = getMatchedItemList(sqlWithoutVar, groupRegex)
     val parsedMap = SqlParser.getParsedMap(exprList)
     var resultSql = sqlWithoutVar
