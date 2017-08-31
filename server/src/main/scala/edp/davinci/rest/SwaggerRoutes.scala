@@ -45,11 +45,12 @@ class SwaggerRoutes extends SwaggerHttpService with HasActorSystem {
   //  override val info = Info("Davinci REST API")
   //  provides license and other description details
 
+  val dir: String = System.getProperty("DAVINCI_HOME")
   val indexRoute: Route = get {
     pathPrefix("swagger") {
       pathEndOrSingleSlash {
-        getFromResource("swagger-ui/index.html")
+        getFromFile(s"$dir/swagger-ui/index.html")
       }
-    } ~ getFromResourceDirectory("swagger-ui")
+    } ~ getFromDirectory(s"$dir/swagger-ui")
   }
 }
