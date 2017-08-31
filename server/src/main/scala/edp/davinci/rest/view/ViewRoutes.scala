@@ -217,8 +217,8 @@ class ViewRoutes(modules: ConfigurationModule with PersistenceModule with Busine
       authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
         session =>
           entity(as[ManualInfo]) { manualInfo =>
-            parameters('offset.as[Int] ? 0, 'limit.as[Int] ? 2000, 'sortby.as[String] ? "") { (offset, limit, sortBy) =>
-              val paginationInfo = s" limit $limit offset $offset"
+            parameters('offset.as[Int] ? 0, 'limit.as[Int] ? -1, 'sortby.as[String] ? "") { (offset, limit, sortBy) =>
+              val paginationInfo =  if (limit != -1) s" limit $limit offset $offset" else ""
               val sortInfo = if (sortBy != "") "ORDER BY " + sortBy.map(ch => if (ch == ':') ' ' else ch) else ""
               val paginateAndSort = sortInfo + paginationInfo
               val sourceFuture = ViewService.getSourceInfo(viewId, session)
