@@ -14,19 +14,19 @@ import scala.collection.mutable.ListBuffer
 object SqlUtils extends SqlUtils
 
 trait SqlUtils extends Serializable {
-  lazy val dataSourceMap: mutable.HashMap[String, HikariDataSource] = new mutable.HashMap[String, HikariDataSource]
+  lazy val dataSourceMap: mutable.HashMap[(String, String), HikariDataSource] = new mutable.HashMap[(String, String), HikariDataSource]
   private lazy val logger = Logger.getLogger(this.getClass)
 
   def getConnection(jdbcUrl: String, username: String, password: String, maxPoolSize: Int = 5): Connection = {
     val tmpJdbcUrl = jdbcUrl.toLowerCase
-    if (!dataSourceMap.contains(tmpJdbcUrl) || dataSourceMap(tmpJdbcUrl) == null) {
+    if (!dataSourceMap.contains((tmpJdbcUrl, username)) || dataSourceMap((tmpJdbcUrl, username)) == null) {
       synchronized {
-        if (!dataSourceMap.contains(tmpJdbcUrl) || dataSourceMap(tmpJdbcUrl) == null) {
+        if (!dataSourceMap.contains((tmpJdbcUrl, username)) || dataSourceMap((tmpJdbcUrl, username)) == null) {
           initJdbc(jdbcUrl, username, password, maxPoolSize)
         }
       }
     }
-    dataSourceMap(tmpJdbcUrl).getConnection
+    dataSourceMap((tmpJdbcUrl, username)).getConnection
   }
 
   private def initJdbc(jdbcUrl: String, username: String, password: String, muxPoolSize: Int = 5): Unit = {
@@ -73,18 +73,18 @@ trait SqlUtils extends Serializable {
 
     val ds: HikariDataSource = new HikariDataSource(config)
     println(tmpJdbcUrl + "$$$$$$$$$$$$$$$$$" + ds.getUsername + " " + ds.getPassword)
-    dataSourceMap(tmpJdbcUrl) = ds
+    dataSourceMap((tmpJdbcUrl, username)) = ds
   }
 
   def resetConnection(jdbcUrl: String, username: String, password: String): Unit = {
-    shutdownConnection(jdbcUrl.toLowerCase)
+    shutdownConnection(jdbcUrl.toLowerCase, username)
     getConnection(jdbcUrl, username, password).close()
   }
 
-  def shutdownConnection(jdbcUrl: String): dataSourceMap.type = {
+  def shutdownConnection(jdbcUrl: String, username: String): dataSourceMap.type = {
     val tmpJdbcUrl = jdbcUrl.toLowerCase
-    dataSourceMap(tmpJdbcUrl).close()
-    dataSourceMap -= tmpJdbcUrl
+    dataSourceMap((tmpJdbcUrl, username)).close()
+    dataSourceMap -= ((tmpJdbcUrl, username))
   }
 
 
@@ -166,14 +166,15 @@ trait SqlUtils extends Serializable {
     var dbConnection: Connection = null
     var statement: Statement = null
     if (connectionUrl != null) {
-      val connectionInfo = connectionUrl.split(sqlUrlSeparator)
-        .filter(u => u.contains("user") || u.contains("password")).map(u => u.substring(u.indexOf('=') + 1))
-      if (connectionInfo.length != 2) {
+      val connInfoArr: Array[String] = connectionUrl.split(sqlUrlSeparator)
+      val userAndPaw = connInfoArr.filter(u => u.contains("user") || u.contains("password"))
+        .map(u => u.substring(u.indexOf('=') + 1))
+      if (userAndPaw.length != 2) {
         logger.info("connection is not in right format")
         throw new Exception("connection is not in right format:" + connectionUrl)
       } else {
         try {
-          dbConnection = SqlUtils.getConnection(connectionUrl, connectionInfo(0), connectionInfo(1))
+          dbConnection = SqlUtils.getConnection(connInfoArr(0), userAndPaw(0), userAndPaw(1))
           statement = dbConnection.createStatement()
           if (sql.length > 1) for (elem <- sql.dropRight(1)) statement.execute(elem)
           val resultSet = statement.executeQuery(sql.last)
@@ -228,20 +229,8 @@ trait SqlUtils extends Serializable {
     val meta = rs.getMetaData
     val columnNum = meta.getColumnCount
     (1 to columnNum).map(columnIndex => {
-      val fieldValue = meta.getColumnType(columnIndex) match {
-        case java.sql.Types.VARCHAR => rs.getString(columnIndex)
-        case java.sql.Types.INTEGER => rs.getInt(columnIndex)
-        case java.sql.Types.BIGINT => rs.getLong(columnIndex)
-        case java.sql.Types.FLOAT => rs.getFloat(columnIndex)
-        case java.sql.Types.DOUBLE => rs.getDouble(columnIndex)
-        case java.sql.Types.BOOLEAN => rs.getBoolean(columnIndex)
-        case java.sql.Types.DATE => rs.getDate(columnIndex)
-        case java.sql.Types.TIMESTAMP => rs.getTimestamp(columnIndex)
-        case java.sql.Types.DECIMAL => rs.getBigDecimal(columnIndex)
-        case _ => println("not supported java sql type")
-      }
-      if (fieldValue == null) null.asInstanceOf[String] else fieldValue.toString
-    })
+      rs.getObject(columnIndex)
+    }).asInstanceOf[Seq[String]]
   }
 
 }
