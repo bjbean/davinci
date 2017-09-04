@@ -21,7 +21,7 @@ export class BizlogicForm extends React.Component {
       step,
       sources,
       groups,
-      groupParamLength,
+      groupParams,
       selectedGroups,
       onGroupSelect,
       onGroupParamChange
@@ -50,15 +50,15 @@ export class BizlogicForm extends React.Component {
       key: 'name'
     }]
 
-    Array.from(Array(groupParamLength)).forEach((i, index) => {
+    groupParams.forEach((gp, index) => {
       columns.push({
-        title: `参数${index + 1}`,
-        key: `param${index + 1}`,
+        title: gp,
+        key: gp,
         className: `${utilStyles.textAlignCenter}`,
         width: 80,
         render: (text, record) => (
           <Input
-            value={record.params[index]}
+            value={record.params.length ? record.params[index].v : ''}
             onChange={onGroupParamChange(record.id, index)}
             className="ant-input ant-input-lg"
             disabled={!record.checked}
@@ -168,7 +168,7 @@ BizlogicForm.propTypes = {
   step: PropTypes.number,
   sources: PropTypes.array,
   groups: PropTypes.array,
-  groupParamLength: PropTypes.number,
+  groupParams: PropTypes.array,
   selectedGroups: PropTypes.array,
   onGroupSelect: PropTypes.func,
   onGroupParamChange: PropTypes.func,

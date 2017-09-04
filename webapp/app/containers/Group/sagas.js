@@ -17,7 +17,6 @@ import {
 
 import request from '../../utils/request'
 import api from '../../utils/api'
-import { notifySagasError } from '../../utils/util'
 import { promiseSagaCreator } from '../../utils/reduxPromisation'
 import { writeAdapter, readListAdapter, readObjectAdapter } from '../../utils/asyncAdapter'
 
@@ -29,7 +28,7 @@ export const getGroups = promiseSagaCreator(
     return groups
   },
   function (err) {
-    notifySagasError(err, 'getGroups')
+    console.log('getGroups', err)
   }
 )
 
@@ -49,7 +48,7 @@ export const addGroup = promiseSagaCreator(
     return result
   },
   function (err) {
-    notifySagasError(err, 'addGroup')
+    console.log('addGroup', err)
   }
 )
 
@@ -66,7 +65,7 @@ export const deleteGroup = promiseSagaCreator(
     yield put(groupDeleted(id))
   },
   function (err) {
-    notifySagasError(err, 'deleteGroup')
+    console.log('deleteGroup', err)
   }
 )
 
@@ -82,7 +81,7 @@ export const getGroupDetail = promiseSagaCreator(
     return group
   },
   function (err) {
-    notifySagasError(err, 'getGroupDetail')
+    console.log('getGroupDetail', err)
   }
 )
 
@@ -100,7 +99,7 @@ export const editGroup = promiseSagaCreator(
     yield put(groupEdited(group))
   },
   function (err) {
-    notifySagasError(err, 'editGroup')
+    console.log('editGroup', err)
   }
 )
 

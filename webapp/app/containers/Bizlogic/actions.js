@@ -12,7 +12,9 @@ import {
   EDIT_BIZLOGIC,
   EDIT_BIZLOGIC_SUCCESS,
   LOAD_BIZDATAS,
-  LOAD_BIZDATAS_SUCCESS
+  LOAD_BIZDATAS_SUCCESS,
+  LOAD_BIZDATAS_FROM_ITEM,
+  LOAD_BIZDATAS_FROM_ITEM_SUCCESS
 } from './constants'
 
 import { promiseActionCreator } from '../../utils/reduxPromisation'
@@ -30,6 +32,8 @@ export const loadBizlogicGroups = promiseActionCreator(LOAD_BIZLOGIC_GROUPS, ['i
 export const editBizlogic = promiseActionCreator(EDIT_BIZLOGIC, ['bizlogic'])
 
 export const loadBizdatas = promiseActionCreator(LOAD_BIZDATAS, ['id', 'sql', 'sorts', 'offset', 'limit'])
+
+export const loadBizdatasFromItem = promiseActionCreator(LOAD_BIZDATAS_FROM_ITEM, ['itemId', 'id', 'sql', 'sorts', 'offset', 'limit'])
 
 export function bizlogicsLoaded (bizlogics) {
   return {
@@ -89,6 +93,16 @@ export function bizdatasLoaded (bizdatas) {
   return {
     type: LOAD_BIZDATAS_SUCCESS,
     payload: {
+      bizdatas
+    }
+  }
+}
+
+export function bizdatasFromItemLoaded (itemId, bizdatas) {
+  return {
+    type: LOAD_BIZDATAS_FROM_ITEM_SUCCESS,
+    payload: {
+      itemId,
       bizdatas
     }
   }

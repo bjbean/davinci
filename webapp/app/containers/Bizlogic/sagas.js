@@ -8,7 +8,8 @@ import {
   LOAD_BIZLOGIC_DETAIL,
   LOAD_BIZLOGIC_GROUPS,
   EDIT_BIZLOGIC,
-  LOAD_BIZDATAS
+  LOAD_BIZDATAS,
+  LOAD_BIZDATAS_FROM_ITEM
 } from './constants'
 import {
   bizlogicsLoaded,
@@ -17,12 +18,13 @@ import {
   bizlogicDetailLoaded,
   bizlogicGroupsLoaded,
   bizlogicEdited,
-  bizdatasLoaded
+  bizdatasLoaded,
+  bizdatasFromItemLoaded
 } from './actions'
 
 import request from '../../utils/request'
 import api from '../../utils/api'
-import { uuid, notifySagasError } from '../../utils/util'
+import { uuid } from '../../utils/util'
 import { promiseSagaCreator } from '../../utils/reduxPromisation'
 import { writeAdapter, readListAdapter, readObjectAdapter } from '../../utils/asyncAdapter'
 
@@ -34,7 +36,7 @@ export const getBizlogics = promiseSagaCreator(
     return bizlogics
   },
   function (err) {
-    notifySagasError(err, 'getBizlogics')
+    console.log('getBizlogics', err)
   }
 )
 
@@ -54,7 +56,7 @@ export const addBizlogic = promiseSagaCreator(
     return result
   },
   function (err) {
-    notifySagasError(err, 'addBizlogic')
+    console.log('addBizlogic', err)
   }
 )
 
@@ -71,7 +73,7 @@ export const deleteBizlogic = promiseSagaCreator(
     yield put(bizlogicDeleted(id))
   },
   function (err) {
-    notifySagasError(err, 'deleteBizlogic')
+    console.log('deleteBizlogic', err)
   }
 )
 
@@ -86,7 +88,7 @@ export const getBizlogicDetail = promiseSagaCreator(
     return bizlogic
   },
   function (err) {
-    notifySagasError(err, 'getBizlogicDetail')
+    console.log('getBizlogicDetail', err)
   }
 )
 
@@ -102,7 +104,7 @@ export const getBizlogicGroups = promiseSagaCreator(
     return groups
   },
   function (err) {
-    notifySagasError(err, 'getBizlogicGroups')
+    console.log('getBizlogicGroups', err)
   }
 )
 
@@ -120,7 +122,7 @@ export const editBizlogic = promiseSagaCreator(
     yield put(bizlogicEdited(bizlogic))
   },
   function (err) {
-    notifySagasError(err, 'editBizlogic')
+    console.log('editBizlogic', err)
   }
 )
 
@@ -144,9 +146,37 @@ export const getBizdatas = promiseSagaCreator(
     return bizdatas
   },
   function (err) {
-    notifySagasError(err, 'getBizdatas')
+    console.log('getBizdatas', err)
   }
 )
+
+export function* getBizdatasWatcher () {
+  yield fork(takeEvery, LOAD_BIZDATAS, getBizdatas)
+}
+
+export const getBizdatasFromItem = promiseSagaCreator(
+  function* ({ itemId, id, sql, sorts, offset, limit }) {
+    let queries = ''
+    if (offset !== undefined && limit !== undefined) {
+      queries = `?sortby=${sorts}&offset=${offset}&limit=${limit}`
+    }
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.bizlogic}/${id}/resultset${queries}`,
+      data: sql || {}
+    })
+    const bizdatas = resultsetConverter(readListAdapter(asyncData))
+    yield put(bizdatasFromItemLoaded(itemId, bizdatas))
+    return bizdatas
+  },
+  function (err) {
+    console.log('getBizdatasFromItem', err)
+  }
+)
+
+export function* getBizdatasFromItemWatcher () {
+  yield fork(takeEvery, LOAD_BIZDATAS_FROM_ITEM, getBizdatasFromItem)
+}
 
 function resultsetConverter (resultset) {
   let dataSource = []
@@ -185,10 +215,6 @@ function resultsetConverter (resultset) {
   }
 }
 
-export function* getBizdatasWatcher () {
-  yield fork(takeEvery, LOAD_BIZDATAS, getBizdatas)
-}
-
 export default [
   getBizlogicsWatcher,
   addBizlogicWatcher,
@@ -196,5 +222,6 @@ export default [
   getBizlogicDetailWatcher,
   getBizlogicGroupsWatcher,
   editBizlogicWatcher,
-  getBizdatasWatcher
+  getBizdatasWatcher,
+  getBizdatasFromItemWatcher
 ]

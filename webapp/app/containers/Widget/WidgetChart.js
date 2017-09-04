@@ -20,7 +20,7 @@ export class WidgetChart extends React.PureComponent {
   }
 
   componentDidMount () {
-    this.chart = echarts.init(document.getElementById('commonChart'))
+    this.chart = echarts.init(document.getElementById('commonChart'), 'default')
     this.renderChart(this.props)
     this.setState({
       tableWidth: this.refs.widgetChart.offsetHeight,

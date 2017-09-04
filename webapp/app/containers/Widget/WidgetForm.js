@@ -290,12 +290,12 @@ export class WidgetForm extends React.Component {
             </FormItem>
           </Col>
           <Col lg={24}>
-            <FormItem label="Bizlogic">
+            <FormItem label="View">
               {getFieldDecorator('flatTable_id', {
                 rules: [{ required: true }]
               })(
                 <Select
-                  placeholder="请选择 Bizlogic"
+                  placeholder="请选择 View"
                   onChange={onBizlogicChange}
                 >
                   {bizlogicOptions}
