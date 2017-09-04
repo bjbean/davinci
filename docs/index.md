@@ -1,6 +1,8 @@
-davinci 可视洞察平台
+davinci
 ======
 [![Apache-2.0 license](https://img.shields.io/hexpm/l/plug.svg)](https://opensource.org/licenses/Apache-2.0)
+
+欢迎欢迎
 
 how to make a dist package
 --------------------------
