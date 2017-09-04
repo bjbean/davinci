@@ -1,3 +1,23 @@
+/*-
+ * <<
+ * Davinci
+ * ==
+ * Copyright (C) 2016 - 2017 EDP
+ * ==
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * >>
+ */
+
 package edp.davinci.rest.source
 
 import javax.ws.rs.Path
@@ -22,7 +42,6 @@ import scala.util.{Failure, Success}
 class SourceRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = getSourceByAllRoute ~ postSourceRoute ~ putSourceRoute ~ deleteSourceByIdRoute
-  private lazy val sourceService = new SourceService(modules)
   private lazy val logger = Logger.getLogger(this.getClass)
   private lazy val routeName = "sources"
 
@@ -49,9 +68,9 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   private def getAllSourcesComplete(session: SessionClass, active: Boolean): Route = {
     if (session.admin) {
-      onComplete(sourceService.getAll(active)) {
+      onComplete(SourceService.getAll) {
         case Success(sourceSeq) =>
-          val responseSource = sourceSeq.map(s => PutSourceInfo(s._1, s._2, s._3, s._4, s._5, s._6, Some(s._7)))
+          val responseSource = sourceSeq.map(s => PutSourceInfo(s._1, s._2, s._3, s._4, s._5, s._6, Some(true)))
           complete(OK, ResponseSeqJson[PutSourceInfo](getHeader(200, session), responseSource))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -118,7 +137,7 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   private def putSourceComplete(session: SessionClass, sourceSeq: Seq[PutSourceInfo]): Route = {
     if (session.admin) {
-      val future = sourceService.update(sourceSeq, session)
+      val future = SourceService.update(sourceSeq, session)
       onComplete(future) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -141,11 +160,12 @@ class SourceRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   def deleteSourceByIdRoute: Route = path(routeName / LongNumber) { sourceId =>
     delete {
       authenticateOAuth2Async[SessionClass]("davinci", AuthorizationProvider.authorize) {
-        session =>if (session.admin) {
+        session =>
+          if (session.admin) {
             val operation = for {
-              source <- sourceService.deleteSource(sourceId)
-              flatTable <- sourceService.updateFlatTable(sourceId)
-            } yield (source,flatTable)
+              source <- SourceService.deleteSource(sourceId)
+              flatTable <- SourceService.updateView(sourceId)
+            } yield (source, flatTable)
             onComplete(operation) {
               case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
               case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))

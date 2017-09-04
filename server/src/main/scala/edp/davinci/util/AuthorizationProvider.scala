@@ -1,3 +1,23 @@
+/*-
+ * <<
+ * Davinci
+ * ==
+ * Copyright (C) 2016 - 2017 EDP
+ * ==
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * >>
+ */
+
 package edp.davinci.util
 
 import akka.http.scaladsl.server.directives.Credentials
@@ -11,6 +31,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import edp.davinci.util.ResponseUtils.currentTime
 import edp.davinci.util.LDAPValidate.validate
+import edp.davinci.module.DbModule._
 
 abstract class AuthorizationError(val statusCode: Int = 401, val desc: String = "authentication error") extends Exception
 
@@ -21,7 +42,6 @@ class passwordError(statusCode: Int = 400, desc: String = "pwd is wrong") extend
 object AuthorizationProvider {
   private lazy val module = ModuleInstance.modules
   private lazy val logger = Logger.getLogger(this.getClass)
-  private lazy val db = module.userDal.getDB
   lazy val realm = "davinci"
 
   def createSessionClass(login: LoginClass, enableLDAP: Boolean): Future[Either[AuthorizationError, (SessionClass, QueryUserInfo)] with Product with Serializable] = {
@@ -56,7 +76,7 @@ object AuthorizationProvider {
       userSeq =>
         userSeq.headOption match {
           case Some(_) =>
-            db.run(module.userDal.getTableQuery.filter(_.email === login.username).map(_.password).update(login.password))
+            db.run(module.userQuery.filter(_.email === login.username).map(_.password).update(login.password))
             ldapUser
           case None =>
             logger.info("user not found")

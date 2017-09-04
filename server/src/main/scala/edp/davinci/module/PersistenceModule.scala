@@ -1,3 +1,23 @@
+/*-
+ * <<
+ * Davinci
+ * ==
+ * Copyright (C) 2016 - 2017 EDP
+ * ==
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * >>
+ */
+
 package edp.davinci.module
 
 import edp.davinci.persistence.base.{BaseDal, BaseDalImpl}
@@ -42,7 +62,7 @@ trait PersistenceModule {
   val relDashboardWidgetDal: BaseDal[RelDashboardWidgetTable, RelDashboardWidget]
   val widgetDal: BaseDal[WidgetTable, Widget]
   val libWidgetDal: BaseDal[LibWidgetTable, LibWidget]
-  val viewDal: BaseDal[ViewTbl, ViewTable]
+  val viewDal: BaseDal[ViewTbl, View]
   val relGroupViewDal: BaseDal[RelGroupViewTable, RelGroupView]
 }
 
@@ -58,7 +78,7 @@ trait PersistenceModuleImpl extends PersistenceModule {
   override lazy val relDashboardWidgetDal = new BaseDalImpl[RelDashboardWidgetTable, RelDashboardWidget](TableQuery[RelDashboardWidgetTable])
   override lazy val widgetDal = new BaseDalImpl[WidgetTable, Widget](TableQuery[WidgetTable])
   override lazy val libWidgetDal = new BaseDalImpl[LibWidgetTable, LibWidget](TableQuery[LibWidgetTable])
-  override lazy val viewDal = new BaseDalImpl[ViewTbl, ViewTable](TableQuery[ViewTbl])
+  override lazy val viewDal = new BaseDalImpl[ViewTbl, View](TableQuery[ViewTbl])
   override lazy val relGroupViewDal = new BaseDalImpl[RelGroupViewTable, RelGroupView](TableQuery[RelGroupViewTable])
 
 }

@@ -1,3 +1,23 @@
+/*-
+ * <<
+ * Davinci
+ * ==
+ * Copyright (C) 2016 - 2017 EDP
+ * ==
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * >>
+ */
+
 package edp.davinci.rest
 
 import edp.davinci.KV
@@ -31,13 +51,13 @@ case class PostRelDashboardWidgetSeq(payload: Seq[PostRelDashboardWidget])
 
 case class PutRelDashboardWidgetSeq(payload: Seq[PutRelDashboardWidget])
 
-case class PostRelGroupFlatTableSeq(payload: Seq[PostRelGroupFlatTable])
+case class PostRelGroupFlatTableSeq(payload: Seq[PostRelGroupView])
 
-case class PutRelGroupFlatTableSeq(payload: Seq[PutRelGroupFlatTable])
+case class PutRelGroupViewSeq(payload: Seq[PutRelGroupView])
 
 case class PostUserInfoSeq(payload: Seq[PostUserInfo])
 
-case class PostFlatTableInfoSeq(payload: Seq[PostFlatTableInfo])
+case class PostViewInfoSeq(payload: Seq[PostViewInfo])
 
 case class PostDashboardInfoSeq(payload: Seq[PostDashboardInfo])
 
@@ -51,7 +71,7 @@ case class PostWidgetInfoSeq(payload: Seq[PostWidgetInfo])
 
 case class SimpleRelUserGroupSeq(payload: Seq[SimpleRelUserGroup])
 
-case class PutFlatTableInfoSeq(payload: Seq[PutFlatTableInfo])
+case class PutViewInfoSeq(payload: Seq[PutViewInfo])
 
 case class PutDashboardSeq(payload: Seq[PutDashboardInfo])
 
@@ -65,7 +85,7 @@ case class PutUserInfoSeq(payload: Seq[PutUserInfo])
 
 case class PutWidgetInfoSeq(payload: Seq[PutWidgetInfo])
 
-case class FlatTableResult(result: Seq[String] = null, totalCount: Long)
+case class ViewResult(result: Seq[String] = null, totalCount: Long)
 
 case class ShareResult(result: Seq[String], totalCount: Long)
 

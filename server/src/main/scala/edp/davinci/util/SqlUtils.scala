@@ -1,3 +1,23 @@
+/*-
+ * <<
+ * Davinci
+ * ==
+ * Copyright (C) 2016 - 2017 EDP
+ * ==
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * >>
+ */
+
 package edp.davinci.util
 
 import java.sql.{Connection, ResultSet, Statement}
@@ -96,7 +116,6 @@ trait SqlUtils extends Serializable {
                  connectionUrl: String,
                  paramSeq: Seq[KV] = null,
                  groupParams: Seq[KV] = null): (ListBuffer[Seq[String]], Long) = {
-    var totalCount: Long = 0
     val trimSql = flatTableSqls.trim
     logger.info(trimSql + "~~~~~~~~~~~~~~~~~~~~~~~~~sqlTemp")
     val sqls = if (trimSql.lastIndexOf(sqlSeparator) == trimSql.length - 1) trimSql.dropRight(1).split(sqlSeparator) else trimSql.split(sqlSeparator)
@@ -108,15 +127,16 @@ trait SqlUtils extends Serializable {
     logger.info("mergeSql~~~~~~~~~~~~~~" + mergeSql)
     val renderedSql = if (queryKVMap.nonEmpty) STRenderUtils.renderSql(mergeSql, queryKVMap) else mergeSql
     logger.info("renderedSql~~~~~~~~~~~~~~" + renderedSql)
-    val resetSqlBuffer = renderedSql.split(sqlSeparator).toBuffer
+    val trimRenderSql = renderedSql.trim
+    val resetSql = if (trimRenderSql.lastIndexOf(sqlSeparator) == trimRenderSql.length - 1) trimRenderSql.dropRight(1).split(sqlSeparator) else trimRenderSql.split(sqlSeparator)
+    val resetSqlBuffer: mutable.Buffer[String] = resetSql.toBuffer
     val projectSql = getProjectSql(resetSqlBuffer.last, filters, tableName, adHocSql, paginateAndSort)
     logger.info(projectSql + "~~~~~~~~~~~~~~~~~~~~~~~~~projectSql")
     resetSqlBuffer.remove(resetSqlBuffer.length - 1)
-    resetSqlBuffer.append(projectSql.split(sqlSeparator).head)
-    val resultSql = resetSqlBuffer.toArray
-    val countNum = getResult(connectionUrl, Array(projectSql.split(sqlSeparator).last))
-    totalCount = countNum.last.last.toLong
-    (getResult(connectionUrl, resultSql), totalCount)
+    resetSqlBuffer.append(projectSql)
+    val result = getResult(connectionUrl, resetSqlBuffer)
+    val totalCount = result.size - 1
+    (result, totalCount)
   }
 
 
@@ -158,7 +178,7 @@ trait SqlUtils extends Serializable {
     queryKVMap
   }
 
-  def getResult(connectionUrl: String, sql: Array[String]): ListBuffer[Seq[String]] = {
+  def getResult(connectionUrl: String, sql: mutable.Buffer[String]): ListBuffer[Seq[String]] = {
     logger.info("the sql in getResult:")
     sql.foreach(logger.info)
     val resultList = new ListBuffer[Seq[String]]
@@ -219,9 +239,9 @@ trait SqlUtils extends Serializable {
       projectSqlWithFilter
     }
     if (paginateStr != "")
-      s"SELECT * FROM ($mixinSql) AS PAGINATE $paginateStr" + s";SELECT COUNT(*) FROM ($mixinSql) AS COUNTSQL"
+      s"SELECT * FROM ($mixinSql) AS PAGINATE $paginateStr"
     else
-      mixinSql + s";SELECT COUNT(*) FROM ($mixinSql) AS COUNTSQL"
+      mixinSql
   }
 
 

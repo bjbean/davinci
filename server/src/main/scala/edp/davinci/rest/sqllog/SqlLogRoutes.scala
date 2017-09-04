@@ -1,3 +1,23 @@
+/*-
+ * <<
+ * Davinci
+ * ==
+ * Copyright (C) 2016 - 2017 EDP
+ * ==
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * >>
+ */
+
 package edp.davinci.rest.sqllog
 
 import javax.ws.rs.Path
@@ -19,7 +39,6 @@ import scala.util.{Failure, Success}
 class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
 
   val routes: Route = getSqlByAllRoute ~ postSqlLogRoute ~ putSqlLogRoute
-  private lazy val sqlLogService = new SqlLogService(modules)
   private lazy val logger = Logger.getLogger(this.getClass)
   private lazy val routeName = "sqllogs"
 
@@ -42,7 +61,7 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   private def getAllLogsComplete(session: SessionClass): Route = {
     if (session.admin) {
-      onComplete(sqlLogService.getAll(session)) {
+      onComplete(SqlLogService.getAll(session)) {
         case Success(logSeq) => complete(OK, ResponseSeqJson[SqlLog](getHeader(200, session), logSeq))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -63,11 +82,18 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   ))
   def postSqlLogRoute: Route = path(routeName) {
     post {
-      entity(as[SimpleSqlLogSeq]) {
-        sqlLogSeq =>
-          authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) {
-            session => modules.sqlLogRoutes.postComplete(session, sqlLogSeq.payload)
+      entity(as[SimpleSqlLogSeq]) { simpleSqlLogSeq =>
+        authenticateOAuth2Async[SessionClass](AuthorizationProvider.realm, AuthorizationProvider.authorize) { session =>
+          if (session.admin) {
+            val sqlLog = simpleSqlLogSeq.payload.map(s => SqlLog(0, s.user_id, s.user_email, s.sql, s.start_time, s.end_time, s.success, s.error))
+            onComplete(modules.sqlLogDal.insert(sqlLog)) {
+              case Success(_) =>
+                complete(OK, ResponseJson[String](getHeader(200, session), ""))
+              case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
+            }
           }
+          else complete(Forbidden, ResponseJson[String](getHeader(403, session), ""))
+        }
       }
     }
   }
@@ -98,7 +124,7 @@ class SqlLogRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   private def putSqlLogComplete(session: SessionClass, sqlLogSeq: Seq[SqlLog]): Route = {
     if (session.admin) {
-      val future = sqlLogService.update(sqlLogSeq, session)
+      val future = SqlLogService.update(sqlLogSeq, session)
       onComplete(future) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))

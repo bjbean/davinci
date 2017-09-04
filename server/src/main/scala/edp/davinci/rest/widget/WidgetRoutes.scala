@@ -1,3 +1,23 @@
+/*-
+ * <<
+ * Davinci
+ * ==
+ * Copyright (C) 2016 - 2017 EDP
+ * ==
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * >>
+ */
+
 package edp.davinci.rest.widget
 
 import javax.ws.rs.Path
@@ -20,7 +40,6 @@ import scala.util.{Failure, Success}
 @Path("/widgets")
 class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with BusinessModule with RoutesModuleImpl) extends Directives {
   val routes: Route = getAllWidgetsRoute ~ postWidgetRoute ~ deleteWidgetByIdRoute ~ putWidgetRoute ~ getWholeSqlByWidgetIdRoute
-  private lazy val widgetService = new WidgetService(modules)
   private lazy val logger = Logger.getLogger(this.getClass)
   private lazy val routeName = "widgets"
 
@@ -46,9 +65,9 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   }
 
   private def getAllWidgetsComplete(session: SessionClass, active: Boolean): Route = {
-    onComplete(widgetService.getAll(session, active)) {
+    onComplete(WidgetService.getAll(session)) {
       case Success(widgetSeq) =>
-        val responseSeq: Seq[PutWidgetInfo] = widgetSeq.map(r => PutWidgetInfo(r._1, r._2, r._3, r._4, r._5.getOrElse(""), r._6, r._7, r._8, r._9, Some(r._10)))
+        val responseSeq: Seq[PutWidgetInfo] = widgetSeq.map(r => PutWidgetInfo(r._1, r._2, r._3, r._4, r._5.getOrElse(""), r._6, r._7, r._8, r._9))
         complete(OK, ResponseJson[Seq[PutWidgetInfo]](getHeader(200, session), responseSeq))
       case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
     }
@@ -81,7 +100,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
       val widgetSeq = postWidgetSeq.map(post => Widget(0, post.widgetlib_id, post.flatTable_id, post.name, Some(post.adhoc_sql), post.desc, post.chart_params, post.query_params, post.publish, active = true, currentTime, session.userId, currentTime, session.userId))
       onComplete(modules.widgetDal.insert(widgetSeq)) {
         case Success(widgets) =>
-          val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql.getOrElse(""), w.desc, w.chart_params,w.query_params, w.publish, Some(w.active)))
+          val putWidgets = widgets.map(w => PutWidgetInfo(w.id, w.widgetlib_id, w.flatTable_id, w.name, w.adhoc_sql.getOrElse(""), w.desc, w.chart_params, w.query_params, w.publish, Some(w.active)))
           complete(OK, ResponseSeqJson[PutWidgetInfo](getHeader(200, session), putWidgets))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
       }
@@ -113,7 +132,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
 
   private def putWidgetComplete(session: SessionClass, putWidgetSeq: Seq[PutWidgetInfo]): Route = {
     if (session.admin) {
-      val future = widgetService.update(putWidgetSeq, session)
+      val future = WidgetService.update(putWidgetSeq, session)
       onComplete(future) {
         case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
         case Failure(ex) => complete(BadRequest, ResponseJson[String](getHeader(400, ex.getMessage, session), ""))
@@ -139,8 +158,8 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
           session =>
             if (session.admin) {
               val operation = for {
-                user <- widgetService.deleteWidget(widgetId)
-                relGU <- widgetService.deleteFromRelDW(widgetId)
+                user <- WidgetService.deleteWidget(widgetId)
+                relGU <- WidgetService.deleteRelDW(widgetId)
               } yield (user, relGU)
               onComplete(operation) {
                 case Success(_) => complete(OK, ResponseJson[String](getHeader(200, session), ""))
@@ -171,7 +190,7 @@ class WidgetRoutes(modules: ConfigurationModule with PersistenceModule with Busi
   }
 
   private def getWholeSqlComplete(session: SessionClass, widgetId: Long): Route = {
-    onComplete(widgetService.getSql(widgetId)) {
+    onComplete(WidgetService.getSql(widgetId)) {
       case Success(sqlSeq) =>
         val resultSql = formatSql(sqlSeq.head)
         complete(OK, ResponseJson[SqlInfo](getHeader(200, session), SqlInfo(resultSql)))

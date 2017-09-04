@@ -1,3 +1,23 @@
+/*-
+ * <<
+ * Davinci
+ * ==
+ * Copyright (C) 2016 - 2017 EDP
+ * ==
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * >>
+ */
+
 package edp.davinci.util
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
@@ -62,17 +82,17 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val formatDashboardInfo: RootJsonFormat[DashboardInfo] = jsonFormat6(DashboardInfo)
 
 
-  implicit val formatPostRelGroupBizlogic: RootJsonFormat[PostRelGroupFlatTable] = jsonFormat2(PostRelGroupFlatTable)
-  implicit val formatPutRelGroupBizlogic: RootJsonFormat[PutRelGroupFlatTable] = jsonFormat3(PutRelGroupFlatTable)
+  implicit val formatPostRelGroupBizlogic: RootJsonFormat[PostRelGroupView] = jsonFormat2(PostRelGroupView)
+  implicit val formatPutRelGroupView: RootJsonFormat[PutRelGroupView] = jsonFormat3(PutRelGroupView)
   implicit val formatPostRelGroupBizlogicSeq: RootJsonFormat[PostRelGroupFlatTableSeq] = jsonFormat1(PostRelGroupFlatTableSeq)
-  implicit val formatPutRelGroupBizlogicSeq: RootJsonFormat[PutRelGroupFlatTableSeq] = jsonFormat1(PutRelGroupFlatTableSeq)
+  implicit val formatPutRelGroupBizlogicSeq: RootJsonFormat[PutRelGroupViewSeq] = jsonFormat1(PutRelGroupViewSeq)
 
-  implicit val formatBizlogic: RootJsonFormat[FlatTable] = jsonFormat14(FlatTable)
-  implicit val formatPostBizlogicInfo: RootJsonFormat[PostFlatTableInfo] = jsonFormat8(PostFlatTableInfo)
-  implicit val formatPutBizlogicInfo: RootJsonFormat[PutFlatTableInfo] = jsonFormat10(PutFlatTableInfo)
-  implicit val formatQUeryBizlogic: RootJsonFormat[QueryFlatTable] = jsonFormat10(QueryFlatTable)
-  implicit val formatPostBizlogicInfoSeq: RootJsonFormat[PostFlatTableInfoSeq] = jsonFormat1(PostFlatTableInfoSeq)
-  implicit val formatPutBizlogicInfoSeq: RootJsonFormat[PutFlatTableInfoSeq] = jsonFormat1(PutFlatTableInfoSeq)
+  implicit val formatView: RootJsonFormat[View] = jsonFormat14(View)
+  implicit val formatPostBizlogicInfo: RootJsonFormat[PostViewInfo] = jsonFormat8(PostViewInfo)
+  implicit val formatPutBizlogicInfo: RootJsonFormat[PutViewInfo] = jsonFormat10(PutViewInfo)
+  implicit val formatQUeryBizlogic: RootJsonFormat[QueryView] = jsonFormat10(QueryView)
+  implicit val formatPostBizlogicInfoSeq: RootJsonFormat[PostViewInfoSeq] = jsonFormat1(PostViewInfoSeq)
+  implicit val formatPutBizlogicInfoSeq: RootJsonFormat[PutViewInfoSeq] = jsonFormat1(PutViewInfoSeq)
 
   implicit val formatLibWidget: RootJsonFormat[LibWidget] = jsonFormat9(LibWidget)
   implicit val formatQueryLibWidget: RootJsonFormat[QueryLibWidget] = jsonFormat5(QueryLibWidget)
@@ -93,7 +113,7 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
 
   implicit val formatPutLoginUserInfo: RootJsonFormat[LoginUserInfo] = jsonFormat2(LoginUserInfo)
 
-  implicit val formatBizlogicResult: RootJsonFormat[FlatTableResult] = jsonFormat2(FlatTableResult)
+  implicit val formatBizlogicResult: RootJsonFormat[ViewResult] = jsonFormat2(ViewResult)
 
   implicit val formatResponsePayload: RootJsonFormat[ResponsePayload] = jsonFormat1(ResponsePayload)
 
@@ -114,7 +134,7 @@ object JsonProtocol extends DefaultJsonProtocol with SprayJsonSupport {
   implicit object formatBaseEntity extends RootJsonFormat[BaseEntity] {
 
     def write(obj: BaseEntity): JsValue = obj match {
-      case biz: FlatTable => biz.toJson
+      case view: View => view.toJson
       case dashboard: Dashboard => dashboard.toJson
       case group: UserGroup => group.toJson
       case ligWidget: LibWidget => ligWidget.toJson
