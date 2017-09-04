@@ -26,7 +26,7 @@ import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import edp.davinci.DavinciConstants._
 import edp.davinci.KV
 import org.apache.log4j.Logger
-
+import java.sql.Types._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -249,8 +249,57 @@ trait SqlUtils extends Serializable {
     val meta = rs.getMetaData
     val columnNum = meta.getColumnCount
     (1 to columnNum).map(columnIndex => {
-      rs.getObject(columnIndex)
-    }).asInstanceOf[Seq[String]]
+      val fieldValue = meta.getColumnType(columnIndex) match {
+        case INTEGER => rs.getInt(columnIndex)
+        case BIGINT => rs.getLong(columnIndex)
+
+        case DECIMAL => rs.getBigDecimal(columnIndex)
+        case NUMERIC => rs.getBigDecimal(columnIndex)
+
+        case FLOAT => rs.getFloat(columnIndex)
+        case DOUBLE => rs.getDouble(columnIndex)
+        case REAL => rs.getDouble(columnIndex)
+
+        case NVARCHAR => rs.getString(columnIndex)
+        case VARCHAR => rs.getString(columnIndex)
+        case LONGNVARCHAR => rs.getString(columnIndex)
+        case LONGVARCHAR => rs.getString(columnIndex)
+
+        case BOOLEAN => rs.getBoolean(columnIndex)
+        case BIT => rs.getBoolean(columnIndex)
+
+        case BINARY => rs.getBytes(columnIndex)
+        case VARBINARY => rs.getBytes(columnIndex)
+        case LONGVARBINARY => rs.getBytes(columnIndex)
+
+        case TINYINT => rs.getShort(columnIndex)
+        case SMALLINT => rs.getShort(columnIndex)
+
+        case DATE => rs.getDate(columnIndex)
+
+        case TIMESTAMP => rs.getTime(columnIndex)
+
+        case BLOB => rs.getBlob(columnIndex)
+
+        case CLOB => rs.getClob(columnIndex)
+
+        case ARRAY =>
+          throw new RuntimeException("ResultSetSerializer not yet implemented for SQL type ARRAY")
+
+        case STRUCT =>
+          throw new RuntimeException("ResultSetSerializer not yet implemented for SQL type STRUCT")
+
+        case DISTINCT =>
+          throw new RuntimeException("ResultSetSerializer not yet implemented for SQL type DISTINCT")
+
+        case REF =>
+          throw new RuntimeException("ResultSetSerializer not yet implemented for SQL type REF")
+
+        case JAVA_OBJECT => rs.getObject(columnIndex)
+        case _ => rs.getObject(columnIndex)
+      }
+      if (fieldValue == null) null.asInstanceOf[String] else fieldValue.toString
+    })
   }
 
 }
