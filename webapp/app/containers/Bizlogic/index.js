@@ -46,7 +46,7 @@ export class Bizlogic extends React.PureComponent {
       formStep: 0,
       groupFormVisible: false,
 
-      groupParamLength: 0
+      groupParams: []
     }
   }
 
@@ -113,14 +113,14 @@ export class Bizlogic extends React.PureComponent {
               id: g.id,
               key: g.id,
               name: g.name,
-              params: checkedGroup ? checkedGroup.sql_params.split('?') : [],
+              params: checkedGroup ? JSON.parse(checkedGroup.sql_params) : [],
               checked: !!checkedGroup
             }
           })
 
           this.setState({
             groupTableSource: groupTableSource,
-            groupParamLength: groups.length ? groups[0].sql_params.split('?').length : 0,
+            groupParams: groups.length ? JSON.parse(groups[0].sql_params).map(o => o.k) : [],
             groupTableSelectedRowKeys: groups.map(g => g.group_id)
           })
         })
@@ -137,19 +137,32 @@ export class Bizlogic extends React.PureComponent {
     if (sign) {
       this.bizlogicForm.validateFieldsAndScroll((err, values) => {
         if (!err) {
-          const { groupTableSource, groupParamLength } = this.state
-          const questionMarks = values.sql_tmpl.match(/\?/g) || []
-          const qmLength = questionMarks.length
+          const { groupTableSource } = this.state
+          const sqlGroupVariables = values.sql_tmpl.match(/group@var\s\$\w+\$/g)
+          const groupParams = sqlGroupVariables
+            ? sqlGroupVariables.map(gv => gv.substring(gv.indexOf('$') + 1, gv.lastIndexOf('$')))
+            : []
 
-          if (groupParamLength !== qmLength) {
-            groupTableSource.forEach(gs => {
-              gs.params = Array.from(Array(qmLength), (i, index) => gs.params[index] || '')
+          groupTableSource.forEach(gs => {
+            const originParams = gs.params
+
+            gs.params = groupParams.map(gp => {
+              const alreadyInUseParam = originParams.find(o => o.k === gp)
+
+              if (alreadyInUseParam) {
+                return Object.assign({}, alreadyInUseParam)
+              } else {
+                return {
+                  k: gp,
+                  v: ''
+                }
+              }
             })
-          }
+          })
 
           this.setState({
             formStep: sign,
-            groupParamLength: qmLength,
+            groupParams,
             groupTableSource: groupTableSource.slice()
           })
         }
@@ -179,7 +192,7 @@ export class Bizlogic extends React.PureComponent {
   onGroupParamChange = (id, paramIndex) => (e) => {
     const { groupTableSource } = this.state
     const changed = groupTableSource.find(i => i.id === id)
-    changed.params[paramIndex] = e.target.value
+    changed.params[paramIndex].v = e.target.value
     this.setState({
       groupTableSource: groupTableSource.slice()
     })
@@ -195,7 +208,7 @@ export class Bizlogic extends React.PureComponent {
           .filter(gs => gs.checked)
           .map(gs => ({
             group_id: gs.id,
-            sql_params: gs.params.join('?')
+            sql_params: JSON.stringify(gs.params)
           }))
         values.trigger_type = ''
         values.frequency = ''
@@ -219,13 +232,16 @@ export class Bizlogic extends React.PureComponent {
 
         this.props.onAddGroup(values)
           .then(({ id, name }) => {
-            const { groupTableSource, groupParamLength } = this.state
+            const { groupTableSource, groupParams } = this.state
 
             groupTableSource.unshift({
               id,
               key: id,
               name,
-              params: Array.from(Array(groupParamLength), () => ''),
+              params: groupParams.map(gp => ({
+                k: gp,
+                v: ''
+              })),
               checked: false
             })
 
@@ -308,7 +324,7 @@ export class Bizlogic extends React.PureComponent {
       formType,
       formStep,
       groupFormVisible,
-      groupParamLength
+      groupParams
     } = this.state
 
     const {
@@ -434,7 +450,7 @@ export class Bizlogic extends React.PureComponent {
             <Col span={24}>
               <Breadcrumb className={utilStyles.breadcrumb}>
                 <Breadcrumb.Item>
-                  <Link>Bizlogic</Link>
+                  <Link>View</Link>
                 </Breadcrumb.Item>
               </Breadcrumb>
             </Col>
@@ -444,7 +460,7 @@ export class Bizlogic extends React.PureComponent {
           <Box>
             <Box.Header>
               <Box.Title>
-                <Icon type="bars" />Bizlogic List
+                <Icon type="bars" />View List
               </Box.Title>
               <Box.Tools>
                 <Button type="primary" icon="plus" onClick={this.showAdd}>新增</Button>
@@ -463,7 +479,7 @@ export class Bizlogic extends React.PureComponent {
                 </Col>
               </Row>
               <Modal
-                title={`${formType === 'add' ? '新增' : '修改'} Bizlogic`}
+                title={`${formType === 'add' ? '新增' : '修改'} View`}
                 wrapClassName="ant-modal-large"
                 visible={formVisible}
                 footer={modalButtons}
@@ -475,7 +491,7 @@ export class Bizlogic extends React.PureComponent {
                   step={formStep}
                   sources={sources}
                   groups={groupTableSource}
-                  groupParamLength={groupParamLength}
+                  groupParams={groupParams}
                   selectedGroups={groupTableSelectedRowKeys}
                   onGroupSelect={this.onGroupTableSelect}
                   onGroupParamChange={this.onGroupParamChange}

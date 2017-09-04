@@ -21,7 +21,6 @@ import {
 
 import request from '../../utils/request'
 import api from '../../utils/api'
-import { notifySagasError } from '../../utils/util'
 import { promiseSagaCreator } from '../../utils/reduxPromisation'
 import { writeAdapter, readObjectAdapter, readListAdapter } from '../../utils/asyncAdapter'
 
@@ -33,7 +32,7 @@ export const getUsers = promiseSagaCreator(
     return users
   },
   function (err) {
-    notifySagasError(err, 'getUsers')
+    console.log('getUsers', err)
   }
 )
 
@@ -53,7 +52,7 @@ export const addUser = promiseSagaCreator(
     return result
   },
   function (err) {
-    notifySagasError(err, 'addUser')
+    console.log('addUser', err)
   }
 )
 
@@ -70,7 +69,7 @@ export const deleteUser = promiseSagaCreator(
     yield put(userDeleted(id))
   },
   function (err) {
-    notifySagasError(err, 'deleteUser')
+    console.log('deleteUser', err)
   }
 )
 
@@ -85,7 +84,7 @@ export const getUserDetail = promiseSagaCreator(
     return user
   },
   function (err) {
-    notifySagasError(err, 'getUserDetail')
+    console.log('getUserDetail', err)
   }
 )
 
@@ -101,7 +100,7 @@ export const getUserGroups = promiseSagaCreator(
     return groups
   },
   function (err) {
-    notifySagasError(err, 'getUserGroups')
+    console.log('getUserGroups', err)
   }
 )
 
@@ -119,7 +118,7 @@ export const editUserInfo = promiseSagaCreator(
     yield put(userInfoEdited(user))
   },
   function (err) {
-    notifySagasError(err, 'editUserInfo')
+    console.log('editUserInfo', err)
   }
 )
 
@@ -138,7 +137,7 @@ export const changeUserPassword = promiseSagaCreator(
     yield put(userPasswordChanged())
   },
   function (err) {
-    notifySagasError(err, 'changeUserPassword')
+    console.log('changeUserPassword', err)
   }
 )
 

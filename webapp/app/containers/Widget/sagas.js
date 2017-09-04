@@ -17,7 +17,6 @@ import {
 
 import request from '../../utils/request'
 import api from '../../utils/api'
-import { notifySagasError } from '../../utils/util'
 import { promiseSagaCreator } from '../../utils/reduxPromisation'
 import { writeAdapter, readObjectAdapter, readListAdapter } from '../../utils/asyncAdapter'
 
@@ -29,7 +28,7 @@ export const getWidgets = promiseSagaCreator(
     return widgets
   },
   function (err) {
-    notifySagasError(err, 'getWidgets')
+    console.log('getWidgets', err)
   }
 )
 
@@ -49,7 +48,7 @@ export const addWidget = promiseSagaCreator(
     return result
   },
   function (err) {
-    notifySagasError(err, 'addWidget')
+    console.log('addWidget', err)
   }
 )
 
@@ -66,7 +65,7 @@ export const deleteWidget = promiseSagaCreator(
     yield put(widgetDeleted(id))
   },
   function (err) {
-    notifySagasError(err, 'deleteWidget')
+    console.log('deleteWidget', err)
   }
 )
 
@@ -81,7 +80,7 @@ export const getWidgetDetail = promiseSagaCreator(
     return widget
   },
   function (err) {
-    notifySagasError(err, 'getWidgetDetail')
+    console.log('getWidgetDetail', err)
   }
 )
 
@@ -99,7 +98,7 @@ export const editWidget = promiseSagaCreator(
     yield put(widgetEdited(widget))
   },
   function (err) {
-    notifySagasError(err, 'editWidget')
+    console.log('editWidget', err)
   }
 )
 

@@ -108,7 +108,6 @@ export class DashboardItem extends PureComponent {
 
     let editButton = ''
     let widgetButton = ''
-    let shareButton = ''
     let deleteButton = ''
 
     if (isAdmin) {
@@ -120,13 +119,6 @@ export class DashboardItem extends PureComponent {
       widgetButton = (
         <Tooltip title="Widget信息">
           <Icon type="setting" onClick={onShowWorkbench(item, widget)} />
-        </Tooltip>
-      )
-      shareButton = (
-        <Tooltip title="分享">
-          <Popover placement="bottomRight" content={<SharePanel id={widget.id} type="widget" />} trigger="click">
-            <Icon type="share-alt" />
-          </Popover>
         </Tooltip>
       )
       deleteButton = (
@@ -149,6 +141,7 @@ export class DashboardItem extends PureComponent {
       ? (
         <Tooltip title="选择参数">
           <Icon
+            className={styles.control}
             type={controlPanelVisible ? 'up-square-o' : 'down-square-o'}
             onClick={this.toggleControlPanel}
           />
@@ -167,6 +160,9 @@ export class DashboardItem extends PureComponent {
         <h4 className={styles.title}>
           {controlPanelHandle}
           {widget.name}
+          <Popover placement="bottom" content={<p className={styles.descPanel}>{widget.desc}</p>}>
+            <Icon className={styles.desc} type="question-circle-o" />
+          </Popover>
         </h4>
         <div className={styles.tools}>
           <Tooltip title="移动">
@@ -180,7 +176,11 @@ export class DashboardItem extends PureComponent {
           <Tooltip title="同步数据">
             <Icon type="reload" onClick={this.onSyncBizdatas} />
           </Tooltip>
-          {shareButton}
+          <Tooltip title="分享">
+            <Popover placement="bottomRight" content={<SharePanel id={widget.id} type="widget" />} trigger="click">
+              <Icon type="share-alt" />
+            </Popover>
+          </Tooltip>
           {deleteButton}
         </div>
         <Animate
