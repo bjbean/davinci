@@ -73,7 +73,7 @@ export class Dashboard extends React.Component {
         this.setState({ modalLoading: true })
         if (this.state.formType === 'add') {
           this.props.onAddDashboard(Object.assign({}, values, {
-            pic: `${Math.ceil(Math.random() * 7)}`
+            pic: `${Math.ceil(Math.random() * 19)}`
           }))
             .then(() => { this.hideDashboardForm() })
         } else {

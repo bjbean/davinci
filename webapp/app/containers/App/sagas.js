@@ -1,12 +1,12 @@
 import { takeLatest } from 'redux-saga'
 import { call, fork, put } from 'redux-saga/effects'
 
+import message from 'antd/lib/message'
 import { LOGIN, GET_LOGIN_USER } from './constants'
 import { logged } from './actions'
 
 import request from '../../utils/request'
 import api from '../../utils/api'
-import { notifySagasError } from '../../utils/util'
 import { promiseSagaCreator } from '../../utils/reduxPromisation'
 import { readListAdapter, readObjectAdapter } from '../../utils/asyncAdapter'
 
@@ -26,7 +26,8 @@ export const login = promiseSagaCreator(
     return loginUser
   },
   function (err) {
-    notifySagasError(err, 'login')
+    message.error('登录失败')
+    throw err
   }
 )
 
@@ -43,7 +44,8 @@ export const getLoginUser = promiseSagaCreator(
     return loginUser
   },
   function (err) {
-    notifySagasError(err, 'getLoginUser')
+    message.error('获取登录用户失败')
+    throw err
   }
 )
 

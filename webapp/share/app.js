@@ -6,6 +6,7 @@ import { Provider } from 'react-redux'
 import { applyRouterMiddleware, Router, hashHistory } from 'react-router'
 import { syncHistoryWithStore } from 'react-router-redux'
 import { useScroll } from 'react-router-scroll'
+import config from '../app/globalConfig'
 
 import App from './containers/App/index'
 
@@ -31,6 +32,7 @@ import '../app/assets/override/antd.css'
 import '../app/assets/override/react-grid.css'
 import '../app/assets/less/style.less'
 
+import echarts from 'echarts'
 import 'echarts/lib/chart/bar'
 import 'echarts/lib/chart/line'
 import 'echarts/lib/chart/scatter'
@@ -42,6 +44,8 @@ import '../app/containers/Widget/temp/wordCloud'
 import 'echarts/lib/component/legend'
 import 'echarts/lib/component/tooltip'
 import 'echarts/lib/component/toolbox'
+
+echarts.registerTheme('default', config.echarts.theme.default)
 
 const initialState = {}
 const store = configureStore(initialState, hashHistory)

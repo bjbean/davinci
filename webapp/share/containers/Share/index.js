@@ -117,7 +117,7 @@ export class Share extends React.Component {
             if (currentChart) {
               currentChart.dispose()
             }
-            currentChart = echarts.init(document.getElementById(domId))
+            currentChart = echarts.init(document.getElementById(domId), 'default')
             this.charts[domId] = currentChart
             currentChart.showLoading('default', { color: '#8BC34A' })
             break

@@ -17,7 +17,6 @@ import {
 
 import request from '../../utils/request'
 import api from '../../utils/api'
-import { notifySagasError } from '../../utils/util'
 import { promiseSagaCreator } from '../../utils/reduxPromisation'
 import { writeAdapter, readObjectAdapter, readListAdapter } from '../../utils/asyncAdapter'
 
@@ -29,7 +28,7 @@ export const getSources = promiseSagaCreator(
     return sources
   },
   function (err) {
-    notifySagasError(err, 'getSources')
+    console.log('getSources', err)
   }
 )
 
@@ -49,7 +48,7 @@ export const addSource = promiseSagaCreator(
     return result
   },
   function (err) {
-    notifySagasError(err, 'addSource')
+    console.log('addSource', err)
   }
 )
 
@@ -66,7 +65,7 @@ export const deleteSource = promiseSagaCreator(
     yield put(sourceDeleted(id))
   },
   function (err) {
-    notifySagasError(err, 'deleteSource')
+    console.log('deleteSource', err)
   }
 )
 
@@ -81,7 +80,7 @@ export const getSourceDetail = promiseSagaCreator(
     return source
   },
   function (err) {
-    notifySagasError(err, 'getSourceDetail')
+    console.log('getSourceDetail', err)
   }
 )
 
@@ -99,7 +98,7 @@ export const editSource = promiseSagaCreator(
     yield put(sourceEdited(source))
   },
   function (err) {
-    notifySagasError(err, 'editSource')
+    console.log('editSource', err)
   }
 )
 

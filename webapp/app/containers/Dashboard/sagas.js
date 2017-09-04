@@ -30,7 +30,6 @@ import {
 
 import request from '../../utils/request'
 import api from '../../utils/api'
-import { notifySagasError } from '../../utils/util'
 import { promiseSagaCreator } from '../../utils/reduxPromisation'
 import { writeAdapter, readObjectAdapter, readListAdapter } from '../../utils/asyncAdapter'
 
@@ -42,7 +41,7 @@ export const getDashboards = promiseSagaCreator(
     return dashboards
   },
   function (err) {
-    notifySagasError(err, 'getDashboards')
+    console.log('getDashboards', err)
   }
 )
 
@@ -62,7 +61,7 @@ export const addDashboard = promiseSagaCreator(
     return result
   },
   function (err) {
-    notifySagasError(err, 'addDashboard')
+    console.log('addDashboard', err)
   }
 )
 
@@ -80,7 +79,7 @@ export const editDashboard = promiseSagaCreator(
     yield put(dashboardEdited(dashboard))
   },
   function (err) {
-    notifySagasError(err, 'editDashboard')
+    console.log('editDashboard', err)
   }
 )
 
@@ -97,7 +96,7 @@ export const deleteDashboard = promiseSagaCreator(
     yield put(dashboardDeleted(id))
   },
   function (err) {
-    notifySagasError(err, 'deleteDashboard')
+    console.log('deleteDashboard', err)
   }
 )
 
@@ -113,7 +112,7 @@ export const getDashboardDetail = promiseSagaCreator(
     return dashboard
   },
   function (err) {
-    notifySagasError(err, 'getDashboardDetail')
+    console.log('getDashboardDetail', err)
   }
 )
 
@@ -133,7 +132,7 @@ export const addDashboardItem = promiseSagaCreator(
     return result
   },
   function (err) {
-    notifySagasError(err, 'addDashboardItem')
+    console.log('addDashboardItem', err)
   }
 )
 
@@ -151,7 +150,7 @@ export const editDashboardItem = promiseSagaCreator(
     yield put(dashboardItemEdited(item))
   },
   function (err) {
-    notifySagasError(err, 'editDashboardItem')
+    console.log('editDashboardItem', err)
   }
 )
 
@@ -171,7 +170,7 @@ export const editDashboardItems = promiseSagaCreator(
     yield put(dashboardItemsEdited(items))
   },
   function (err) {
-    notifySagasError(err, 'editDashboardItems')
+    console.log('editDashboardItems', err)
   }
 )
 
@@ -188,7 +187,7 @@ export const deleteDashboardItem = promiseSagaCreator(
     yield put(dashboardItemDeleted(id))
   },
   function (err) {
-    notifySagasError(err, 'deleteDashboardItem')
+    console.log('deleteDashboardItem', err)
   }
 )
 
@@ -204,7 +203,7 @@ export const getDashboardShareLink = promiseSagaCreator(
     return shareInfo
   },
   function (err) {
-    notifySagasError(err, 'getDashboardShareLink')
+    console.log('getDashboardShareLink', err)
   }
 )
 
@@ -220,7 +219,7 @@ export const getWidgetShareLink = promiseSagaCreator(
     return shareInfo
   },
   function (err) {
-    notifySagasError(err, 'getWidgetShareLink')
+    console.log('getWidgetShareLink', err)
   }
 )
 

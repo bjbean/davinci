@@ -143,7 +143,7 @@ export class Grid extends React.Component {
             if (currentChart) {
               currentChart.dispose()
             }
-            currentChart = echarts.init(document.getElementById(domId))
+            currentChart = echarts.init(document.getElementById(domId), 'default')
             this.charts[domId] = currentChart
             currentChart.showLoading('default', { color: '#8BC34A' })
             break
@@ -182,6 +182,11 @@ export class Grid extends React.Component {
               }, JSON.parse(widget.chart_params))
             })
             currentChart.setOption(chartOptions)
+
+            currentChart.on('dataZoom', (dzParams) => {
+              console.log(dzParams)
+            })
+
             currentChart.hideLoading()
           }
         })
