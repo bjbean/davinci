@@ -37,7 +37,7 @@ case class SqlInfo(sqls: Array[String])
 
 case class BaseInfo(id: Long, name: String)
 
-case class ManualInfo(adHoc: Option[String] = None, manualFilters: Option[String] = None, params: Option[List[KV]] = None, shareInfo: Option[String] = None)
+case class ManualInfo(adHoc: Option[String] = None, manualFilters: Option[String] = None, params: Option[List[KV]] = None)
 
 case class WidgetInfo(id: Long, widget_id: Long, flatTableId: Long, position_x: Int, position_y: Int, width: Int, length: Int, trigger_type: String, trigger_params: String, aesStr: String = "")
 

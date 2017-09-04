@@ -26,7 +26,7 @@ import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import edp.davinci.DavinciConstants._
 import edp.davinci.KV
 import org.apache.log4j.Logger
-
+import java.sql.Types._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -34,19 +34,19 @@ import scala.collection.mutable.ListBuffer
 object SqlUtils extends SqlUtils
 
 trait SqlUtils extends Serializable {
-  lazy val dataSourceMap: mutable.HashMap[String, HikariDataSource] = new mutable.HashMap[String, HikariDataSource]
+  lazy val dataSourceMap: mutable.HashMap[(String, String), HikariDataSource] = new mutable.HashMap[(String, String), HikariDataSource]
   private lazy val logger = Logger.getLogger(this.getClass)
 
   def getConnection(jdbcUrl: String, username: String, password: String, maxPoolSize: Int = 5): Connection = {
     val tmpJdbcUrl = jdbcUrl.toLowerCase
-    if (!dataSourceMap.contains(tmpJdbcUrl) || dataSourceMap(tmpJdbcUrl) == null) {
+    if (!dataSourceMap.contains((tmpJdbcUrl, username)) || dataSourceMap((tmpJdbcUrl, username)) == null) {
       synchronized {
-        if (!dataSourceMap.contains(tmpJdbcUrl) || dataSourceMap(tmpJdbcUrl) == null) {
+        if (!dataSourceMap.contains((tmpJdbcUrl, username)) || dataSourceMap((tmpJdbcUrl, username)) == null) {
           initJdbc(jdbcUrl, username, password, maxPoolSize)
         }
       }
     }
-    dataSourceMap(tmpJdbcUrl).getConnection
+    dataSourceMap((tmpJdbcUrl, username)).getConnection
   }
 
   private def initJdbc(jdbcUrl: String, username: String, password: String, muxPoolSize: Int = 5): Unit = {
@@ -93,18 +93,18 @@ trait SqlUtils extends Serializable {
 
     val ds: HikariDataSource = new HikariDataSource(config)
     println(tmpJdbcUrl + "$$$$$$$$$$$$$$$$$" + ds.getUsername + " " + ds.getPassword)
-    dataSourceMap(tmpJdbcUrl) = ds
+    dataSourceMap((tmpJdbcUrl, username)) = ds
   }
 
   def resetConnection(jdbcUrl: String, username: String, password: String): Unit = {
-    shutdownConnection(jdbcUrl.toLowerCase)
+    shutdownConnection(jdbcUrl.toLowerCase, username)
     getConnection(jdbcUrl, username, password).close()
   }
 
-  def shutdownConnection(jdbcUrl: String): dataSourceMap.type = {
+  def shutdownConnection(jdbcUrl: String, username: String): dataSourceMap.type = {
     val tmpJdbcUrl = jdbcUrl.toLowerCase
-    dataSourceMap(tmpJdbcUrl).close()
-    dataSourceMap -= tmpJdbcUrl
+    dataSourceMap((tmpJdbcUrl, username)).close()
+    dataSourceMap -= ((tmpJdbcUrl, username))
   }
 
 
@@ -186,14 +186,15 @@ trait SqlUtils extends Serializable {
     var dbConnection: Connection = null
     var statement: Statement = null
     if (connectionUrl != null) {
-      val connectionInfo = connectionUrl.split(sqlUrlSeparator)
-        .filter(u => u.contains("user") || u.contains("password")).map(u => u.substring(u.indexOf('=') + 1))
-      if (connectionInfo.length != 2) {
+      val connInfoArr: Array[String] = connectionUrl.split(sqlUrlSeparator)
+      val userAndPaw = connInfoArr.filter(u => u.contains("user") || u.contains("password"))
+        .map(u => u.substring(u.indexOf('=') + 1))
+      if (userAndPaw.length != 2) {
         logger.info("connection is not in right format")
         throw new Exception("connection is not in right format:" + connectionUrl)
       } else {
         try {
-          dbConnection = SqlUtils.getConnection(connectionUrl, connectionInfo(0), connectionInfo(1))
+          dbConnection = SqlUtils.getConnection(connInfoArr(0), userAndPaw(0), userAndPaw(1))
           statement = dbConnection.createStatement()
           if (sql.length > 1) for (elem <- sql.dropRight(1)) statement.execute(elem)
           val resultSet = statement.executeQuery(sql.last)
@@ -244,22 +245,58 @@ trait SqlUtils extends Serializable {
       mixinSql
   }
 
-
   def getRow(rs: ResultSet): Seq[String] = {
     val meta = rs.getMetaData
     val columnNum = meta.getColumnCount
     (1 to columnNum).map(columnIndex => {
       val fieldValue = meta.getColumnType(columnIndex) match {
-        case java.sql.Types.VARCHAR => rs.getString(columnIndex)
-        case java.sql.Types.INTEGER => rs.getInt(columnIndex)
-        case java.sql.Types.BIGINT => rs.getLong(columnIndex)
-        case java.sql.Types.FLOAT => rs.getFloat(columnIndex)
-        case java.sql.Types.DOUBLE => rs.getDouble(columnIndex)
-        case java.sql.Types.BOOLEAN => rs.getBoolean(columnIndex)
-        case java.sql.Types.DATE => rs.getDate(columnIndex)
-        case java.sql.Types.TIMESTAMP => rs.getTimestamp(columnIndex)
-        case java.sql.Types.DECIMAL => rs.getBigDecimal(columnIndex)
-        case _ => println("not supported java sql type")
+        case INTEGER => rs.getInt(columnIndex)
+        case BIGINT => rs.getLong(columnIndex)
+
+        case DECIMAL => rs.getBigDecimal(columnIndex)
+        case NUMERIC => rs.getBigDecimal(columnIndex)
+
+        case FLOAT => rs.getFloat(columnIndex)
+        case DOUBLE => rs.getDouble(columnIndex)
+        case REAL => rs.getDouble(columnIndex)
+
+        case NVARCHAR => rs.getString(columnIndex)
+        case VARCHAR => rs.getString(columnIndex)
+        case LONGNVARCHAR => rs.getString(columnIndex)
+        case LONGVARCHAR => rs.getString(columnIndex)
+
+        case BOOLEAN => rs.getBoolean(columnIndex)
+        case BIT => rs.getBoolean(columnIndex)
+
+        case BINARY => rs.getBytes(columnIndex)
+        case VARBINARY => rs.getBytes(columnIndex)
+        case LONGVARBINARY => rs.getBytes(columnIndex)
+
+        case TINYINT => rs.getShort(columnIndex)
+        case SMALLINT => rs.getShort(columnIndex)
+
+        case DATE => rs.getDate(columnIndex)
+
+        case TIMESTAMP => rs.getTime(columnIndex)
+
+        case BLOB => rs.getBlob(columnIndex)
+
+        case CLOB => rs.getClob(columnIndex)
+
+        case ARRAY =>
+          throw new RuntimeException("ResultSetSerializer not yet implemented for SQL type ARRAY")
+
+        case STRUCT =>
+          throw new RuntimeException("ResultSetSerializer not yet implemented for SQL type STRUCT")
+
+        case DISTINCT =>
+          throw new RuntimeException("ResultSetSerializer not yet implemented for SQL type DISTINCT")
+
+        case REF =>
+          throw new RuntimeException("ResultSetSerializer not yet implemented for SQL type REF")
+
+        case JAVA_OBJECT => rs.getObject(columnIndex)
+        case _ => rs.getObject(columnIndex)
       }
       if (fieldValue == null) null.asInstanceOf[String] else fieldValue.toString
     })

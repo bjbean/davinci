@@ -152,9 +152,14 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
 
 
   @Path("/csv/{share_info}")
-  @ApiOperation(value = "get csv by share info", notes = "", nickname = "", httpMethod = "GET")
+  @ApiOperation(value = "get csv by share info", notes = "", nickname = "", httpMethod = "POST")
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "share_info", value = "share info value", required = true, dataType = "string", paramType = "path")))
+    new ApiImplicitParam(name = "share_info", value = "share info value", required = true, dataType = "string", paramType = "path"),
+    new ApiImplicitParam(name = "manualInfo", value = "manualInfo", required = false, dataType = "edp.davinci.rest.ManualInfo", paramType = "body"),
+    new ApiImplicitParam(name = "offset", value = "offset", required = false, dataType = "integer", paramType = "query"),
+    new ApiImplicitParam(name = "limit", value = "limit", required = false, dataType = "integer", paramType = "query"),
+    new ApiImplicitParam(name = "sortby", value = "sort by", required = false, dataType = "string", paramType = "query")
+  ))
   @ApiResponses(Array(
     new ApiResponse(code = 200, message = "post success"),
     new ApiResponse(code = 403, message = "user is not admin"),
@@ -162,8 +167,15 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
     new ApiResponse(code = 400, message = "bad request")
   ))
   def getCSVRoute: Route = path(routeName / "csv" / Segment) { shareInfoStr =>
-    get {
-      authVerify(shareInfoStr, textCSV, "")
+    post {
+      entity(as[ManualInfo]) { manualInfo =>
+        parameters('offset.as[Int] ? 0, 'limit.as[Int] ? -1, 'sortby.as[String] ? "") { (offset, limit, sortby) =>
+          val paginationInfo = if (limit != -1) s" limit $limit offset $offset" else ""
+          val sortInfo = if (sortby != "") "ORDER BY " + sortby.map(ch => if (ch == ':') ' ' else ch) else ""
+          val paginateAndSort = sortInfo + paginationInfo
+          authVerify(shareInfoStr, textCSV, paginateAndSort, manualInfo)
+        }
+      }
     }
   }
 
@@ -323,10 +335,13 @@ class ShareRoutes(modules: ConfigurationModule with PersistenceModule with Busin
           else (manualInfo.manualFilters.orNull, manualInfo.params.orNull, manualInfo.adHoc.orNull)
           if (infoArr.length == 2) {
             val urlDecode = URLDecoder.decode(infoArr.last, defaultEncode)
+            logger.info("urlDecode~~~~~~~~~~~~~~~~~~~~~~~~~:" + urlDecode)
             val base64decoder = new sun.misc.BASE64Decoder
             val base64decode: String = new String(base64decoder.decodeBuffer(urlDecode))
+            logger.info("base64decode~~~~~~~~~~~~~~~~~~~~~~~~~:" + base64decode)
             val paramAndFilter: ParamHelper = json2caseClass[ParamHelper](base64decode)
             val (urlFilters, urlParams) = (paramAndFilter.f_get, paramAndFilter.p_get)
+            logger.info("url filter~~~~~~~~~~~~~~~~~~~~~~~~~:" + urlFilters)
             val filters = mergeFilters(manualFilters, urlFilters)
             val params = mergeParams(widgetParams, urlParams)
             getResultComplete(userId, infoId, contentType, filters, params, paginateAndSort, adHoc)
